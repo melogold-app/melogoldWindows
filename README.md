@@ -4,7 +4,7 @@
 
 <h1 align="center">Melogold для Windows</h1>
 
-<p align="center">Клиент <a href="https://github.com/MaximCemencov/melogoldAndroid">Melogold</a> для Windows: музыка из YouTube Music с общими избранным, библиотекой и плейлистами на всех устройствах.</p>
+<p align="center">Клиент <a href="https://github.com/melogold-app/melogoldAndroid">Melogold</a> для Windows: музыка из YouTube Music с общими избранным, библиотекой и плейлистами на всех устройствах.</p>
 
 ## Статус
 
@@ -13,7 +13,7 @@
 - нативное приложение на C# (.NET, WinUI 3) для x64 и ARM64;
 - вход в аккаунт Melogold и список подключённых устройств;
 - установщик без прав администратора и автообновление из
-  [GitHub Releases](https://github.com/MaximCemencov/melogoldWindows/releases).
+  [GitHub Releases](https://github.com/melogold-app/melogoldWindows/releases).
 
 Иконка приложения — `Assets/melogold.ico`.
 
@@ -21,7 +21,7 @@
 
 | Платформа | Репозиторий |
 |---|---|
-| Android | [melogoldAndroid](https://github.com/MaximCemencov/melogoldAndroid) |
+| Android | [melogoldAndroid](https://github.com/melogold-app/melogoldAndroid) |
 | Сервер | melogoldServer |
 | Windows | melogoldWindows |
 | Linux | melogoldLinux |

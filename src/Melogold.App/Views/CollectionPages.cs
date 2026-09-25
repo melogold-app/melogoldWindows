@@ -213,7 +213,7 @@ public sealed partial class HistoryPage : CatalogPage
     /// <summary>Чьи прослушивания показать (tasks/0002 §3.5): виден с аккаунтом, когда есть прослушивания других устройств.</summary>
     private readonly ComboBox _device = new() { MinWidth = 200, VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed };
     private HistoryDevice _filter = HistoryDevice.All;
-    private Dictionary<string, string>? _deviceNames;
+    private Dictionary<string, Melogold.Server.DeviceDto>? _deviceNames;
 
     public HistoryPage()
     {
@@ -279,22 +279,34 @@ public sealed partial class HistoryPage : CatalogPage
         {
             try
             {
-                _deviceNames = (await _account.DevicesAsync()).Devices.ToDictionary(d => d.Id, d => d.Name);
+                _deviceNames = (await _account.DevicesAsync()).Devices.ToDictionary(d => d.Id);
             }
             catch (Exception e) when (e is Melogold.Server.ApiException or HttpRequestException or TaskCanceledException)
             {
                 Log.Warn("Device names unavailable", e);
             }
         }
-        var options = new List<(string Text, HistoryDevice Filter)>
+        var options = new List<(string Text, string? Glyph, HistoryDevice Filter)>
         {
-            (Loc.Get("HistoryDeviceAll"), HistoryDevice.All),
-            (Loc.Get("HistoryDeviceThis"), HistoryDevice.This(current)),
+            (Loc.Get("HistoryDeviceAll"), null, HistoryDevice.All),
+            (Loc.Get("HistoryDeviceThis"), Melogold.Core.Domain.DeviceSymbols.Glyph("windows"), HistoryDevice.This(current)),
         };
-        options.AddRange(others.Select(id => (_deviceNames?.GetValueOrDefault(id) ?? Loc.Get("HistoryDeviceOther"), HistoryDevice.Other(id))).OrderBy(o => o.Item1, StringComparer.CurrentCulture));
+        options.AddRange(others
+            .Select(id => _deviceNames?.GetValueOrDefault(id) is { } d
+                ? (d.Name, Melogold.Core.Domain.DeviceSymbols.Glyph(d.Platform), HistoryDevice.Other(id))
+                : (Loc.Get("HistoryDeviceOther"), (string?)Melogold.Core.Domain.DeviceSymbols.Glyph(null), HistoryDevice.Other(id)))
+            .OrderBy(o => o.Item1, StringComparer.CurrentCulture));
         var selected = _filter;
         _device.Items.Clear();
-        foreach (var (text, filter) in options) _device.Items.Add(new ComboBoxItem { Content = text, Tag = filter });
+        foreach (var (text, glyph, filter) in options)
+        {
+            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            if (glyph is not null) content.Children.Add(new FontIcon { Glyph = glyph, FontSize = 14 });
+            content.Children.Add(new TextBlock { Text = text });
+            var item = new ComboBoxItem { Content = content, Tag = filter };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(item, text);
+            _device.Items.Add(item);
+        }
         _device.SelectedIndex = Math.Max(0, options.FindIndex(o => o.Filter == selected));
         _filter = options[_device.SelectedIndex].Filter;
         _device.Visibility = Visibility.Visible;

@@ -281,6 +281,16 @@ public sealed class AccountService : IDisposable
     public Task<DeviceListResponse> DevicesAsync(CancellationToken ct = default) =>
         AuthorizedAsync((api, token) => api.DevicesAsync(token, ct), ct);
 
+    /// <summary>Код с нового устройства (часы, телевизор): его данные и три числа на выбор.</summary>
+    public Task<LinkDetails> ResolveLinkAsync(string userCode, CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.ResolveLinkAsync(token, userCode, ct), ct);
+
+    public Task<LinkDecisionResponse> ApproveLinkAsync(string linkId, string verifyCode, CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.ApproveLinkAsync(token, linkId, verifyCode, ct), ct);
+
+    public Task<LinkDecisionResponse> DenyLinkAsync(string linkId, CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.DenyLinkAsync(token, linkId, ct), ct);
+
     public Task RevokeAsync(string deviceId, string? password, CancellationToken ct = default) =>
         AuthorizedAsync((api, token) => api.RevokeDeviceAsync(token, deviceId, password, ct), ct);
 

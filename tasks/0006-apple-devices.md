@@ -1,6 +1,6 @@
 # Устройства Apple в аккаунте: значки и одобрение входа по коду
 
-Статус: открыто
+Статус: сделано
 
 Появляется клиент Melogold для Apple: iPhone, iPad, Mac, Vision Pro и самостоятельное приложение для Apple Watch (`melogoldiOSmacOS`). Его устройства входят в тот же аккаунт и видны в списке устройств Windows. Значения `platform` — в API §1.6 сервера (коммиты 651b1a7 и 90f5149): `ios`, `ipados`, `macos`, `visionos`, `watchos`.
 

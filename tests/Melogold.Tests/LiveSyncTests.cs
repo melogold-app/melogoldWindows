@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using Melogold.Core.Data;
+using Melogold.Core.Domain;
 using Melogold.Core.Music;
 using Melogold.Server;
 using Xunit;
@@ -181,6 +182,110 @@ public class LiveSyncTests(ITestOutputHelper output)
             if (a.Account.Session is not null) await a.Account.DeleteAccountAsync(password);
             output.WriteLine($"Аккаунт {login} удалён");
         }
+    }
+
+    /// <summary>
+    /// Вход по коду (tasks/0006 §2, API §4.6 <c>request</c>): «часы» просят вход и показывают код; Windows вводит его,
+    /// видит часы и три числа, выбирает число с часов — часы получают сессию и появляются в списке устройств. Неверное
+    /// число — вход отклонён.
+    /// </summary>
+    [Fact]
+    public async Task WatchSignsInWithCode()
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        using var a = new Device("E2E Windows A", server, output);
+        using var http = new HttpClient { BaseAddress = new Uri(server) };
+
+        async Task<System.Text.Json.Nodes.JsonObject> Post(string path, object body)
+        {
+            using var response = await http.PostAsync(path, new StringContent(System.Text.Json.JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json"));
+            var text = await response.Content.ReadAsStringAsync();
+            Assert.True(response.IsSuccessStatusCode, $"{path}: {(int)response.StatusCode} {text}");
+            return (System.Text.Json.Nodes.JsonObject)System.Text.Json.Nodes.JsonNode.Parse(text)!;
+        }
+
+        // Часы просят вход: код и секрет опроса
+        async Task<(string UserCode, string PollSecret)> WatchAsks() =>
+            await Post("/auth/link/requests", new
+            {
+                device = new { hwid = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32)), name = "Apple Watch", platform = "watchos", osVersion = "11.0", model = "Watch7,1" },
+            }) is var created ? ((string)created["userCode"]!, (string)created["pollSecret"]!) : default;
+
+        try
+        {
+            await a.Account.RegisterAsync(login, password);
+
+            var (code, secret) = await WatchAsks();
+            // Код вводят как удобно: строчными, с пробелом
+            var link = await a.Account.ResolveLinkAsync(UserCode.Normalize(code.ToLowerInvariant().Replace("-", " "))!);
+            Assert.Equal("claimed", link.Status);
+            Assert.Equal("watchos", link.Device?.Platform);
+            Assert.Equal(DeviceKind.Watch, DeviceSymbols.Kind(link.Device?.Platform));
+            Assert.Equal(3, link.VerifyChoices.Count);
+            var shown = (string)(await Post("/auth/link/poll", new { pollSecret = secret, knownStatus = "pending", waitSeconds = 0 }))["verifyCode"]!;
+            Assert.Contains(shown, link.VerifyChoices);
+
+            Assert.Equal("approved", (await a.Account.ApproveLinkAsync(link.LinkId, shown)).Status);
+            var done = await Post("/auth/link/poll", new { pollSecret = secret, knownStatus = "claimed", waitSeconds = 0 });
+            Assert.Equal("completed", (string)done["status"]!);
+            Assert.NotNull(done["session"]);
+            Assert.Contains((await a.Account.DevicesAsync()).Devices, d => d.Platform == "watchos" && d.Name == "Apple Watch");
+            output.WriteLine("✓ часы вошли по коду");
+
+            // Неверное число — отказ
+            var (code2, _) = await WatchAsks();
+            var link2 = await a.Account.ResolveLinkAsync(UserCode.Normalize(code2)!);
+            var wrong = Enumerable.Range(10, 90).Select(n => n.ToString(System.Globalization.CultureInfo.InvariantCulture)).First(n => !link2.VerifyChoices.Contains(n));
+            var error = await Assert.ThrowsAsync<ApiException>(() => a.Account.ApproveLinkAsync(link2.LinkId, wrong));
+            Assert.Equal("link_verify_mismatch", error.Code);
+            output.WriteLine("✓ неверное число — вход отклонён");
+
+            // Несуществующий код
+            Assert.Equal("link_not_found", (await Assert.ThrowsAsync<ApiException>(() => a.Account.ResolveLinkAsync("ZZZZ-ZZZZ"))).Code);
+        }
+        finally
+        {
+            if (a.Account.Session is not null) await a.Account.DeleteAccountAsync(password);
+            output.WriteLine($"Аккаунт {login} удалён");
+        }
+    }
+
+    /// <summary>
+    /// Для скриншота списка устройств (tasks/0006 §3): временный аккаунт с iPhone, iPad, Mac, Vision Pro и часами.
+    /// Логин и пароль — в файл <c>MELOGOLD_SCREENSHOT_ACCOUNT</c>; второй запуск с тем же файлом удаляет аккаунт.
+    /// </summary>
+    [Fact]
+    public async Task AppleDevicesAccountForScreenshot()
+    {
+        var file = Environment.GetEnvironmentVariable("MELOGOLD_SCREENSHOT_ACCOUNT");
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1" && !string.IsNullOrEmpty(file), "MELOGOLD_LIVE=1 и MELOGOLD_SCREENSHOT_ACCOUNT");
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        using var a = new Device("E2E Windows", server, output);
+        if (File.Exists(file))
+        {
+            var saved = File.ReadAllLines(file!);
+            await a.Account.SignInAsync(saved[0], saved[1]);
+            await a.Account.DeleteAccountAsync(saved[1]);
+            File.Delete(file!);
+            output.WriteLine($"Аккаунт {saved[0]} удалён");
+            return;
+        }
+        var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        // Латиница: пароль вводит в окно tools/shot.ps1, а аргументы Windows PowerShell портят кириллицу
+        var password = "check-devices-" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        await a.Account.RegisterAsync(login, password);
+        using var http = new HttpClient { BaseAddress = new Uri(server) };
+        foreach (var (name, platform, model) in new[] { ("iPhone", "ios", "iPhone17,1"), ("iPad", "ipados", "iPad16,3"), ("MacBook Air", "macos", "Mac15,12"), ("Apple Vision Pro", "visionos", "RealityDevice14,1"), ("Apple Watch", "watchos", "Watch7,1") })
+        {
+            var body = System.Text.Json.JsonSerializer.Serialize(new { login, password, device = new { hwid = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32)), name, platform, model } });
+            using var response = await http.PostAsync("/auth/login", new StringContent(body, System.Text.Encoding.UTF8, "application/json"));
+            Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
+        }
+        File.WriteAllLines(file!, [login, password]);
+        output.WriteLine($"Аккаунт {login} с устройствами Apple готов");
     }
 
     /// <summary>

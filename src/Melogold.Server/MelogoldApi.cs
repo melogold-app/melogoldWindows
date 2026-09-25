@@ -181,6 +181,17 @@ public sealed class MelogoldApi : IDisposable
     public Task ConfirmRecoveryCodeAsync(string token, string recoveryCodeCreatedAt, CancellationToken ct = default) =>
         SendNoContentAsync(HttpMethod.Post, "/auth/me/recovery-code/confirm", new { recoveryCodeCreatedAt }, token, false, ct);
 
+    // ---------- Вход нового устройства по коду (API §4.6, режим request) ----------
+
+    public Task<LinkDetails> ResolveLinkAsync(string token, string userCode, CancellationToken ct = default) =>
+        SendAsync<LinkDetails>(HttpMethod.Post, "/auth/me/links/resolve", new { userCode }, token, false, ct);
+
+    public Task<LinkDecisionResponse> ApproveLinkAsync(string token, string linkId, string verifyCode, CancellationToken ct = default) =>
+        SendAsync<LinkDecisionResponse>(HttpMethod.Post, $"/auth/me/links/{linkId}/approve", new { verifyCode }, token, false, ct);
+
+    public Task<LinkDecisionResponse> DenyLinkAsync(string token, string linkId, CancellationToken ct = default) =>
+        SendAsync<LinkDecisionResponse>(HttpMethod.Post, $"/auth/me/links/{linkId}/deny", new { }, token, false, ct);
+
     public Task DeleteAccountAsync(string token, string password, CancellationToken ct = default) =>
         SendNoContentAsync(HttpMethod.Post, "/auth/me/delete", new { password }, token, false, ct);
 

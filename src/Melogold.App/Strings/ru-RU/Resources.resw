@@ -523,4 +523,27 @@
   <data name="SortDuration" xml:space="preserve"><value>Длительность</value></data>
   <data name="DurationHoursMinutesFormat" xml:space="preserve"><value>{0} ч {1} мин</value></data>
   <data name="DurationMinutesFormat" xml:space="preserve"><value>{0} мин</value></data>
+  <data name="AccountAddDevice" xml:space="preserve"><value>Добавить устройство</value></data>
+  <data name="LinkCodeText" xml:space="preserve"><value>Введите код, который показывает новое устройство — например, часы</value></data>
+  <data name="LinkCodeHeader" xml:space="preserve"><value>Код</value></data>
+  <data name="LinkContinue" xml:space="preserve"><value>Продолжить</value></data>
+  <data name="LinkInvalidCode" xml:space="preserve"><value>Код — 8 букв и цифр, например K7QX-M2PD</value></data>
+  <data name="LinkChooseNumber" xml:space="preserve"><value>Выберите число, которое видно на новом устройстве</value></data>
+  <data name="LinkDeny" xml:space="preserve"><value>Отклонить</value></data>
+  <data name="LinkDenied" xml:space="preserve"><value>Вход отклонён</value></data>
+  <data name="LinkSameNetwork" xml:space="preserve"><value>В той же сети</value></data>
+  <data name="LinkOtherNetwork" xml:space="preserve"><value>В другой сети</value></data>
+  <data name="LinkExpiresFormat" xml:space="preserve"><value>Код действует ещё {0} мин</value></data>
+  <data name="LinkApprovedFormat" xml:space="preserve"><value>«{0}» вошло в аккаунт</value></data>
+  <data name="LinkNotFound" xml:space="preserve"><value>Код не найден</value></data>
+  <data name="LinkExpired" xml:space="preserve"><value>Код устарел — запросите новый на устройстве</value></data>
+  <data name="LinkVerifyMismatch" xml:space="preserve"><value>Число не совпало — вход отклонён</value></data>
+  <data name="LinkAlreadyClaimed" xml:space="preserve"><value>Этот код уже используется</value></data>
+  <data name="LinkWrongMode" xml:space="preserve"><value>Это код приглашения, а не входа</value></data>
+  <data name="DevicePhone" xml:space="preserve"><value>Телефон</value></data>
+  <data name="DeviceTablet" xml:space="preserve"><value>Планшет</value></data>
+  <data name="DeviceComputer" xml:space="preserve"><value>Компьютер</value></data>
+  <data name="DeviceWatch" xml:space="preserve"><value>Часы</value></data>
+  <data name="DeviceHeadset" xml:space="preserve"><value>Гарнитура</value></data>
+  <data name="DeviceOther" xml:space="preserve"><value>Устройство</value></data>
 </root>

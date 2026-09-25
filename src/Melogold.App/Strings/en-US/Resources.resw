@@ -523,4 +523,27 @@
   <data name="SortDuration" xml:space="preserve"><value>Duration</value></data>
   <data name="DurationHoursMinutesFormat" xml:space="preserve"><value>{0} h {1} min</value></data>
   <data name="DurationMinutesFormat" xml:space="preserve"><value>{0} min</value></data>
+  <data name="AccountAddDevice" xml:space="preserve"><value>Add a device</value></data>
+  <data name="LinkCodeText" xml:space="preserve"><value>Enter the code the new device shows — for example, your watch</value></data>
+  <data name="LinkCodeHeader" xml:space="preserve"><value>Code</value></data>
+  <data name="LinkContinue" xml:space="preserve"><value>Continue</value></data>
+  <data name="LinkInvalidCode" xml:space="preserve"><value>The code is 8 letters and digits, like K7QX-M2PD</value></data>
+  <data name="LinkChooseNumber" xml:space="preserve"><value>Choose the number shown on the new device</value></data>
+  <data name="LinkDeny" xml:space="preserve"><value>Deny</value></data>
+  <data name="LinkDenied" xml:space="preserve"><value>Sign-in denied</value></data>
+  <data name="LinkSameNetwork" xml:space="preserve"><value>On the same network</value></data>
+  <data name="LinkOtherNetwork" xml:space="preserve"><value>On another network</value></data>
+  <data name="LinkExpiresFormat" xml:space="preserve"><value>The code works for {0} more min</value></data>
+  <data name="LinkApprovedFormat" xml:space="preserve"><value>“{0}” signed in to your account</value></data>
+  <data name="LinkNotFound" xml:space="preserve"><value>Code not found</value></data>
+  <data name="LinkExpired" xml:space="preserve"><value>The code has expired — get a new one on the device</value></data>
+  <data name="LinkVerifyMismatch" xml:space="preserve"><value>The number didn’t match — sign-in denied</value></data>
+  <data name="LinkAlreadyClaimed" xml:space="preserve"><value>This code is already in use</value></data>
+  <data name="LinkWrongMode" xml:space="preserve"><value>This is an invitation code, not a sign-in code</value></data>
+  <data name="DevicePhone" xml:space="preserve"><value>Phone</value></data>
+  <data name="DeviceTablet" xml:space="preserve"><value>Tablet</value></data>
+  <data name="DeviceComputer" xml:space="preserve"><value>Computer</value></data>
+  <data name="DeviceWatch" xml:space="preserve"><value>Watch</value></data>
+  <data name="DeviceHeadset" xml:space="preserve"><value>Headset</value></data>
+  <data name="DeviceOther" xml:space="preserve"><value>Device</value></data>
 </root>

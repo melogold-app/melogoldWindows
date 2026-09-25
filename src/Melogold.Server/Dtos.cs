@@ -265,3 +265,11 @@ public sealed record ErrorEnvelope
     [JsonExtensionData]
     public Dictionary<string, System.Text.Json.JsonElement>? Extra { get; init; }
 }
+
+/// <summary>Новое устройство «сообщает о себе» (API §4.6 <c>LinkDeviceInfo</c>).</summary>
+public sealed record LinkDeviceInfo(string Name, string Platform, string? OsVersion, string? Model, string? ClientVersion, bool AlreadyLinked);
+
+/// <summary>Привязка по коду (API §4.6 <c>LinkDetails</c>): у <c>claimed</c> — три числа на выбор.</summary>
+public sealed record LinkDetails(string LinkId, string Mode, string Status, string CreatedAt, string ExpiresAt, LinkDeviceInfo? Device, bool? SameNetwork, IReadOnlyList<string> VerifyChoices);
+
+public sealed record LinkDecisionResponse(string LinkId, string Status);

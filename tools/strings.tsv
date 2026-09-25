@@ -532,3 +532,26 @@ SortListeningTime	Время прослушивания	Listening time
 SortDuration	Длительность	Duration
 DurationHoursMinutesFormat	{0} ч {1} мин	{0} h {1} min
 DurationMinutesFormat	{0} мин	{0} min
+AccountAddDevice	Добавить устройство	Add a device
+LinkCodeText	Введите код, который показывает новое устройство — например, часы	Enter the code the new device shows — for example, your watch
+LinkCodeHeader	Код	Code
+LinkContinue	Продолжить	Continue
+LinkInvalidCode	Код — 8 букв и цифр, например K7QX-M2PD	The code is 8 letters and digits, like K7QX-M2PD
+LinkChooseNumber	Выберите число, которое видно на новом устройстве	Choose the number shown on the new device
+LinkDeny	Отклонить	Deny
+LinkDenied	Вход отклонён	Sign-in denied
+LinkSameNetwork	В той же сети	On the same network
+LinkOtherNetwork	В другой сети	On another network
+LinkExpiresFormat	Код действует ещё {0} мин	The code works for {0} more min
+LinkApprovedFormat	«{0}» вошло в аккаунт	“{0}” signed in to your account
+LinkNotFound	Код не найден	Code not found
+LinkExpired	Код устарел — запросите новый на устройстве	The code has expired — get a new one on the device
+LinkVerifyMismatch	Число не совпало — вход отклонён	The number didn’t match — sign-in denied
+LinkAlreadyClaimed	Этот код уже используется	This code is already in use
+LinkWrongMode	Это код приглашения, а не входа	This is an invitation code, not a sign-in code
+DevicePhone	Телефон	Phone
+DeviceTablet	Планшет	Tablet
+DeviceComputer	Компьютер	Computer
+DeviceWatch	Часы	Watch
+DeviceHeadset	Гарнитура	Headset
+DeviceOther	Устройство	Device

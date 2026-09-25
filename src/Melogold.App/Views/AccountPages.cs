@@ -337,6 +337,13 @@ public sealed partial class AccountPage : Page
 
         body.Children.Add(Header("AccountDevicesGroup"));
         body.Children.Add(_devices);
+        // Вход нового устройства по коду (tasks/0006 §2): часам неудобно набирать пароль
+        var addDevice = new Button { Content = Loc.Get("AccountAddDevice"), Margin = new Thickness(0, 8, 0, 0) };
+        addDevice.Click += async (_, _) =>
+        {
+            if (await Controls.LinkDeviceDialog.ShowAsync(XamlRoot)) await LoadDevicesAsync();
+        };
+        body.Children.Add(addDevice);
 
         var signOut = new Button
         {
@@ -367,6 +374,14 @@ public sealed partial class AccountPage : Page
             _sync.StatusChanged -= OnStatusChanged;
             _sync.DevicesChanged -= OnDevicesChanged;
         };
+    }
+
+    /// <summary>Значок устройства по <c>platform</c> (tasks/0006 §1) с подписью для экранного диктора.</summary>
+    private static FontIcon DeviceIcon(string? platform)
+    {
+        var icon = new FontIcon { Glyph = Melogold.Core.Domain.DeviceSymbols.Glyph(platform) };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(icon, Controls.DeviceTexts.Kind(platform));
+        return icon;
     }
 
     private static TextBlock Header(string key) => new() { Text = Loc.Get(key), Style = (Style)Application.Current.Resources["SettingsSectionHeaderStyle"] };
@@ -409,7 +424,7 @@ public sealed partial class AccountPage : Page
                 Header = device.Name,
                 Description = device.IsCurrent ? Loc.Get("AccountDeviceCurrent")
                     : IsoTime.TryParse(device.LastSeenAt) is { } seen ? Loc.Format("AccountDeviceSeenFormat", AccountTexts.Relative(seen)) : "",
-                HeaderIcon = new FontIcon { Glyph = device.Platform is "android" or "ios" ? "" : "" },
+                HeaderIcon = DeviceIcon(device.Platform),
             };
             if (!device.IsCurrent)
             {

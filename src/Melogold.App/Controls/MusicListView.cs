@@ -44,9 +44,19 @@ public sealed partial class MusicListView : ListView
         protected override DataTemplate SelectTemplateCore(object item, DependencyObject container) => SelectTemplateCore(item);
     }
 
+    /// <summary>Поля, которые задала страница; в узком окне по бокам — 16 (как у Windows в узком окне), а не 36.</summary>
+    private Thickness? _widePadding;
+
     public MusicListView()
     {
         ItemTemplateSelector = new Selector();
+        SizeChanged += (_, e) =>
+        {
+            _widePadding ??= Padding;
+            var wide = _widePadding.Value;
+            var side = e.NewSize.Width < NarrowWidth ? Math.Min(16, wide.Left) : wide.Left;
+            if (Padding.Left != side) Padding = new Thickness(side, wide.Top, side, wide.Bottom);
+        };
         ContainerContentChanging += (_, e) =>
         {
             // Заголовок секции не выделяется и не получает фокус как строка
@@ -75,6 +85,9 @@ public sealed partial class MusicListView : ListView
     private static TrackActions Actions => App.Services.GetRequiredService<TrackActions>();
 
     /// <summary>Заменить строки списка; треки попадают в <see cref="RowOwner.Tracks"/> для «играть с этого трека».</summary>
+    /// <summary>Уже этого окно узкое: поля по бокам меньше.</summary>
+    public const double NarrowWidth = 600;
+
     public void SetItems(IEnumerable<MusicItem> items, RowOwner owner, bool showType = false)
     {
         owner.Tracks.Clear();

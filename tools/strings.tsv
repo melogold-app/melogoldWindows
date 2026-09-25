@@ -613,3 +613,5 @@ SearchBox.AccessKey	П	F
 PlayerMore.AccessKey	Е	M
 DropOpen	Открыть в Melogold	Open in Melogold
 DropImport	Импорт копии	Import a copy
+MenuMute	Без звука	Mute
+MenuUnmute	Включить звук	Unmute

@@ -54,6 +54,12 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "melogold.ico"));
         ApplyBackdrop();
         ApplyTheme();
+        // Меньше 500×500 окно не сжимается: у́же панель плеера и заголовок разваливаются (пользователь показал окно в 290)
+        Root.Loaded += (_, _) =>
+        {
+            ApplyMinimumSize();
+            Content.XamlRoot.Changed += (_, _) => ApplyMinimumSize();
+        };
 #if DEBUG
         DebugSnapshot.Start(Root);
 #endif
@@ -113,6 +119,8 @@ public sealed partial class MainWindow : Window
         // Сочетания клавиш — все в окне «Сочетания клавиш» (F1, Ctrl+/; ShortcutsDialog). Стрелки с Ctrl и Shift в поле
         // ввода остаются полю: там они двигают курсор и выделяют текст
         const VirtualKeyModifiers ctrl = VirtualKeyModifiers.Control, shift = VirtualKeyModifiers.Shift;
+        // Сочетания висят на корне окна: подсказку «Ctrl+F» WinUI показывал бы над всем окном
+        Root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
         void Key(VirtualKey key, VirtualKeyModifiers modifiers, Action action, bool inText = true) =>
             Root.KeyboardAccelerators.Add(Accelerator(key, modifiers, action, inText ? null : FocusInTextInput));
         Key(VirtualKey.F, ctrl, FocusSearch);
@@ -235,6 +243,17 @@ public sealed partial class MainWindow : Window
             AppTheme.Dark => ElementTheme.Dark,
             _ => ElementTheme.Default,
         };
+    }
+
+    private const double MinWindowWidth = 500, MinWindowHeight = 500;
+
+    /// <summary>Наименьший размер окна в эффективных пикселях — в пикселях экрана с его масштабом (другой монитор — пересчёт).</summary>
+    private void ApplyMinimumSize()
+    {
+        if (AppWindow.Presenter is not OverlappedPresenter presenter || Content?.XamlRoot is not { } root) return;
+        var scale = root.RasterizationScale;
+        presenter.PreferredMinimumWidth = (int)Math.Ceiling(MinWindowWidth * scale);
+        presenter.PreferredMinimumHeight = (int)Math.Ceiling(MinWindowHeight * scale);
     }
 
     /// <summary>Плашка всплывает снизу и тает, как уведомление, а не появляется рывком.</summary>
@@ -504,20 +523,43 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void LayoutSearch()
     {
+        // В узком окне поиску не хватает места рядом с подписью «Melogold»: подпись прячется, значок остаётся
+        var title = AppTitleBar.ActualWidth is > 0 and < 720 ? "" : "Melogold";
+        if (AppTitleBar.Title != title) AppTitleBar.Title = title;
         if (_searchColumn is not { ActualWidth: > 0 } column || VisualTreeHelper.GetParent(SearchBox) is not FrameworkElement presenter) return;
         var bar = AppTitleBar.ActualWidth;
-        var width = Math.Min(Math.Clamp(bar * 0.32, 240, 520), column.ActualWidth);
+        var columnLeft = column.TransformToVisual(AppTitleBar).TransformPoint(default).X;
+        // Место — от начала колонки до кнопок окна, а не ширина самой колонки: она подстраивается под поиск, и в
+        // узком окне оба сжимались до 9 px. Немного места остаётся, чтобы окно можно было тащить за заголовок
+        var captions = FixCaptionInset();
+        // 48 — колонка TitleBar, за которую окно всегда можно утащить (TitleBarMinDragRegionWidth)
+        var room = Math.Max(0, bar - columnLeft - captions - 48);
+        var width = Math.Min(Math.Clamp(bar * 0.32, 180, 520), room);
         SearchBox.Width = width;
         // В узком окне TitleBar прижимает поиск влево — так и оставить
-        if (presenter.HorizontalAlignment != HorizontalAlignment.Center)
+        if (presenter.HorizontalAlignment != HorizontalAlignment.Center || column.ActualWidth <= width + 1)
         {
             SearchBox.Margin = default;
             return;
         }
-        var columnLeft = column.TransformToVisual(AppTitleBar).TransformPoint(default).X;
         var left = Math.Clamp((bar - width) / 2 - columnLeft, 0, column.ActualWidth - width);
         var shift = left - (column.ActualWidth - width) / 2;
         SearchBox.Margin = shift >= 0 ? new Thickness(2 * shift, 0, 0, 0) : new Thickness(0, 0, -2 * shift, 0);
+    }
+
+    /// <summary>
+    /// Место под кнопки окна справа, в эффективных пикселях. TitleBar (WinAppSDK 2.3) ставит в свою колонку
+    /// <c>RightPaddingColumn</c> <c>AppWindow.TitleBar.RightInset</c> без деления на масштаб экрана: при 225 % это
+    /// 288 вместо 128, и в узком окне поиску не оставалось места (замер 2026-09-26). Здесь — верная ширина.
+    /// </summary>
+    private double FixCaptionInset()
+    {
+        var captions = AppWindow.TitleBar.RightInset / (Content.XamlRoot?.RasterizationScale ?? 1);
+        if (VisualTreeHelper.GetChildrenCount(AppTitleBar) > 0 && VisualTreeHelper.GetChild(AppTitleBar, 0) is Grid layoutRoot
+            && layoutRoot.FindName("RightPaddingColumn") is ColumnDefinition padding
+            && Math.Abs(padding.Width.Value - captions) > 1)
+            padding.Width = new GridLength(captions);
+        return captions;
     }
 
     /// <summary>Есть обновление — значок «!» у пункта «Настройки» (§3), пока оно не установлено.</summary>

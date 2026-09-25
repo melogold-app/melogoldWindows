@@ -9,12 +9,15 @@
     PointerExited="OnPointerExited">
 
     <Grid Height="56" ColumnSpacing="12" Background="Transparent" Opacity="{x:Bind local:MusicRow.RowOpacity(Item.Dimmed), Mode=OneWay}">
+        <!-- Колонки справа постоянной ширины: ♡, «в кэше», длительность и «…» стоят ровно во всех строках, даже если
+             в строке чего-то из них нет -->
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="40" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="32" />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="Auto" MinWidth="40" />
+            <ColumnDefinition Width="32" />
         </Grid.ColumnDefinitions>
 
         <!-- Обложка 40 px; при наведении на ней кнопка play -->
@@ -96,28 +99,31 @@
                 Glyph="{x:Bind local:MusicRow.HeartGlyph(Item.IsLiked), Mode=OneWay}" />
         </Button>
 
-        <!-- Длительность; контурный значок — трек целиком в кэше и играет без сети (tasks/0003) -->
-        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-            <FontIcon
-                x:Uid="RowCached"
-                FontSize="12"
-                Glyph="&#xE930;"
-                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Visibility="{x:Bind Item.Cached, Mode=OneWay}"
-                ToolTipService.ToolTip="{x:Bind local:MusicRow.CachedText()}" />
-            <TextBlock
-                MinWidth="40"
-                VerticalAlignment="Center"
-                HorizontalTextAlignment="Right"
-                Style="{StaticResource CaptionTextBlockStyle}"
-                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Text="{x:Bind Item.Duration}" />
-        </StackPanel>
+        <!-- Контурный значок — трек целиком в кэше и играет без сети (tasks/0003) -->
+        <FontIcon
+            x:Uid="RowCached"
+            Grid.Column="3"
+            FontSize="12"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Glyph="&#xE930;"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Visibility="{x:Bind Item.Cached, Mode=OneWay}"
+            ToolTipService.ToolTip="{x:Bind local:MusicRow.CachedText()}" />
+
+        <!-- Длительность -->
+        <TextBlock
+            Grid.Column="4"
+            VerticalAlignment="Center"
+            HorizontalTextAlignment="Right"
+            Style="{StaticResource CaptionTextBlockStyle}"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{x:Bind Item.Duration}" />
 
         <Button
             x:Name="MenuButton"
             x:Uid="RowMenuButton"
-            Grid.Column="4"
+            Grid.Column="5"
             Style="{StaticResource RowIconButtonStyle}"
             Opacity="{x:Bind local:MusicRow.HoverOpacity(Hovered), Mode=OneWay}"
             Visibility="{x:Bind Item.IsTrack, Mode=OneWay}"

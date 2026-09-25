@@ -9,7 +9,8 @@
   -Steps — шаги через «|» по UI Automation, без мыши и фокуса:
     «имя» нажимает элемент (точное имя, иначе начало имени), «имя=текст» вводит текст в поле,
     «@файл.png» снимает окно посреди сценария, «@mini:файл.png» — мини-плеер, «!max» и «!restore» разворачивают и
-    восстанавливают окно, «!wait:5» ждёт 5 с, «!show:имя» прокручивает до элемента. В конце окно снимается в -Out.
+    восстанавливают окно, «!size:500x700» — окно такого размера (эффективные пиксели, как в XAML), «!wait:5» ждёт 5 с,
+    «!show:имя» прокручивает до элемента. В конце окно снимается в -Out.
 #>
 param(
     [string]$Out = "shot.png",
@@ -32,6 +33,8 @@ public static class Win {
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr hdc, uint flags);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+    [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
 }
 "@
@@ -118,6 +121,13 @@ if ($Steps) {
         if ($step.StartsWith("!wait:")) { Start-Sleep -Seconds ([int]$step.Substring(6)); continue }
         if ($step -eq "!max") { [Win]::ShowWindow($h, 3) | Out-Null; Start-Sleep -Seconds 2; continue }   # SW_MAXIMIZE
         if ($step -eq "!restore") { [Win]::ShowWindow($h, 9) | Out-Null; Start-Sleep -Seconds 2; continue }   # SW_RESTORE
+        if ($step.StartsWith("!size:")) {
+            # Размер в эффективных пикселях: умножается на масштаб экрана окна; без перемещения и без фокуса
+            $wh = $step.Substring(6).Split("x"); $scale = [Win]::GetDpiForWindow($h) / 96.0
+            [Win]::ShowWindow($h, 9) | Out-Null
+            [Win]::SetWindowPos($h, [IntPtr]::Zero, 0, 0, [int]([int]$wh[0] * $scale), [int]([int]$wh[1] * $scale), 0x0016) | Out-Null   # NOMOVE|NOZORDER|NOACTIVATE
+            Start-Sleep -Seconds 2; continue
+        }
         $pattern = $null
         if ($step.Contains("=")) {
             $name, $value = $step.Split("=", 2)

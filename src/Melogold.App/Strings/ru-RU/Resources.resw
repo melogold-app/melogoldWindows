@@ -604,4 +604,6 @@
   <data name="PlayerMore.AccessKey" xml:space="preserve"><value>Е</value></data>
   <data name="DropOpen" xml:space="preserve"><value>Открыть в Melogold</value></data>
   <data name="DropImport" xml:space="preserve"><value>Импорт копии</value></data>
+  <data name="MenuMute" xml:space="preserve"><value>Без звука</value></data>
+  <data name="MenuUnmute" xml:space="preserve"><value>Включить звук</value></data>
 </root>

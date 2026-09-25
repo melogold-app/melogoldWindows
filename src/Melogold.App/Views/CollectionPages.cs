@@ -15,14 +15,15 @@ namespace Melogold.App.Views;
 /// <summary>Фильтр и сортировка длинного списка (§5.3): сортировка запоминается для экрана.</summary>
 public sealed partial class ListToolbar : Grid
 {
-    private readonly TextBox _filter = new() { PlaceholderText = Loc.Get("Filter"), Width = 240 };
+    private readonly TextBox _filter = new() { PlaceholderText = Loc.Get("Filter") };
     private readonly ComboBox? _sort;
 
     public ListToolbar(string screen, IReadOnlyList<(string Key, string Label)> sorts, Action changed)
     {
         ColumnSpacing = 8;
         Margin = new Thickness(0, 0, 0, 8);
-        ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        // Фильтр тянется до 320, сортировка справа помещается всегда: в узком окне фильтр уже, а не сортировка за краем
+        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star), MaxWidth = 320 });
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_filter, Loc.Get("Filter"));
@@ -31,7 +32,7 @@ public sealed partial class ListToolbar : Grid
         if (sorts.Count > 0)
         {
             var settings = App.Services.GetRequiredService<SettingsStore>();
-            _sort = new ComboBox { MinWidth = 200, Header = null };
+            _sort = new ComboBox { MinWidth = 160, Header = null };
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_sort, Loc.Get("Sort"));
             foreach (var (key, label) in sorts) _sort.Items.Add(new ComboBoxItem { Content = label, Tag = key });
             var saved = settings.Sorts.GetValueOrDefault(screen);
@@ -137,7 +138,8 @@ public sealed partial class AllTracksPage : CatalogPage
         var visible = Visible();
         _list.SetItems(visible, new RowOwner(new TrackContext.List())
         {
-            Detail = track => _playTime.GetValueOrDefault(track.VideoId) is > 0 and var ms ? ListeningTime(ms) : null,
+            // Меньше минуты — без «0 мин»: только исполнитель
+            Detail = track => _playTime.GetValueOrDefault(track.VideoId) is >= 60_000 and var ms ? ListeningTime(ms) : null,
         });
         if (_all.Count == 0) _state.ShowEmpty("\uE8D6", Loc.Get("AllTracks"), Loc.Get("AllTracksEmpty"), (Loc.Get("FindMusic"), () => App.Current?.Window?.FocusSearchBox()));
         else if (visible.Count == 0) _state.ShowEmpty("\uE721", Loc.Get("NothingFound"));

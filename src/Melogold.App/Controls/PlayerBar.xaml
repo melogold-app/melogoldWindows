@@ -14,15 +14,22 @@
         Background="{ThemeResource LayerOnMicaBaseAltFillColorDefaultBrush}"
         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
         BorderThickness="0,1,0,0"
-        ColumnSpacing="16">
+        ColumnSpacing="16"
+        RowSpacing="2">
+        <!-- Боковые колонки всегда равной ширины: Play стоит посередине окна (там же середина «Сейчас играет»).
+             Ширина колонок — по кнопкам справа в каждом состоянии, см. VisualStateManager внизу -->
         <Grid.ColumnDefinitions>
-            <ColumnDefinition x:Name="LeftColumn" Width="*" MinWidth="200" />
-            <ColumnDefinition Width="2*" MaxWidth="640" />
-            <ColumnDefinition x:Name="RightColumn" Width="*" MinWidth="120" />
+            <ColumnDefinition x:Name="LeftColumn" Width="*" MinWidth="320" />
+            <ColumnDefinition x:Name="CenterColumn" Width="2*" MaxWidth="640" />
+            <ColumnDefinition x:Name="RightColumn" Width="*" MinWidth="320" />
         </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
         <!-- Слева: обложка, название, исполнитель, ♡. Правый клик — то же меню, что «…» -->
-        <Grid ColumnSpacing="12" Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay}" ContextRequested="OnTrackContextRequested">
+        <Grid x:Name="TrackInfo" Grid.RowSpan="2" VerticalAlignment="Center" ColumnSpacing="12" Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay}" ContextRequested="OnTrackContextRequested">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -88,10 +95,10 @@
             </ToggleButton>
         </Grid>
 
-        <!-- В центре: кнопки и ползунок -->
-        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Spacing="8">
+        <!-- В центре: кнопки и ползунок; в узком окне ползунок — строкой сверху во всю ширину -->
+            <StackPanel x:Name="Transport" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Spacing="8">
                 <ToggleButton
+                    x:Name="ShuffleButton"
                     x:Uid="PlayerShuffle"
                     Style="{StaticResource PlayerIconToggleStyle}"
                     IsChecked="{x:Bind ViewModel.Shuffle, Mode=OneWay}"
@@ -124,6 +131,7 @@
                     <FontIcon Glyph="&#xE893;" />
                 </Button>
                 <ToggleButton
+                    x:Name="RepeatButton"
                     Style="{StaticResource PlayerIconToggleStyle}"
                     IsChecked="{x:Bind local:PlayerBar.IsRepeat(ViewModel.Repeat), Mode=OneWay}"
                     AutomationProperties.Name="{x:Bind ViewModel.RepeatLabel, Mode=OneWay}"
@@ -132,7 +140,7 @@
                     <FontIcon Glyph="{x:Bind ViewModel.RepeatGlyph, Mode=OneWay}" />
                 </ToggleButton>
             </StackPanel>
-            <Grid ColumnSpacing="12">
+            <Grid x:Name="SeekRow" Grid.Row="1" Grid.Column="1" ColumnSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="44" />
                     <ColumnDefinition Width="*" />
@@ -163,10 +171,9 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Text="{x:Bind ViewModel.DurationText, Mode=OneWay}" />
             </Grid>
-        </StackPanel>
 
         <!-- Справа: «Текст», «Очередь», громкость, мини-плеер и «…» -->
-        <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal" Spacing="4">
+        <StackPanel x:Name="RightPanel" Grid.Column="2" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal" Spacing="4">
             <ToggleButton
                 x:Name="LyricsButton"
                 x:Uid="PlayerLyricsButton"
@@ -184,10 +191,11 @@
             </ToggleButton>
             <!-- Колесо мыши над громкостью меняет её, как в «Медиаплеере» -->
             <StackPanel x:Name="VolumePanel" Orientation="Horizontal" Spacing="4" Background="Transparent" PointerWheelChanged="OnVolumeWheel">
-                <Button x:Uid="PlayerMute" Style="{StaticResource PlayerIconButtonStyle}" Command="{x:Bind ViewModel.ToggleMuteCommand}">
+                <Button x:Name="MuteButton" x:Uid="PlayerMute" Style="{StaticResource PlayerIconButtonStyle}" Command="{x:Bind ViewModel.ToggleMuteCommand}">
                     <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" />
                 </Button>
                 <Slider
+                    x:Name="VolumeSlider"
                     x:Uid="PlayerVolume"
                     Width="100"
                     VerticalAlignment="Center"
@@ -216,22 +224,61 @@
             </Button>
         </StackPanel>
 
+        <!-- Ширина окна (панель во всю ширину): что остаётся на виду. Спрятанное — в начале меню «…» (PlayerBar.BuildMenu) -->
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
-                <VisualState x:Name="Wide">
+                <!-- Всё: ползунок громкости, мини-плеер -->
+                <VisualState x:Name="Full">
                     <VisualState.StateTriggers>
-                        <AdaptiveTrigger MinWindowWidth="900" />
+                        <AdaptiveTrigger MinWindowWidth="1100" />
                     </VisualState.StateTriggers>
                 </VisualState>
+                <!-- Без ползунка громкости: кнопка звука остаётся, громкость — колесом над ней -->
+                <VisualState x:Name="Medium">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="860" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="VolumeSlider.Visibility" Value="Collapsed" />
+                        <Setter Target="LeftColumn.MinWidth" Value="216" />
+                        <Setter Target="RightColumn.MinWidth" Value="216" />
+                    </VisualState.Setters>
+                </VisualState>
+                <!-- Справа только «Текст», «Очередь» и «…» -->
                 <VisualState x:Name="Narrow">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="720" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="VolumePanel.Visibility" Value="Collapsed" />
+                        <Setter Target="MiniButton.Visibility" Value="Collapsed" />
+                        <Setter Target="LeftColumn.MinWidth" Value="200" />
+                        <Setter Target="RightColumn.MinWidth" Value="200" />
+                    </VisualState.Setters>
+                </VisualState>
+                <!-- Две строки, как «Медиаплеер» Windows: перемотка сверху во всю ширину, под ней трек, ⏮ ⏯ ⏭, «Текст»,
+                     «Очередь» и «…»; ♡, перемешать и повтор — в «…» -->
+                <VisualState x:Name="Compact">
                     <VisualState.StateTriggers>
                         <AdaptiveTrigger MinWindowWidth="0" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="VolumePanel.Visibility" Value="Collapsed" />
-                        <Setter Target="LeftColumn.MinWidth" Value="120" />
-                        <Setter Target="RightColumn.MinWidth" Value="40" />
-                        <Setter Target="RightColumn.Width" Value="Auto" />
+                        <Setter Target="MiniButton.Visibility" Value="Collapsed" />
+                        <Setter Target="LikeButton.Visibility" Value="Collapsed" />
+                        <Setter Target="ShuffleButton.Visibility" Value="Collapsed" />
+                        <Setter Target="RepeatButton.Visibility" Value="Collapsed" />
+                        <Setter Target="SeekRow.(Grid.Row)" Value="0" />
+                        <Setter Target="SeekRow.(Grid.Column)" Value="0" />
+                        <Setter Target="SeekRow.(Grid.ColumnSpan)" Value="3" />
+                        <Setter Target="Transport.(Grid.Row)" Value="1" />
+                        <Setter Target="TrackInfo.(Grid.Row)" Value="1" />
+                        <Setter Target="TrackInfo.(Grid.RowSpan)" Value="1" />
+                        <Setter Target="RightPanel.(Grid.Row)" Value="1" />
+                        <Setter Target="RightPanel.(Grid.RowSpan)" Value="1" />
+                        <Setter Target="CenterColumn.Width" Value="Auto" />
+                        <Setter Target="LeftColumn.MinWidth" Value="128" />
+                        <Setter Target="RightColumn.MinWidth" Value="128" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>

@@ -106,7 +106,48 @@ public sealed partial class PlayerBar : UserControl
             keys.Click += (_, _) => App.Current?.Window?.ShowShortcuts();
             items.Add(keys);
         }, anchor: MoreButton);
+        AddHiddenControls(menu.Items);
         return menu;
+    }
+
+    /// <summary>
+    /// Что спрятала узкая панель (VisualStateManager в PlayerBar.xaml) — в начале меню, с сочетаниями клавиш справа:
+    /// ♡, перемешать, повтор, звук, мини-плеер.
+    /// </summary>
+    private void AddHiddenControls(IList<MenuFlyoutItemBase> items)
+    {
+        var hidden = new List<MenuFlyoutItemBase>();
+        if (LikeButton.Visibility == Visibility.Collapsed)
+            hidden.Add(Command(Loc.Get(ViewModel.IsLiked ? "MenuFavoriteRemove" : "MenuFavoriteAdd"), HeartGlyph(ViewModel.IsLiked), "Ctrl+D", ViewModel.ToggleLikeCommand));
+        if (ShuffleButton.Visibility == Visibility.Collapsed)
+        {
+            var shuffle = new ToggleMenuFlyoutItem { Text = Loc.Get("ShortcutShuffle"), IsChecked = ViewModel.Shuffle, Icon = new FontIcon { Glyph = "\uE8B1" }, KeyboardAcceleratorTextOverride = "Ctrl+H" };
+            shuffle.Click += (_, _) => ViewModel.ToggleShuffleCommand.Execute(null);
+            hidden.Add(shuffle);
+        }
+        if (RepeatButton.Visibility == Visibility.Collapsed)
+            hidden.Add(Command(ViewModel.RepeatLabel, ViewModel.RepeatGlyph, "Ctrl+T", ViewModel.CycleRepeatCommand));
+        if (VolumePanel.Visibility == Visibility.Collapsed)
+        {
+            var muted = App.Services.GetRequiredService<SettingsStore>().Muted;
+            hidden.Add(Command(Loc.Get(muted ? "MenuUnmute" : "MenuMute"), ViewModel.VolumeGlyph, "Ctrl+M", ViewModel.ToggleMuteCommand));
+        }
+        if (MiniButton.Visibility == Visibility.Collapsed)
+        {
+            var mini = new MenuFlyoutItem { Text = Loc.Get("ShortcutMini"), Icon = new FontIcon { Glyph = "\uE944" }, KeyboardAcceleratorTextOverride = "Ctrl+Shift+M" };
+            mini.Click += (_, _) => App.Current?.Window?.OpenMiniPlayer();
+            hidden.Add(mini);
+        }
+        if (hidden.Count == 0) return;
+        hidden.Add(new MenuFlyoutSeparator());
+        for (var i = 0; i < hidden.Count; i++) items.Insert(i, hidden[i]);
+    }
+
+    private static MenuFlyoutItem Command(string text, string glyph, string keys, System.Windows.Input.ICommand command)
+    {
+        var item = new MenuFlyoutItem { Text = text, Icon = new FontIcon { Glyph = glyph }, KeyboardAcceleratorTextOverride = keys };
+        item.Click += (_, _) => command.Execute(null);
+        return item;
     }
 
     /// <summary>Длинное название обрезано многоточием — целиком в подсказке.</summary>

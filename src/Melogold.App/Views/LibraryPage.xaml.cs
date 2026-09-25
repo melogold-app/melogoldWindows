@@ -33,6 +33,14 @@ public sealed partial class LibraryPage : CatalogPage
         _importFirst.Click += async (_, _) => await ImportFlow.RunAsync(XamlRoot);
         _content.Children.Add(_importFirst);
         _content.Children.Add(_collections);
+        // Карточки коллекций — во всю ширину: колонок столько, сколько влезает карточек от 248, без пустоты справа
+        _content.SizeChanged += (_, e) => FitCollections(e.NewSize.Width);
+        // В узком окне поля по бокам 16, как у списков (MusicListView.NarrowWidth)
+        _scroller.SizeChanged += (_, e) =>
+        {
+            var side = e.NewSize.Width < MusicListView.NarrowWidth ? 16 : 36;
+            if (_content.Margin.Left != side) _content.Margin = new Thickness(side, 24, side, 36);
+        };
 
         var header = new Grid { Margin = new Thickness(0, 24, 0, 8) };
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -121,6 +129,18 @@ public sealed partial class LibraryPage : CatalogPage
 
     private static void Open(Type page, string? parameter = null) => App.Services.GetRequiredService<Navigator>().Open(page, parameter);
 
+    private const double MinCollectionWidth = 248;
+
+    private void FitCollections(double width)
+    {
+        if (width <= 0) return;
+        var columns = Math.Max(1, (int)(width / MinCollectionWidth));
+        var item = Math.Floor(width / columns);
+        if (Math.Abs(item - _collections.ItemWidth) < 1) return;
+        _collections.ItemWidth = item;
+        foreach (var card in _collections.Children.OfType<Button>()) card.Width = item - 8;
+    }
+
     private void AddCollection(string glyph, string title, string subtitle, Action open)
     {
         var grid = new Grid { ColumnSpacing = 16 };
@@ -135,7 +155,7 @@ public sealed partial class LibraryPage : CatalogPage
         var button = new Button
         {
             Content = grid,
-            Width = 240,
+            Width = _collections.ItemWidth - 8,
             Height = 68,
             Padding = new Thickness(16, 8, 16, 8),
             HorizontalContentAlignment = HorizontalAlignment.Left,

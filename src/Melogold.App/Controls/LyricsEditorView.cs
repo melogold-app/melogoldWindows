@@ -226,6 +226,7 @@ public sealed partial class LyricsEditorView : Grid
         };
         controls.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         controls.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        controls.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         controls.Children.Add(Transport(_next));
 
         var buttons = new Grid { ColumnSpacing = 8 };
@@ -243,15 +244,17 @@ public sealed partial class LyricsEditorView : Grid
         buttons.Children.Add(_mark);
         SetRow(buttons, 1);
         controls.Children.Add(buttons);
-        controls.Children.Add(new TextBlock
+        // Подсказка о клавишах — своей строкой под кнопками: в узком окне она переносится и не наезжает на перемотку
+        var hint = new TextBlock
         {
             Text = Loc.Get("LyricsEditorKeysHint"),
             Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
             Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
-            HorizontalAlignment = HorizontalAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, -8, 0, 0),
-        });
+            TextWrapping = TextWrapping.WrapWholeWords,
+            Margin = new Thickness(0, -4, 0, 0),
+        };
+        SetRow(hint, 2);
+        controls.Children.Add(hint);
         SetRow(controls, 2);
         _sync.Children.Add(controls);
     }

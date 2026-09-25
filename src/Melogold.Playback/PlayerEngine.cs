@@ -543,12 +543,22 @@ public sealed class PlayerEngine : IDisposable
 
     private Task<AacStreamSource> OpenSourceAsync(string videoId, CancellationToken ct) => Task.Run(async () =>
     {
+        // Трек целиком в кэше играет без запросов: ни player, ни адреса
         var info = Songs?.Complete(videoId) ?? await _resolver.ResolveAsync(videoId, ct).ConfigureAwait(false);
-        return await AacStreamSource.OpenAsync(_http, info, async token =>
+        var cache = Songs?.Entry(info);
+        try
         {
-            _resolver.Invalidate(videoId);
-            return await _resolver.ResolveAsync(videoId, token).ConfigureAwait(false);
-        }, ct, Songs?.Entry(info)).ConfigureAwait(false);
+            return await AacStreamSource.OpenAsync(_http, info, async token =>
+            {
+                _resolver.Invalidate(videoId);
+                return await _resolver.ResolveAsync(videoId, token).ConfigureAwait(false);
+            }, ct, cache).ConfigureAwait(false);
+        }
+        catch
+        {
+            cache?.Release();
+            throw;
+        }
     }, ct);
 
     /// <summary>Заранее открытый источник трека, если он готов и не сломан; иначе null.</summary>
@@ -558,7 +568,10 @@ public sealed class PlayerEngine : IDisposable
         try
         {
             var source = await task;
-            return source.Info.ExpiresAtMs > IsoTime.NowMs() ? source : null;
+            if (source.Info.ExpiresAtMs > IsoTime.NowMs()) return source;
+            // Адрес истёк: источник не нужен — закрыть, чтобы кэш не держал трек закреплённым
+            source.Dispose();
+            return null;
         }
         catch (Exception)
         {
@@ -586,6 +599,8 @@ public sealed class PlayerEngine : IDisposable
         foreach (var index in Queue.Upcoming(2))
         {
             var videoId = Queue.Items[index].Track.VideoId;
+            // Целиком в кэше — адрес не нужен
+            if (Songs?.IsComplete(videoId) == true) continue;
             _ = Task.Run(async () =>
             {
                 try

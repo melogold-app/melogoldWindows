@@ -42,7 +42,7 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         SpeedBox.SelectedIndex = Math.Max(0, Array.IndexOf(Speeds, _settings.Speed));
         NormalizeSwitch.IsOn = _settings.NormalizeVolume;
         FillSizes(ImageCacheSizeBox, ImageCacheSizes, _settings.ImageCacheMaxMb, 128);
-        FillSizes(SongCacheSizeBox, SongCacheSizes, _settings.SongCacheMaxMb, 2048);
+        FillSizes(SongCacheSizeBox, SongCacheSizes, _settings.SongCacheMaxMb, 4096);
         SignInButton.Content = Loc.Get("AccountSignIn");
         RegisterButton.Content = Loc.Get("AccountRegister");
         _account.StateChanged += _ => DispatcherQueue.TryEnqueue(ShowAccount);
@@ -215,7 +215,11 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         CacheCard.Description = Loc.Format("CacheUsedFormat", FormatSize(cache));
         ImageCacheCard.Description = Used(images, _settings.ImageCacheMaxMb);
         ClearImagesButton.IsEnabled = images > 0;
-        SongCacheCard.Description = Used(songs, _settings.SongCacheMaxMb);
+        // «Занято X из Y» (tasks/0003 §3)
+        SongCacheCard.Description = _settings.SongCacheMaxMb > 0
+            ? Loc.Format("CacheUsedOfFormat", FormatSize(songs), FormatSize(_settings.SongCacheMaxMb * 1024 * 1024))
+            : Loc.Format("CacheUsedOfUnlimitedFormat", FormatSize(songs));
+        ClearSongsButton.IsEnabled = songs > 0;
         ClearCacheButton.IsEnabled = cache > 0;
         SearchHistoryCard.Description = searches == 0 ? Loc.Get("EmptySearchHistory") : null!;
         ClearSearchesButton.IsEnabled = searches > 0;
@@ -246,7 +250,15 @@ public sealed partial class SettingsPage : Page, IScrollToTop
     {
         if (!_ready || SongCacheSizeBox.SelectedItem is not ComboBoxItem { Tag: long mb }) return;
         _settings.SongCacheMaxMb = mb;
+        _settings.SongCacheSizeChosen = true;
         await Task.Run(_songs.Trim);
+        await ShowStorageAsync();
+    }
+
+    /// <summary>«Очистить кэш» музыки: всё, кроме играющего сейчас.</summary>
+    private async void OnClearSongs(object sender, RoutedEventArgs e)
+    {
+        await Task.Run(_songs.Clear);
         await ShowStorageAsync();
     }
 

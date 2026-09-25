@@ -434,9 +434,9 @@
   <data name="LyricsTooLarge" xml:space="preserve"><value>The lyrics are too large for the server: they stay on this device only</value></data>
   <data name="SettingsStorageDescription.Text" xml:space="preserve"><value>Caches free themselves: what went unused the longest goes first.</value></data>
   <data name="SettingsImageCache.Header" xml:space="preserve"><value>Image cache</value></data>
-  <data name="SettingsSongCache.Header" xml:space="preserve"><value>Song cache</value></data>
+  <data name="SettingsSongCache.Header" xml:space="preserve"><value>Music cache</value></data>
   <data name="SettingsImageCacheSize.Header" xml:space="preserve"><value>Max size</value></data>
-  <data name="SettingsSongCacheSize.Header" xml:space="preserve"><value>Max size</value></data>
+  <data name="SettingsSongCacheSize.Header" xml:space="preserve"><value>Cache size</value></data>
   <data name="ImageCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Image cache max size</value></data>
   <data name="SongCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Song cache max size</value></data>
   <data name="ClearImagesButton.Content" xml:space="preserve"><value>Clear</value></data>
@@ -546,4 +546,15 @@
   <data name="DeviceWatch" xml:space="preserve"><value>Watch</value></data>
   <data name="DeviceHeadset" xml:space="preserve"><value>Headset</value></data>
   <data name="DeviceOther" xml:space="preserve"><value>Device</value></data>
+  <data name="ClearSongsButton.Content" xml:space="preserve"><value>Clear cache</value></data>
+  <data name="CacheUsedOfFormat" xml:space="preserve"><value>{0} of {1} used</value></data>
+  <data name="CacheUsedOfUnlimitedFormat" xml:space="preserve"><value>{0} used</value></data>
+  <data name="RowCachedTooltip" xml:space="preserve"><value>Available offline (cached)</value></data>
+  <data name="RowCached.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Available offline (cached)</value></data>
+  <data name="NoNetwork" xml:space="preserve"><value>No network</value></data>
+  <data name="Downloads" xml:space="preserve"><value>Downloads</value></data>
+  <data name="DownloadsCachedFormat" xml:space="preserve"><value>Cached · {0} · {1}</value></data>
+  <data name="DownloadsCachedCountFormat" xml:space="preserve"><value>Cached: {0}</value></data>
+  <data name="DownloadsCachedNote" xml:space="preserve"><value>They play offline until new tracks replace them</value></data>
+  <data name="DownloadsCachedEmpty" xml:space="preserve"><value>Tracks played to the end will be here: they play offline</value></data>
 </root>

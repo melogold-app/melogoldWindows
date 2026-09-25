@@ -59,6 +59,10 @@ public sealed partial class MusicRow : UserControl, INotifyPropertyChanged
 
     private void OnPointerExited(object sender, PointerRoutedEventArgs e) => Hovered = false;
 
+    public static double RowOpacity(bool dimmed) => dimmed ? 0.45 : 1;
+
+    public static string CachedText() => Loc.Get("RowCachedTooltip");
+
     public static CornerRadius Corner(bool round) => round ? new CornerRadius(20) : new CornerRadius(4);
 
     public static string HeartGlyph(bool liked) => liked ? "" : "";

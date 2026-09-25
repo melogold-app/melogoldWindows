@@ -443,9 +443,9 @@ LyricsSourceMelogold	Текст: сообщество Melogold	Lyrics: Melogold 
 LyricsTooLarge	Текст слишком большой для сервера: он останется только на этом устройстве	The lyrics are too large for the server: they stay on this device only
 SettingsStorageDescription.Text	Кэш освобождается сам: первым уходит то, что дольше всего не использовалось.	Caches free themselves: what went unused the longest goes first.
 SettingsImageCache.Header	Кэш изображений	Image cache
-SettingsSongCache.Header	Кэш песен	Song cache
+SettingsSongCache.Header	Кэш музыки	Music cache
 SettingsImageCacheSize.Header	Максимальный размер	Max size
-SettingsSongCacheSize.Header	Максимальный размер	Max size
+SettingsSongCacheSize.Header	Размер кэша	Cache size
 ImageCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Максимальный размер кэша изображений	Image cache max size
 SongCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Максимальный размер кэша песен	Song cache max size
 ClearImagesButton.Content	Очистить	Clear
@@ -555,3 +555,14 @@ DeviceComputer	Компьютер	Computer
 DeviceWatch	Часы	Watch
 DeviceHeadset	Гарнитура	Headset
 DeviceOther	Устройство	Device
+ClearSongsButton.Content	Очистить кэш	Clear cache
+CacheUsedOfFormat	Занято {0} из {1}	{0} of {1} used
+CacheUsedOfUnlimitedFormat	Занято {0}	{0} used
+RowCachedTooltip	Есть без сети (в кэше)	Available offline (cached)
+RowCached.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Есть без сети (в кэше)	Available offline (cached)
+NoNetwork	Нет сети	No network
+Downloads	Скачанное	Downloads
+DownloadsCachedFormat	В кэше · {0} · {1}	Cached · {0} · {1}
+DownloadsCachedCountFormat	В кэше: {0}	Cached: {0}
+DownloadsCachedNote	Играют без сети, пока их не сменят новые треки	They play offline until new tracks replace them
+DownloadsCachedEmpty	Здесь будут треки, прослушанные целиком: они играют без сети	Tracks played to the end will be here: they play offline

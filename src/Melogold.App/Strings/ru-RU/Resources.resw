@@ -434,9 +434,9 @@
   <data name="LyricsTooLarge" xml:space="preserve"><value>Текст слишком большой для сервера: он останется только на этом устройстве</value></data>
   <data name="SettingsStorageDescription.Text" xml:space="preserve"><value>Кэш освобождается сам: первым уходит то, что дольше всего не использовалось.</value></data>
   <data name="SettingsImageCache.Header" xml:space="preserve"><value>Кэш изображений</value></data>
-  <data name="SettingsSongCache.Header" xml:space="preserve"><value>Кэш песен</value></data>
+  <data name="SettingsSongCache.Header" xml:space="preserve"><value>Кэш музыки</value></data>
   <data name="SettingsImageCacheSize.Header" xml:space="preserve"><value>Максимальный размер</value></data>
-  <data name="SettingsSongCacheSize.Header" xml:space="preserve"><value>Максимальный размер</value></data>
+  <data name="SettingsSongCacheSize.Header" xml:space="preserve"><value>Размер кэша</value></data>
   <data name="ImageCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Максимальный размер кэша изображений</value></data>
   <data name="SongCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Максимальный размер кэша песен</value></data>
   <data name="ClearImagesButton.Content" xml:space="preserve"><value>Очистить</value></data>
@@ -546,4 +546,15 @@
   <data name="DeviceWatch" xml:space="preserve"><value>Часы</value></data>
   <data name="DeviceHeadset" xml:space="preserve"><value>Гарнитура</value></data>
   <data name="DeviceOther" xml:space="preserve"><value>Устройство</value></data>
+  <data name="ClearSongsButton.Content" xml:space="preserve"><value>Очистить кэш</value></data>
+  <data name="CacheUsedOfFormat" xml:space="preserve"><value>Занято {0} из {1}</value></data>
+  <data name="CacheUsedOfUnlimitedFormat" xml:space="preserve"><value>Занято {0}</value></data>
+  <data name="RowCachedTooltip" xml:space="preserve"><value>Есть без сети (в кэше)</value></data>
+  <data name="RowCached.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Есть без сети (в кэше)</value></data>
+  <data name="NoNetwork" xml:space="preserve"><value>Нет сети</value></data>
+  <data name="Downloads" xml:space="preserve"><value>Скачанное</value></data>
+  <data name="DownloadsCachedFormat" xml:space="preserve"><value>В кэше · {0} · {1}</value></data>
+  <data name="DownloadsCachedCountFormat" xml:space="preserve"><value>В кэше: {0}</value></data>
+  <data name="DownloadsCachedNote" xml:space="preserve"><value>Играют без сети, пока их не сменят новые треки</value></data>
+  <data name="DownloadsCachedEmpty" xml:space="preserve"><value>Здесь будут треки, прослушанные целиком: они играют без сети</value></data>
 </root>

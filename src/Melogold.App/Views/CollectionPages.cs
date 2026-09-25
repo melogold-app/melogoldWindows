@@ -145,6 +145,59 @@ public sealed partial class AllTracksPage : CatalogPage
     }
 }
 
+/// <summary>
+/// «Скачанное» (tasks/0003 §2, §4): загрузок у Windows пока нет, поэтому здесь только «В кэше · N · X МБ» — треки,
+/// прослушанные целиком: они играют без сети, пока их не сменят новые.
+/// </summary>
+public sealed partial class DownloadsPage : CatalogPage
+{
+    private readonly MusicListView _list = new() { Padding = new Thickness(36, 24, 36, 24) };
+    private readonly TextBlock _group = new() { Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"], Margin = new Thickness(0, 8, 0, 4) };
+    private readonly StateView _state = new();
+    private readonly Library _library = App.Services.GetRequiredService<Library>();
+    private readonly Melogold.Playback.SongCache _cache = App.Services.GetRequiredService<Melogold.Playback.SongCache>();
+
+    public DownloadsPage()
+    {
+        InitializeComponent();
+        var top = new StackPanel();
+        top.Children.Add(new TextBlock { Text = Loc.Get("Downloads"), Style = (Style)Application.Current.Resources["PageTitleStyle"] });
+        top.Children.Add(_group);
+        top.Children.Add(new TextBlock
+        {
+            Text = Loc.Get("DownloadsCachedNote"),
+            TextWrapping = TextWrapping.Wrap,
+            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+            Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            Margin = new Thickness(0, 0, 0, 12),
+        });
+        top.Children.Add(_state);
+        _list.Header = top;
+        Content = _list;
+        _cache.Changed += _ => DispatcherQueue.TryEnqueue(Load);
+        Loaded += (_, _) => Load();
+    }
+
+    public override void ScrollToTop() => SearchPage.FindScrollViewer(_list)?.ChangeView(null, 0, null);
+
+    private async void Load()
+    {
+        var (tracks, bytes) = await Task.Run(() =>
+        {
+            var cached = _cache.CompleteTracks();
+            return (cached.Select(c => _library.GetTrack(c.VideoId)).OfType<Track>().ToList(), cached.Sum(c => c.Bytes));
+        });
+        _group.Text = Loc.Format("DownloadsCachedFormat", tracks.Count, SettingsSize(bytes));
+        _list.SetItems(tracks, new RowOwner(new TrackContext.List()));
+        if (tracks.Count == 0) _state.ShowEmpty("\uE930", Loc.Get("DownloadsCachedEmpty"));
+        else _state.ShowContent();
+    }
+
+    private static string SettingsSize(long bytes) => bytes >= 1024L * 1024 * 1024
+        ? Loc.Format("SizeGigabytesFormat", (bytes / 1024.0 / 1024 / 1024).ToString("0.#", CultureInfo.CurrentCulture))
+        : Loc.Format("SizeMegabytesFormat", (bytes / 1024.0 / 1024).ToString("0.#", CultureInfo.CurrentCulture));
+}
+
 /// <summary>Избранное (REWRITE §3.2.2): список играет целиком, фильтр и сортировка.</summary>
 public sealed partial class FavoritesPage : CatalogPage
 {

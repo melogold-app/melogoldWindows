@@ -117,10 +117,11 @@
                     </toolkit:SettingsCard>
                 </toolkit:SettingsExpander.Items>
             </toolkit:SettingsExpander>
-            <toolkit:SettingsExpander x:Name="SongCacheCard" x:Uid="SettingsSongCache" Header="Song cache">
+            <toolkit:SettingsExpander x:Name="SongCacheCard" x:Uid="SettingsSongCache" Header="Music cache">
                 <toolkit:SettingsExpander.HeaderIcon>
                     <FontIcon Glyph="&#xE8D6;" />
                 </toolkit:SettingsExpander.HeaderIcon>
+                <Button x:Name="ClearSongsButton" x:Uid="ClearSongsButton" Content="Clear cache" Click="OnClearSongs" />
                 <toolkit:SettingsExpander.Items>
                     <toolkit:SettingsCard x:Uid="SettingsSongCacheSize" Header="Max size">
                         <ComboBox x:Name="SongCacheSizeBox" x:Uid="SongCacheSizeBox" MinWidth="180" SelectionChanged="OnSongCacheSizeChanged" />

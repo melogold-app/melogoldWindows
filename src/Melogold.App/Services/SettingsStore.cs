@@ -88,9 +88,13 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     [ObservableProperty]
     public partial long ImageCacheMaxMb { get; set; } = 128;
 
-    /// <summary>«Максимальный размер» кэша песен, МБ; 0 — без ограничения (Android <c>exoPlayerDiskCacheMaxSize</c>, 2 ГБ).</summary>
+    /// <summary>«Размер кэша» музыки, МБ; 0 — без ограничения (tasks/0003: по умолчанию 4 ГБ).</summary>
     [ObservableProperty]
-    public partial long SongCacheMaxMb { get; set; } = 2048;
+    public partial long SongCacheMaxMb { get; set; } = 4096;
+
+    /// <summary>Размер кэша выбрал человек: новое значение по умолчанию его не меняет.</summary>
+    [ObservableProperty]
+    public partial bool SongCacheSizeChosen { get; set; }
 
     /// <summary>Версия, о которой уже сказали окном или уведомлением: о каждой — один раз, дальше значок «!».</summary>
     [ObservableProperty]
@@ -125,7 +129,8 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             Sorts = data.Sorts ?? [];
             ImageCacheMaxMb = Math.Max(1, data.ImageCacheMaxMb);
             UpdateAnnouncedVersion = data.UpdateAnnouncedVersion;
-            SongCacheMaxMb = Math.Max(0, data.SongCacheMaxMb);
+            SongCacheSizeChosen = data.SongCacheSizeChosen;
+            SongCacheMaxMb = data.SongCacheSizeChosen ? Math.Max(0, data.SongCacheMaxMb) : 4096;
         }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
         {
@@ -147,7 +152,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
                 Theme = Theme, LastSection = LastSection, Volume = Volume, Muted = Muted, Speed = Speed, NormalizeVolume = NormalizeVolume,
                 Repeat = Repeat, Shuffle = Shuffle, Autoplay = Autoplay, PauseHistory = PauseHistory, ServerUrl = ServerUrl,
                 LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, PauseSearchHistory = PauseSearchHistory, Sorts = Sorts,
-                ImageCacheMaxMb = ImageCacheMaxMb, SongCacheMaxMb = SongCacheMaxMb, UpdateAnnouncedVersion = UpdateAnnouncedVersion,
+                ImageCacheMaxMb = ImageCacheMaxMb, SongCacheMaxMb = SongCacheMaxMb, SongCacheSizeChosen = SongCacheSizeChosen, UpdateAnnouncedVersion = UpdateAnnouncedVersion,
             };
             var temp = _path + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(data, Json));
@@ -182,7 +187,8 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         public bool PauseSearchHistory { get; set; }
         public Dictionary<string, string>? Sorts { get; set; }
         public long ImageCacheMaxMb { get; set; } = 128;
-        public long SongCacheMaxMb { get; set; } = 2048;
+        public long SongCacheMaxMb { get; set; } = 4096;
+        public bool SongCacheSizeChosen { get; set; }
         public string? UpdateAnnouncedVersion { get; set; }
     }
 }

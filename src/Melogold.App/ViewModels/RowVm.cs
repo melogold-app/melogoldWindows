@@ -25,6 +25,18 @@ public sealed class RowOwner(TrackContext context)
 /// </summary>
 public sealed partial class RowVm : ObservableObject
 {
+    /// <summary>Трек целиком в кэше музыки (задаётся при запуске приложения).</summary>
+    public static Func<string, bool>? IsCached { get; set; }
+
+    /// <summary>Есть ли сеть (задаётся при запуске приложения).</summary>
+    public static Func<bool>? IsOnline { get; set; }
+
+    /// <summary>Есть без сети: контурный значок у длительности.</summary>
+    public bool Cached { get; }
+
+    /// <summary>Сети нет, а трека нет в кэше: строка приглушена, воспроизвести его нельзя.</summary>
+    public bool Dimmed { get; }
+
     public RowVm(MusicItem item, RowOwner owner, bool showType = false)
     {
         Item = item;
@@ -39,6 +51,9 @@ public sealed partial class RowVm : ObservableObject
                         track.IsVideo ? track.ViewsText : track.AlbumTitle);
                 ArtworkUrl = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 120);
                 Duration = track.VideoType == "live" ? Loc.Get("Live") : track.DurationText;
+                // Целиком в кэше — играет без сети; без сети остальные приглушены (tasks/0003 §4)
+                Cached = IsCached?.Invoke(track.VideoId) == true;
+                Dimmed = !Cached && IsOnline?.Invoke() == false;
                 Explicit = track.Explicit;
                 Unavailable = track.Unavailable;
                 break;

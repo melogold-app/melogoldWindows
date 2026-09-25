@@ -8,7 +8,7 @@
     PointerEntered="OnPointerEntered"
     PointerExited="OnPointerExited">
 
-    <Grid Height="56" ColumnSpacing="12" Background="Transparent">
+    <Grid Height="56" ColumnSpacing="12" Background="Transparent" Opacity="{x:Bind local:MusicRow.RowOpacity(Item.Dimmed), Mode=OneWay}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="40" />
             <ColumnDefinition Width="*" />
@@ -95,14 +95,23 @@
                 Glyph="{x:Bind local:MusicRow.HeartGlyph(Item.IsLiked), Mode=OneWay}" />
         </Button>
 
-        <TextBlock
-            Grid.Column="3"
-            MinWidth="40"
-            VerticalAlignment="Center"
-            HorizontalTextAlignment="Right"
-            Style="{StaticResource CaptionTextBlockStyle}"
-            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-            Text="{x:Bind Item.Duration}" />
+        <!-- Длительность; контурный значок — трек целиком в кэше и играет без сети (tasks/0003) -->
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <FontIcon
+                x:Uid="RowCached"
+                FontSize="12"
+                Glyph="&#xE930;"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Visibility="{x:Bind Item.Cached, Mode=OneWay}"
+                ToolTipService.ToolTip="{x:Bind local:MusicRow.CachedText()}" />
+            <TextBlock
+                MinWidth="40"
+                VerticalAlignment="Center"
+                HorizontalTextAlignment="Right"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="{x:Bind Item.Duration}" />
+        </StackPanel>
 
         <Button
             x:Name="MenuButton"

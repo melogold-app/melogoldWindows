@@ -43,6 +43,9 @@ public partial class App : Application
         };
         Services = ConfigureServices();
         Images.Cache = Services.GetRequiredService<ImageCache>();
+        var songs = Services.GetRequiredService<SongCache>();
+        ViewModels.RowVm.IsCached = songs.IsComplete;
+        ViewModels.RowVm.IsOnline = System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable;
         InitializeComponent();
     }
 

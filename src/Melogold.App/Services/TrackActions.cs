@@ -52,6 +52,12 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
     public void Play(IReadOnlyList<Track> tracks, int index, TrackContext context)
     {
         if (index < 0 || index >= tracks.Count) return;
+        // Без сети играет только то, что целиком в кэше (tasks/0003 §4)
+        if (ViewModels.RowVm.IsOnline?.Invoke() == false && ViewModels.RowVm.IsCached?.Invoke(tracks[index].VideoId) != true)
+        {
+            snackbar.Show(Loc.Get("NoNetwork"));
+            return;
+        }
         var previous = engine.Queue.UserAddedCount >= 2 ? engine.Queue.Snapshot((long)engine.Position.TotalMilliseconds) : null;
         var wasPlaying = engine.IsPlaying;
         if (context.PlaysSingle) engine.PlaySingle(tracks[index]);

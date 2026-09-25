@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Melogold.Tests;
 
-/// <summary>Кэш песен: прочитанные диапазоны на диске, трек целиком — без сети, лимит по давности.</summary>
+/// <summary>Кэш музыки (tasks/0003 §5): индекс, вытеснение по давности, играющий не трогается, «целиком», смена формата.</summary>
 public sealed class SongCacheTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), $"melogold-songs-{Guid.NewGuid():N}");
@@ -11,11 +11,11 @@ public sealed class SongCacheTests : IDisposable
 
     private SongCache Cache() => new(_directory, () => _max, (_, _) => { });
 
-    private static StreamInfo Info(string id = "dQw4w9WgXcQ", long length = 1000) => new()
+    private static StreamInfo Info(string id = "dQw4w9WgXcQ", long length = 1000, int itag = 140) => new()
     {
         VideoId = id,
         Url = "https://example.invalid/stream",
-        Itag = 140,
+        Itag = itag,
         ContentLength = length,
         Source = "VISIONOS",
         LoudnessDb = -7.5,
@@ -43,50 +43,75 @@ public sealed class SongCacheTests : IDisposable
     }
 
     [Fact]
-    public void WholeTrackPlaysWithoutAddress()
+    public void WholeTrackIncludingAShortLastChunkPlaysWithoutAddress()
     {
         var cache = Cache();
-        var entry = cache.Entry(Info());
+        var changed = new List<string>();
+        cache.Changed += changed.Add;
+        var entry = cache.Entry(Info(length: 1000));
         entry.Write(0, Bytes(0, 600), 1000);
         Assert.Null(cache.Complete("dQw4w9WgXcQ"));
+        // Последний кусок короче остальных
         entry.Write(600, Bytes(600, 400), 1000);
         Assert.True(entry.IsComplete);
+        Assert.True(cache.IsComplete("dQw4w9WgXcQ"));
+        Assert.Equal(["dQw4w9WgXcQ"], changed);
 
-        // Другой запуск: сведения о потоке — из кэша, адреса нет
-        var info = Cache().Complete("dQw4w9WgXcQ");
+        // Другой запуск: индекс читается с диска, сведения о потоке — без адреса
+        var again = Cache();
+        var info = again.Complete("dQw4w9WgXcQ");
         Assert.NotNull(info);
         Assert.Equal("", info.Url);
         Assert.Equal(-7.5, info.LoudnessDb);
         Assert.Equal(1000, info.ContentLength);
-        Assert.True(Cache().Entry(info).TryRead(0, 1000, out var all));
+        Assert.True(again.Entry(info).TryRead(0, 1000, out var all));
         Assert.Equal(Bytes(0, 1000), all);
+        Assert.Single(again.CompleteTracks());
     }
 
     [Fact]
-    public void OtherLengthStartsOver()
-    {
-        Cache().Entry(Info()).Write(0, Bytes(0, 1000), 1000);
-        var entry = Cache().Entry(Info(length: 2000));
-        Assert.False(entry.TryRead(0, 10, out _));
-    }
-
-    [Fact]
-    public void TrimsLongestUnusedFirst()
+    public void AnotherFormatDropsTheOldBytes()
     {
         var cache = Cache();
-        cache.Entry(Info("aaaaaaaaaaa", 4000)).Write(0, new byte[4000], 4000);
-        cache.Entry(Info("bbbbbbbbbbb", 4000)).Write(0, new byte[4000], 4000);
-        // «a» играл давно, «b» — только что
-        File.SetLastWriteTimeUtc(Path.Combine(_directory, "aaaaaaaaaaa.140.json"), DateTime.UtcNow.AddDays(-2));
-        File.SetLastWriteTimeUtc(Path.Combine(_directory, "bbbbbbbbbbb.140.json"), DateTime.UtcNow.AddDays(-1));
-        _max = 5000;
+        cache.Entry(Info(itag: 140)).Write(0, Bytes(0, 1000), 1000);
+        Assert.True(cache.IsComplete("dQw4w9WgXcQ"));
+        var opus = cache.Entry(Info(itag: 251, length: 800));
+        Assert.False(cache.IsComplete("dQw4w9WgXcQ"));
+        Assert.False(opus.TryRead(0, 10, out _));
+        Assert.Empty(Directory.GetFiles(_directory, "*.140.*"));
+    }
+
+    [Fact]
+    public void LongestUnlistenedGoesFirstAndThePlayingOneStays()
+    {
+        var cache = Cache();
+        var old = cache.Entry(Info("aaaaaaaaaaa", 4000));
+        old.Write(0, new byte[4000], 4000);
+        old.Release();
+        Thread.Sleep(20);
+        var recent = cache.Entry(Info("bbbbbbbbbbb", 4000));
+        recent.Write(0, new byte[4000], 4000);
+        recent.Release();
+        Thread.Sleep(20);
+        // Играет сейчас: закреплён, хотя и не новее
+        var playing = cache.Entry(Info("ccccccccccc", 4000));
+        playing.Write(0, new byte[4000], 4000);
+
+        _max = 9000;
         cache.Trim();
-        Assert.Null(cache.Complete("aaaaaaaaaaa"));
-        Assert.NotNull(cache.Complete("bbbbbbbbbbb"));
-        Assert.Equal(4000, cache.Size);
+        Assert.False(cache.IsComplete("aaaaaaaaaaa"));
+        Assert.True(cache.IsComplete("bbbbbbbbbbb"));
+        Assert.True(cache.IsComplete("ccccccccccc"));
+        Assert.Equal(8000, cache.Size);
+
+        // Лимит 32 МБ-подобный — меньше одного трека: уходят все, кроме играющего
+        _max = 1000;
+        cache.Trim();
+        Assert.Equal(["ccccccccccc"], cache.CompleteTracks().Select(t => t.VideoId));
 
         // Без ограничения ничего не удаляется
         _max = 0;
+        playing.Release();
         cache.Trim();
         Assert.Equal(4000, cache.Size);
     }

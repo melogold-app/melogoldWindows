@@ -15,6 +15,7 @@ public sealed class AacStreamSource : IDisposable
     private const int HeadBytes = 64 * 1024;
 
     private readonly HttpRangeReader _reader;
+    private readonly SongCacheEntry? _cache;
     private readonly byte[] _head;
     private readonly Dictionary<int, Task<Loaded>> _fragments = [];
     private readonly Lock _lock = new();
@@ -34,9 +35,10 @@ public sealed class AacStreamSource : IDisposable
         public bool Has(Mp4Sample sample) => sample.Offset + sample.Size <= Ready;
     }
 
-    private AacStreamSource(HttpRangeReader reader, byte[] head, Mp4Index index)
+    private AacStreamSource(HttpRangeReader reader, byte[] head, Mp4Index index, SongCacheEntry? cache)
     {
         _reader = reader;
+        _cache = cache;
         _head = head;
         Index = index;
     }
@@ -74,7 +76,7 @@ public sealed class AacStreamSource : IDisposable
                 throw new StreamException(StreamErrorKind.Extractor, "Unsupported stream: " + e.Message);
             }
         }
-        var source = new AacStreamSource(reader, head, index);
+        var source = new AacStreamSource(reader, head, index, cache);
         source.Prefetch(0);
         source.Prefetch(1);
         return source;
@@ -245,5 +247,7 @@ public sealed class AacStreamSource : IDisposable
     {
         _life.Cancel();
         lock (_lock) _fragments.Clear();
+        // Трек больше не играет: кэш может его вытеснить
+        _cache?.Release();
     }
 }

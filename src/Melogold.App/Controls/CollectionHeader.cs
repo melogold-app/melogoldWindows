@@ -64,7 +64,7 @@ public sealed partial class CollectionHeader : Grid
         _details.Text = details ?? "";
         _details.Visibility = string.IsNullOrEmpty(details) ? Visibility.Collapsed : Visibility.Visible;
         _artwork.CornerRadius = round ? new CornerRadius(100) : new CornerRadius(8);
-        _image.Source = imageUrl is null ? null : new BitmapImage(new Uri(imageUrl)) { DecodePixelWidth = 400 };
+        _image.Source = Images.From(imageUrl, 400);
         if (!string.IsNullOrWhiteSpace(description))
         {
             _description.Text = description.Trim();

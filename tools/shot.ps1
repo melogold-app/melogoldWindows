@@ -9,7 +9,7 @@
   -Steps — шаги через «|» по UI Automation, без мыши и фокуса:
     «имя» нажимает элемент (точное имя, иначе начало имени), «имя=текст» вводит текст в поле,
     «@файл.png» снимает окно посреди сценария, «@mini:файл.png» — мини-плеер, «!max» и «!restore» разворачивают и
-    восстанавливают окно, «!wait:5» ждёт 5 с. В конце окно снимается в -Out.
+    восстанавливают окно, «!wait:5» ждёт 5 с, «!show:имя» прокручивает до элемента. В конце окно снимается в -Out.
 #>
 param(
     [string]$Out = "shot.png",
@@ -70,11 +70,11 @@ function Test-Actionable($e) {
     return $false
 }
 
-function Find-Element($root, [string]$name) {
+function Find-Element($root, [string]$name, [switch]$Offscreen) {
     $until = (Get-Date).AddSeconds(15)
     while ((Get-Date) -lt $until) {
         $all = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
-            Where-Object { -not $_.Current.IsOffscreen }
+            Where-Object { $Offscreen -or -not $_.Current.IsOffscreen }
         # Среди одноимённых — сначала то, что нажимается (кнопка «Текст», а не подпись с тем же словом)
         $exact = @($all | Where-Object { $_.Current.Name -eq $name })
         $found = $exact | Where-Object { Test-Actionable $_ } | Select-Object -First 1
@@ -105,6 +105,14 @@ if ($Steps) {
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($h)
     foreach ($step in $Steps.Split("|")) {
         if ($step.StartsWith("@")) { Capture $h $step.Substring(1); continue }
+        if ($step.StartsWith("!show:")) {
+            # Прокрутить до элемента (ScrollItemPattern), не нажимая его
+            $pattern = $null
+            $target = Find-Element $root $step.Substring(6) -Offscreen
+            if ($target.TryGetCurrentPattern([System.Windows.Automation.ScrollItemPattern]::Pattern, [ref]$pattern)) { $pattern.ScrollIntoView() }
+            Start-Sleep -Seconds 1
+            continue
+        }
         if ($step.StartsWith("!wait:")) { Start-Sleep -Seconds ([int]$step.Substring(6)); continue }
         if ($step -eq "!max") { [Win]::ShowWindow($h, 3) | Out-Null; Start-Sleep -Seconds 2; continue }   # SW_MAXIMIZE
         if ($step -eq "!restore") { [Win]::ShowWindow($h, 9) | Out-Null; Start-Sleep -Seconds 2; continue }   # SW_RESTORE

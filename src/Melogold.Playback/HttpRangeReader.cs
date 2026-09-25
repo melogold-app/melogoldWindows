@@ -7,9 +7,10 @@ namespace Melogold.Playback;
 /// Чтение диапазонов адреса потока (docs/PROMPT.md §4, грабли §8.1): 403 и истёкший адрес — не пропуск трека, а свежий
 /// адрес и повтор (до двух раз подряд); сетевая ошибка — повтор через 1 и 3 с. Короткие диапазоны googlevideo не душит.
 /// Параллельные чтения (текущий фрагмент и упреждающие) получают 403 на один и тот же истёкший адрес разом: адрес
-/// обновляет первое из них, остальные просто повторяют со свежим и не тратят попытки.
+/// обновляет первое из них, остальные просто повторяют со свежим и не тратят попытки. С <paramref name="cache"/> —
+/// сначала кэш песен: что уже на диске, в сеть не ходит, прочитанное из сети ложится туда.
 /// </summary>
-public sealed class HttpRangeReader(HttpClient http, StreamInfo info, Func<CancellationToken, Task<StreamInfo>> refresh)
+public sealed class HttpRangeReader(HttpClient http, StreamInfo info, Func<CancellationToken, Task<StreamInfo>> refresh, SongCacheEntry? cache = null)
 {
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private int _refreshes;
@@ -28,6 +29,13 @@ public sealed class HttpRangeReader(HttpClient http, StreamInfo info, Func<Cance
             var end = start + length - 1;
             if (TotalLength is { } total) end = Math.Min(end, total - 1);
             if (end < start) return [];
+            if (cache is not null && cache.TryRead(start, (int)(end - start + 1), out var cached)) return cached;
+            if (current.Url.Length == 0)
+            {
+                // Трек открыт из кэша, а диапазона на диске уже нет (кэш очистили): нужен адрес
+                Info = await refresh(ct).ConfigureAwait(false);
+                continue;
+            }
             using var request = new HttpRequestMessage(HttpMethod.Get, current.Url);
             request.Headers.Range = new RangeHeaderValue(start, end);
             if (current.UserAgent is not null) request.Headers.TryAddWithoutValidation("User-Agent", current.UserAgent);
@@ -60,7 +68,9 @@ public sealed class HttpRangeReader(HttpClient http, StreamInfo info, Func<Cance
                 // Свежий адрес работает: следующий 403 (адрес истёк через часы) снова может его обновить
                 if (ReferenceEquals(Info, current)) Volatile.Write(ref _refreshes, 0);
                 if (response.Content.Headers.ContentRange?.Length is { } full) TotalLength = full;
-                return await response.Content.ReadAsByteArrayAsync(timeout.Token).ConfigureAwait(false);
+                var bytes = await response.Content.ReadAsByteArrayAsync(timeout.Token).ConfigureAwait(false);
+                cache?.Write(start, bytes, TotalLength);
+                return bytes;
             }
             catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException && !ct.IsCancellationRequested)
             {

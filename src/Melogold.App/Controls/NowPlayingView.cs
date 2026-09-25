@@ -30,7 +30,7 @@ public sealed partial class NowPlayingView : Grid
     private readonly PlayerEngine _engine = App.Services.GetRequiredService<PlayerEngine>();
     private readonly LyricsService _lyrics = App.Services.GetRequiredService<LyricsService>();
     private readonly SolidColorBrush _background = new(Colors.Transparent);
-    private readonly Grid _body = new() { ColumnSpacing = 48 };
+    private readonly Grid _body = new() { ColumnSpacing = 64 };
     private readonly Grid _artPanel = new() { RowSpacing = 16, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 480 };
     private readonly Grid _lyricsPanel = new();
     private readonly Border _artwork = new() { CornerRadius = new CornerRadius(8), HorizontalAlignment = HorizontalAlignment.Center };
@@ -284,23 +284,28 @@ public sealed partial class NowPlayingView : Grid
         var wide = ActualWidth >= WideWidth;
         _mode.Visibility = wide ? Visibility.Collapsed : Visibility.Visible;
         _body.ColumnDefinitions.Clear();
+        var available = ActualWidth - 96;
+        double side;
         if (wide)
         {
-            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
-            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+            // Обложка и текст — один блок посередине окна: обложка до 480 и не выше окна, текст до 760, остальное — поля
+            side = Math.Max(120, Math.Min(Math.Min(480, ActualHeight - 220), (available - _body.ColumnSpacing) * 0.42));
+            var lyrics = Math.Min(760, available - side - _body.ColumnSpacing);
+            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(side) });
+            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(lyrics) });
+            _body.HorizontalAlignment = HorizontalAlignment.Center;
             SetColumn(_lyricsPanel, 1);
             _artPanel.Visibility = Visibility.Visible;
             _lyricsPanel.Visibility = Visibility.Visible;
         }
         else
         {
+            side = Math.Max(120, Math.Min(Math.Min(available, 480), ActualHeight - 220));
+            _body.HorizontalAlignment = HorizontalAlignment.Stretch;
             SetColumn(_lyricsPanel, 0);
             _artPanel.Visibility = _showLyricsInNarrow ? Visibility.Collapsed : Visibility.Visible;
             _lyricsPanel.Visibility = _showLyricsInNarrow ? Visibility.Visible : Visibility.Collapsed;
         }
-        // Обложка — квадрат по ширине колонки, но не выше окна
-        var column = wide ? (ActualWidth - 96 - 48) * 2 / 5 : ActualWidth - 96;
-        var side = Math.Max(120, Math.Min(Math.Min(column, 480), ActualHeight - 220));
         _artwork.Width = _artwork.Height = side;
     }
 

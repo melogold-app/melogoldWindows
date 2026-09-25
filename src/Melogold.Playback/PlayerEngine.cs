@@ -538,14 +538,17 @@ public sealed class PlayerEngine : IDisposable
 
     // ---------- Упреждающий резолв и автовоспроизведение ----------
 
+    /// <summary>Кэш песен (null — без него): прочитанное ложится на диск, целиком прочитанный трек играет без сети.</summary>
+    public SongCache? Songs { get; set; }
+
     private Task<AacStreamSource> OpenSourceAsync(string videoId, CancellationToken ct) => Task.Run(async () =>
     {
-        var info = await _resolver.ResolveAsync(videoId, ct).ConfigureAwait(false);
+        var info = Songs?.Complete(videoId) ?? await _resolver.ResolveAsync(videoId, ct).ConfigureAwait(false);
         return await AacStreamSource.OpenAsync(_http, info, async token =>
         {
             _resolver.Invalidate(videoId);
             return await _resolver.ResolveAsync(videoId, token).ConfigureAwait(false);
-        }, ct).ConfigureAwait(false);
+        }, ct, Songs?.Entry(info)).ConfigureAwait(false);
     }, ct);
 
     /// <summary>Заранее открытый источник трека, если он готов и не сломан; иначе null.</summary>

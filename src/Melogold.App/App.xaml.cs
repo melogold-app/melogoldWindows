@@ -41,7 +41,10 @@ public partial class App : Application
             Log.Warn("Unobserved task", e.Exception);
             e.SetObserved();
         };
+        // «Восстановить» из настроек: база из копии встаёт на место до того, как её откроют
+        DatabaseBackup.ApplyPending();
         Services = ConfigureServices();
+        Images.Cache = Services.GetRequiredService<ImageCache>();
         InitializeComponent();
     }
 
@@ -79,8 +82,14 @@ public partial class App : Application
         services.AddSingleton<ForYouBuilder>();
         // Всё, что ниже, создаётся в потоке интерфейса: плеер запоминает его контекст, плашка — его очередь
         services.AddSingleton<Snackbar>();
+        services.AddSingleton<ImageCache>();
+        services.AddSingleton(sp =>
+        {
+            var settings = sp.GetRequiredService<SettingsStore>();
+            return new SongCache(Path.Combine(AppPaths.Cache, "songs"), () => settings.SongCacheMaxMb * 1024L * 1024, (message, error) => Log.Warn(message, error));
+        });
         services.AddSingleton(sp => new PlayerEngine(sp.GetRequiredService<StreamResolver>(), sp.GetRequiredService<YouTubeMusic>(),
-            sp.GetRequiredService<Library>(), sp.GetRequiredService<SettingsStore>()));
+            sp.GetRequiredService<Library>(), sp.GetRequiredService<SettingsStore>()) { Songs = sp.GetRequiredService<SongCache>() });
         services.AddSingleton<PlayerViewModel>();
         services.AddSingleton<TrackActions>();
         services.AddSingleton<CollectionMenu>();

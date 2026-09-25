@@ -84,6 +84,14 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     public partial bool PreferSyncedLyrics { get; set; } = true;
 
 
+    /// <summary>«Максимальный размер» кэша изображений, МБ (Android <c>coilDiskCacheMaxSize</c>, 128 МБ).</summary>
+    [ObservableProperty]
+    public partial long ImageCacheMaxMb { get; set; } = 128;
+
+    /// <summary>«Максимальный размер» кэша песен, МБ; 0 — без ограничения (Android <c>exoPlayerDiskCacheMaxSize</c>, 2 ГБ).</summary>
+    [ObservableProperty]
+    public partial long SongCacheMaxMb { get; set; } = 2048;
+
     /// <summary>Сортировки списков по ключу экрана.</summary>
     [ObservableProperty]
     public partial Dictionary<string, string> Sorts { get; set; } = [];
@@ -111,6 +119,8 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             PreferSyncedLyrics = data.PreferSyncedLyrics;
             PauseSearchHistory = data.PauseSearchHistory;
             Sorts = data.Sorts ?? [];
+            ImageCacheMaxMb = Math.Max(1, data.ImageCacheMaxMb);
+            SongCacheMaxMb = Math.Max(0, data.SongCacheMaxMb);
         }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
         {
@@ -132,6 +142,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
                 Theme = Theme, LastSection = LastSection, Volume = Volume, Muted = Muted, Speed = Speed, NormalizeVolume = NormalizeVolume,
                 Repeat = Repeat, Shuffle = Shuffle, Autoplay = Autoplay, PauseHistory = PauseHistory, ServerUrl = ServerUrl,
                 LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, PauseSearchHistory = PauseSearchHistory, Sorts = Sorts,
+                ImageCacheMaxMb = ImageCacheMaxMb, SongCacheMaxMb = SongCacheMaxMb,
             };
             var temp = _path + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(data, Json));
@@ -165,5 +176,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         public bool PreferSyncedLyrics { get; set; } = true;
         public bool PauseSearchHistory { get; set; }
         public Dictionary<string, string>? Sorts { get; set; }
+        public long ImageCacheMaxMb { get; set; } = 128;
+        public long SongCacheMaxMb { get; set; } = 2048;
     }
 }

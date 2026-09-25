@@ -50,9 +50,10 @@ public sealed class AacStreamSource : IDisposable
     /// <summary>Чтение фрагмента не удалось даже с повторами: плееру — ошибка с классом.</summary>
     public event Action<Exception>? Failed;
 
-    public static async Task<AacStreamSource> OpenAsync(HttpClient http, StreamInfo info, Func<CancellationToken, Task<StreamInfo>> refresh, CancellationToken ct)
+    public static async Task<AacStreamSource> OpenAsync(HttpClient http, StreamInfo info, Func<CancellationToken, Task<StreamInfo>> refresh, CancellationToken ct,
+        SongCacheEntry? cache = null)
     {
-        var reader = new HttpRangeReader(http, info, refresh);
+        var reader = new HttpRangeReader(http, info, refresh, cache);
         var head = await reader.ReadAsync(0, HeadBytes, ct).ConfigureAwait(false);
         Mp4Index? index = null;
         while (index is null)

@@ -97,14 +97,55 @@
                 <Button x:Name="ResetHiddenButton" x:Uid="ResetHiddenButton" Content="Reset" Click="OnResetHidden" />
             </toolkit:SettingsCard>
 
-            <!-- Хранилище и данные: кэш и его очистка -->
-            <TextBlock x:Uid="SettingsStorage" Style="{StaticResource SettingsSectionHeaderStyle}" Text="Storage and data" />
-            <toolkit:SettingsCard x:Name="CacheCard" x:Uid="SettingsCache" Header="Cache">
+            <!-- Хранилище (Android «Хранилище»): кэш изображений и песен с «Максимальным размером», прочий кэш -->
+            <TextBlock x:Uid="SettingsStorage" Style="{StaticResource SettingsSectionHeaderStyle}" Text="Storage" />
+            <TextBlock
+                x:Uid="SettingsStorageDescription"
+                Margin="1,0,0,4"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                TextWrapping="Wrap"
+                Text="Caches free themselves: what went unused the longest goes first." />
+            <toolkit:SettingsExpander x:Name="ImageCacheCard" x:Uid="SettingsImageCache" Header="Image cache">
+                <toolkit:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE91B;" />
+                </toolkit:SettingsExpander.HeaderIcon>
+                <Button x:Name="ClearImagesButton" x:Uid="ClearImagesButton" Content="Clear" Click="OnClearImages" />
+                <toolkit:SettingsExpander.Items>
+                    <toolkit:SettingsCard x:Uid="SettingsImageCacheSize" Header="Max size">
+                        <ComboBox x:Name="ImageCacheSizeBox" x:Uid="ImageCacheSizeBox" MinWidth="180" SelectionChanged="OnImageCacheSizeChanged" />
+                    </toolkit:SettingsCard>
+                </toolkit:SettingsExpander.Items>
+            </toolkit:SettingsExpander>
+            <toolkit:SettingsExpander x:Name="SongCacheCard" x:Uid="SettingsSongCache" Header="Song cache">
+                <toolkit:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE8D6;" />
+                </toolkit:SettingsExpander.HeaderIcon>
+                <toolkit:SettingsExpander.Items>
+                    <toolkit:SettingsCard x:Uid="SettingsSongCacheSize" Header="Max size">
+                        <ComboBox x:Name="SongCacheSizeBox" x:Uid="SongCacheSizeBox" MinWidth="180" SelectionChanged="OnSongCacheSizeChanged" />
+                    </toolkit:SettingsCard>
+                </toolkit:SettingsExpander.Items>
+            </toolkit:SettingsExpander>
+            <toolkit:SettingsCard x:Name="CacheCard" x:Uid="SettingsCache" Header="Other cache">
                 <toolkit:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xEDA2;" />
                 </toolkit:SettingsCard.HeaderIcon>
                 <Button x:Name="ClearCacheButton" x:Uid="ClearCacheButton" Content="Clear" Click="OnClearCache" />
             </toolkit:SettingsCard>
+
+            <!-- База данных (Android «База данных»): копия в файл и восстановление из файла -->
+            <TextBlock x:Uid="SettingsDatabase" Style="{StaticResource SettingsSectionHeaderStyle}" Text="Database" />
+            <controls:ClickableCard x:Uid="SettingsBackup" Header="Backup" IsActionIconVisible="False" Activated="OnBackup">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE74E;" />
+                </toolkit:SettingsCard.HeaderIcon>
+            </controls:ClickableCard>
+            <controls:ClickableCard x:Uid="SettingsRestore" Header="Restore" IsActionIconVisible="False" Activated="OnRestore">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE777;" />
+                </toolkit:SettingsCard.HeaderIcon>
+            </controls:ClickableCard>
 
             <!-- О приложении -->
             <TextBlock x:Uid="SettingsAbout" Style="{StaticResource SettingsSectionHeaderStyle}" Text="About" />

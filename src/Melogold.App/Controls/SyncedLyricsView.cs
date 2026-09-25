@@ -41,11 +41,11 @@ public sealed partial class SyncedLyricsView : Grid
     private const double BaseFontSize = 28;
 
     /// <summary>
-    /// Размер текста по области: растёт с окном (во весь экран — до 56), в маленьком окне не меньше 24. При обычном окне
-    /// (колонка около 620 пикселей) — 28, как на телефоне.
+    /// Размер текста по области: растёт с окном (колонка 760 и высокое окно — около 44), в маленьком окне не меньше 24,
+    /// больше 56 не бывает.
     /// </summary>
     public static double FontSizeFor(double width, double height) =>
-        Math.Round(Math.Clamp(Math.Min(width * 0.045, height * 0.06), 24, 56));
+        Math.Round(Math.Clamp(Math.Min(width * 0.058, height * 0.06), 24, 56));
 
     private readonly ScrollViewer _scroller = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden };
     private readonly Grid _content = new();
@@ -185,7 +185,7 @@ public sealed partial class SyncedLyricsView : Grid
         foreach (var row in rows)
         {
             var view = row is LyricRow.Sung sung ? RowView.ForLine(sung, _text) : RowView.ForInterlude((LyricRow.Interlude)row, _text);
-            view.ApplyScale(Scale);
+            view.ApplyScale(LineScale);
             view.Element.Tapped += (_, _) => Seek?.Invoke(Math.Max(0, row.StartMs - _offset));
             _rowViews.Add(view);
             _lines.Children.Add(view.Element);
@@ -212,16 +212,16 @@ public sealed partial class SyncedLyricsView : Grid
 
     private long LyricsPosition => Position() + LeadMs + _offset;
 
-    private double Scale => _fontSize / BaseFontSize;
+    private double LineScale => _fontSize / BaseFontSize;
 
     /// <summary>Размер текста по размеру области: строки, отступы, точки проигрыша и подложка — в том же масштабе.</summary>
     private void ApplyFontSize(double size)
     {
         if (Math.Abs(size - _fontSize) < 0.5) return;
         _fontSize = size;
-        _lines.Spacing = 4 * Scale;
-        foreach (var row in _rowViews) row.ApplyScale(Scale);
-        if (_pillGeometry is not null) _pillGeometry.CornerRadius = new Vector2((float)(12 * Scale));
+        _lines.Spacing = 4 * LineScale;
+        foreach (var row in _rowViews) row.ApplyScale(LineScale);
+        if (_pillGeometry is not null) _pillGeometry.CornerRadius = new Vector2((float)(12 * LineScale));
     }
 
     /// <summary>Слежение — через 3 с после последнего движения; до тех пор — «К текущей строке».</summary>
@@ -285,7 +285,7 @@ public sealed partial class SyncedLyricsView : Grid
         if (_pillVisual is not null) return;
         _compositor = ElementCompositionPreview.GetElementVisual(this).Compositor;
         _pillGeometry = _compositor.CreateRoundedRectangleGeometry();
-        _pillGeometry.CornerRadius = new Vector2((float)(12 * Scale));
+        _pillGeometry.CornerRadius = new Vector2((float)(12 * LineScale));
         _pillBrush = _compositor.CreateColorBrush(_pill);
         _pillShape = _compositor.CreateSpriteShape(_pillGeometry);
         _pillShape.FillBrush = _pillBrush;
@@ -303,7 +303,7 @@ public sealed partial class SyncedLyricsView : Grid
         var view = _active >= 0 && _active < _rowViews.Count ? _rowViews[_active] : null;
         if (view is null || view.IsInterlude || view.Body.ActualWidth <= 0 || _pillVisual is null) return null;
         var origin = view.Body.TransformToVisual(_content).TransformPoint(default);
-        var (x, y) = (16 * Scale, 10 * Scale);
+        var (x, y) = (16 * LineScale, 10 * LineScale);
         return (new Vector2((float)(origin.X - x), (float)(origin.Y - y)), new Vector2((float)(view.Body.ActualWidth + 2 * x), (float)(view.Body.ActualHeight + 2 * y)));
     }
 

@@ -430,8 +430,8 @@ EmptySearchHistory	История пуста	History is empty
 SettingsHidden.Header	Сбросить черный список	Reset the blacklist
 ResetHiddenButton.Content	Сбросить	Reset
 BlacklistEmpty	Черный список пуст	The blacklist is empty
-SettingsStorage.Text	Хранилище и данные	Storage and data
-SettingsCache.Header	Кэш	Cache
+SettingsStorage.Text	Хранилище	Storage
+SettingsCache.Header	Другой кэш	Other cache
 ClearCacheButton.Content	Очистить	Clear
 CacheUsedFormat	{0} использовано · тексты и подборки, найденные в сети	{0} used · lyrics and picks found online
 SettingsLicenses.Header	Лицензии	Licenses
@@ -441,3 +441,28 @@ LicensesServices	Звук и каталог — YouTube и YouTube Music; тек
 OfflineDataFromFormat	Нет сети — данные от {0}	No connection — data from {0}
 LyricsSourceMelogold	Текст: сообщество Melogold	Lyrics: Melogold community
 LyricsTooLarge	Текст слишком большой для сервера: он останется только на этом устройстве	The lyrics are too large for the server: they stay on this device only
+SettingsStorageDescription.Text	Кэш освобождается сам: первым уходит то, что дольше всего не использовалось.	Caches free themselves: what went unused the longest goes first.
+SettingsImageCache.Header	Кэш изображений	Image cache
+SettingsSongCache.Header	Кэш песен	Song cache
+SettingsImageCacheSize.Header	Максимальный размер	Max size
+SettingsSongCacheSize.Header	Максимальный размер	Max size
+ImageCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Максимальный размер кэша изображений	Image cache max size
+SongCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Максимальный размер кэша песен	Song cache max size
+ClearImagesButton.Content	Очистить	Clear
+CacheUsedPercentFormat	{0} использовано ({1}%)	{0} used ({1}%)
+CacheUsedPlainFormat	{0} использовано	{0} used
+CacheUnlimited	Без ограничений	Unlimited
+SizeGigabytesFormat	{0} ГБ	{0} GB
+SettingsDatabase.Text	База данных	Database
+SettingsBackup.Header	Резервное копирование	Backup
+SettingsBackup.Description	Экспортировать базу данных в файл. Персональные настройки (например, тема) и кэш исключаются.	Export the database to a file. Personal settings (such as the theme) and caches are excluded.
+SettingsRestore.Header	Восстановить	Restore
+SettingsRestore.Description	Импортировать базу данных из файла	Import the database from a file
+BackupFileType	База данных Melogold	Melogold database
+BackupSaved	Резервная копия сохранена	Backup saved
+BackupFailed	Не удалось сохранить файл	Couldn’t save the file
+RestoreInvalid	Это не резервная копия Melogold для Windows	This isn’t a Melogold for Windows backup
+RestoreTitle	Восстановить базу данных?	Restore the database?
+RestoreText	Существующие данные будут перезаписаны. Melogold перезапустится после восстановления базы данных.	Existing data will be overwritten. Melogold will restart after restoring the database.
+RestoreAction	Восстановить	Restore
+RestoreRestartManually	База будет восстановлена при следующем запуске Melogold	The database will be restored the next time Melogold starts

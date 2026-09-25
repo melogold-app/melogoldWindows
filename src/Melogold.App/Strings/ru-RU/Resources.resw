@@ -421,8 +421,8 @@
   <data name="SettingsHidden.Header" xml:space="preserve"><value>Сбросить черный список</value></data>
   <data name="ResetHiddenButton.Content" xml:space="preserve"><value>Сбросить</value></data>
   <data name="BlacklistEmpty" xml:space="preserve"><value>Черный список пуст</value></data>
-  <data name="SettingsStorage.Text" xml:space="preserve"><value>Хранилище и данные</value></data>
-  <data name="SettingsCache.Header" xml:space="preserve"><value>Кэш</value></data>
+  <data name="SettingsStorage.Text" xml:space="preserve"><value>Хранилище</value></data>
+  <data name="SettingsCache.Header" xml:space="preserve"><value>Другой кэш</value></data>
   <data name="ClearCacheButton.Content" xml:space="preserve"><value>Очистить</value></data>
   <data name="CacheUsedFormat" xml:space="preserve"><value>{0} использовано · тексты и подборки, найденные в сети</value></data>
   <data name="SettingsLicenses.Header" xml:space="preserve"><value>Лицензии</value></data>
@@ -432,4 +432,29 @@
   <data name="OfflineDataFromFormat" xml:space="preserve"><value>Нет сети — данные от {0}</value></data>
   <data name="LyricsSourceMelogold" xml:space="preserve"><value>Текст: сообщество Melogold</value></data>
   <data name="LyricsTooLarge" xml:space="preserve"><value>Текст слишком большой для сервера: он останется только на этом устройстве</value></data>
+  <data name="SettingsStorageDescription.Text" xml:space="preserve"><value>Кэш освобождается сам: первым уходит то, что дольше всего не использовалось.</value></data>
+  <data name="SettingsImageCache.Header" xml:space="preserve"><value>Кэш изображений</value></data>
+  <data name="SettingsSongCache.Header" xml:space="preserve"><value>Кэш песен</value></data>
+  <data name="SettingsImageCacheSize.Header" xml:space="preserve"><value>Максимальный размер</value></data>
+  <data name="SettingsSongCacheSize.Header" xml:space="preserve"><value>Максимальный размер</value></data>
+  <data name="ImageCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Максимальный размер кэша изображений</value></data>
+  <data name="SongCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Максимальный размер кэша песен</value></data>
+  <data name="ClearImagesButton.Content" xml:space="preserve"><value>Очистить</value></data>
+  <data name="CacheUsedPercentFormat" xml:space="preserve"><value>{0} использовано ({1}%)</value></data>
+  <data name="CacheUsedPlainFormat" xml:space="preserve"><value>{0} использовано</value></data>
+  <data name="CacheUnlimited" xml:space="preserve"><value>Без ограничений</value></data>
+  <data name="SizeGigabytesFormat" xml:space="preserve"><value>{0} ГБ</value></data>
+  <data name="SettingsDatabase.Text" xml:space="preserve"><value>База данных</value></data>
+  <data name="SettingsBackup.Header" xml:space="preserve"><value>Резервное копирование</value></data>
+  <data name="SettingsBackup.Description" xml:space="preserve"><value>Экспортировать базу данных в файл. Персональные настройки (например, тема) и кэш исключаются.</value></data>
+  <data name="SettingsRestore.Header" xml:space="preserve"><value>Восстановить</value></data>
+  <data name="SettingsRestore.Description" xml:space="preserve"><value>Импортировать базу данных из файла</value></data>
+  <data name="BackupFileType" xml:space="preserve"><value>База данных Melogold</value></data>
+  <data name="BackupSaved" xml:space="preserve"><value>Резервная копия сохранена</value></data>
+  <data name="BackupFailed" xml:space="preserve"><value>Не удалось сохранить файл</value></data>
+  <data name="RestoreInvalid" xml:space="preserve"><value>Это не резервная копия Melogold для Windows</value></data>
+  <data name="RestoreTitle" xml:space="preserve"><value>Восстановить базу данных?</value></data>
+  <data name="RestoreText" xml:space="preserve"><value>Существующие данные будут перезаписаны. Melogold перезапустится после восстановления базы данных.</value></data>
+  <data name="RestoreAction" xml:space="preserve"><value>Восстановить</value></data>
+  <data name="RestoreRestartManually" xml:space="preserve"><value>База будет восстановлена при следующем запуске Melogold</value></data>
 </root>

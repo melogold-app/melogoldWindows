@@ -421,8 +421,8 @@
   <data name="SettingsHidden.Header" xml:space="preserve"><value>Reset the blacklist</value></data>
   <data name="ResetHiddenButton.Content" xml:space="preserve"><value>Reset</value></data>
   <data name="BlacklistEmpty" xml:space="preserve"><value>The blacklist is empty</value></data>
-  <data name="SettingsStorage.Text" xml:space="preserve"><value>Storage and data</value></data>
-  <data name="SettingsCache.Header" xml:space="preserve"><value>Cache</value></data>
+  <data name="SettingsStorage.Text" xml:space="preserve"><value>Storage</value></data>
+  <data name="SettingsCache.Header" xml:space="preserve"><value>Other cache</value></data>
   <data name="ClearCacheButton.Content" xml:space="preserve"><value>Clear</value></data>
   <data name="CacheUsedFormat" xml:space="preserve"><value>{0} used · lyrics and picks found online</value></data>
   <data name="SettingsLicenses.Header" xml:space="preserve"><value>Licenses</value></data>
@@ -432,4 +432,29 @@
   <data name="OfflineDataFromFormat" xml:space="preserve"><value>No connection — data from {0}</value></data>
   <data name="LyricsSourceMelogold" xml:space="preserve"><value>Lyrics: Melogold community</value></data>
   <data name="LyricsTooLarge" xml:space="preserve"><value>The lyrics are too large for the server: they stay on this device only</value></data>
+  <data name="SettingsStorageDescription.Text" xml:space="preserve"><value>Caches free themselves: what went unused the longest goes first.</value></data>
+  <data name="SettingsImageCache.Header" xml:space="preserve"><value>Image cache</value></data>
+  <data name="SettingsSongCache.Header" xml:space="preserve"><value>Song cache</value></data>
+  <data name="SettingsImageCacheSize.Header" xml:space="preserve"><value>Max size</value></data>
+  <data name="SettingsSongCacheSize.Header" xml:space="preserve"><value>Max size</value></data>
+  <data name="ImageCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Image cache max size</value></data>
+  <data name="SongCacheSizeBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Song cache max size</value></data>
+  <data name="ClearImagesButton.Content" xml:space="preserve"><value>Clear</value></data>
+  <data name="CacheUsedPercentFormat" xml:space="preserve"><value>{0} used ({1}%)</value></data>
+  <data name="CacheUsedPlainFormat" xml:space="preserve"><value>{0} used</value></data>
+  <data name="CacheUnlimited" xml:space="preserve"><value>Unlimited</value></data>
+  <data name="SizeGigabytesFormat" xml:space="preserve"><value>{0} GB</value></data>
+  <data name="SettingsDatabase.Text" xml:space="preserve"><value>Database</value></data>
+  <data name="SettingsBackup.Header" xml:space="preserve"><value>Backup</value></data>
+  <data name="SettingsBackup.Description" xml:space="preserve"><value>Export the database to a file. Personal settings (such as the theme) and caches are excluded.</value></data>
+  <data name="SettingsRestore.Header" xml:space="preserve"><value>Restore</value></data>
+  <data name="SettingsRestore.Description" xml:space="preserve"><value>Import the database from a file</value></data>
+  <data name="BackupFileType" xml:space="preserve"><value>Melogold database</value></data>
+  <data name="BackupSaved" xml:space="preserve"><value>Backup saved</value></data>
+  <data name="BackupFailed" xml:space="preserve"><value>Couldn’t save the file</value></data>
+  <data name="RestoreInvalid" xml:space="preserve"><value>This isn’t a Melogold for Windows backup</value></data>
+  <data name="RestoreTitle" xml:space="preserve"><value>Restore the database?</value></data>
+  <data name="RestoreText" xml:space="preserve"><value>Existing data will be overwritten. Melogold will restart after restoring the database.</value></data>
+  <data name="RestoreAction" xml:space="preserve"><value>Restore</value></data>
+  <data name="RestoreRestartManually" xml:space="preserve"><value>The database will be restored the next time Melogold starts</value></data>
 </root>

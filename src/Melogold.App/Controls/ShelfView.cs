@@ -25,7 +25,7 @@ public sealed partial class ShelfView : StackPanel
         </DataTemplate>
         """);
 
-    public ShelfView(Shelf shelf, TrackContext context, int maxRows = 5, Action? onMore = null)
+    public ShelfView(Shelf shelf, TrackContext context, int maxRows = 5, Action? onMore = null, string? moreLabel = null)
     {
         Spacing = 4;
         MaxRows = maxRows;
@@ -44,7 +44,7 @@ public sealed partial class ShelfView : StackPanel
             more = () => App.Services.GetRequiredService<Navigator>().Open(typeof(TrackListPage), new TrackListRequest(shelf.Title ?? "", tracks));
         if (more is not null)
         {
-            var button = new HyperlinkButton { Content = Loc.Get("SeeAll") + " ›", VerticalAlignment = VerticalAlignment.Center };
+            var button = new HyperlinkButton { Content = moreLabel ?? Loc.Get("SeeAll") + " ›", VerticalAlignment = VerticalAlignment.Center };
             button.Click += (_, _) => more();
             Grid.SetColumn(button, 1);
             header.Children.Add(button);

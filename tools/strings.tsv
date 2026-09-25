@@ -172,3 +172,13 @@ RowPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Во
 RowLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	В Избранное	Add to Favorites
 RowMenuButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Меню	Menu
 RowMenuButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Меню	Menu
+# Тренды и Новое
+TrendsHeader	Тренды	Trends
+NewHeader	Новое	New
+Refresh	Обновить	Refresh
+NewReleases	Новые альбомы и синглы	New albums & singles
+ForYou	Для вас	For you
+PlayAllForYou	Слушать всё	Play all
+SimilarArtists	Похожие исполнители	Similar artists
+SimilarAlbums	Похожие альбомы	Similar albums
+PlaylistsForYou	Плейлисты для вас	Playlists for you

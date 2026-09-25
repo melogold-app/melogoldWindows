@@ -67,6 +67,7 @@ public partial class App : Application
         services.AddSingleton<YouTubeMusic>();
         services.AddSingleton<StreamResolver>();
         services.AddSingleton<CatalogCache>();
+        services.AddSingleton<ForYouBuilder>();
         // Всё, что ниже, создаётся в потоке интерфейса: плеер запоминает его контекст, плашка — его очередь
         services.AddSingleton<Snackbar>();
         services.AddSingleton(sp => new PlayerEngine(sp.GetRequiredService<StreamResolver>(), sp.GetRequiredService<YouTubeMusic>(),

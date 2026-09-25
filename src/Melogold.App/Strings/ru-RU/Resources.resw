@@ -168,4 +168,13 @@
   <data name="RowLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>В Избранное</value></data>
   <data name="RowMenuButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Меню</value></data>
   <data name="RowMenuButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Меню</value></data>
+  <data name="TrendsHeader" xml:space="preserve"><value>Тренды</value></data>
+  <data name="NewHeader" xml:space="preserve"><value>Новое</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Обновить</value></data>
+  <data name="NewReleases" xml:space="preserve"><value>Новые альбомы и синглы</value></data>
+  <data name="ForYou" xml:space="preserve"><value>Для вас</value></data>
+  <data name="PlayAllForYou" xml:space="preserve"><value>Слушать всё</value></data>
+  <data name="SimilarArtists" xml:space="preserve"><value>Похожие исполнители</value></data>
+  <data name="SimilarAlbums" xml:space="preserve"><value>Похожие альбомы</value></data>
+  <data name="PlaylistsForYou" xml:space="preserve"><value>Плейлисты для вас</value></data>
 </root>

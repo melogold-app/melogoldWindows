@@ -168,4 +168,13 @@
   <data name="RowLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add to Favorites</value></data>
   <data name="RowMenuButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Menu</value></data>
   <data name="RowMenuButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Menu</value></data>
+  <data name="TrendsHeader" xml:space="preserve"><value>Trends</value></data>
+  <data name="NewHeader" xml:space="preserve"><value>New</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="NewReleases" xml:space="preserve"><value>New albums &amp; singles</value></data>
+  <data name="ForYou" xml:space="preserve"><value>For you</value></data>
+  <data name="PlayAllForYou" xml:space="preserve"><value>Play all</value></data>
+  <data name="SimilarArtists" xml:space="preserve"><value>Similar artists</value></data>
+  <data name="SimilarAlbums" xml:space="preserve"><value>Similar albums</value></data>
+  <data name="PlaylistsForYou" xml:space="preserve"><value>Playlists for you</value></data>
 </root>

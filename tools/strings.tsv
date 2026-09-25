@@ -1,0 +1,45 @@
+# ключ	русский	английский — тексты по docs/GLOSSARY.md Android; после правки: python tools/strings.py
+# Оболочка
+AppTitleBar.Title	Melogold	Melogold
+NavTrends.Content	Тренды	Trends
+NavNew.Content	Новое	New
+NavLibrary.Content	Библиотека	Library
+NavSettings	Настройки	Settings
+SearchBox.PlaceholderText	Поиск	Search
+Back	Назад	Back
+# Разделы
+TrendsTitle.Text	Тренды	Trends
+NewTitle.Text	Новое	New
+LibraryTitle.Text	Библиотека	Library
+SettingsTitle.Text	Настройки	Settings
+# Состояния (REWRITE §3.0)
+ErrorOffline	Нет соединения с YouTube. Проверьте сеть или VPN	Can't reach YouTube. Check your network or VPN
+ErrorBlocked	YouTube не ответил: проверка на бота или блокировка. Попробуйте позже или смените сеть	YouTube didn't respond: a bot check or a block. Try again later or switch networks
+ErrorParser	YouTube изменил страницу. Исправление придёт с обновлением	YouTube changed its page. A fix will come with an update
+ErrorUnknown	Что-то пошло не так	Something went wrong
+Retry	Повторить	Retry
+CheckUpdates	Проверить обновления	Check for updates
+Diagnostics	Диагностика	Diagnostics
+NothingFound	Ничего не нашлось	Nothing found
+OfflineSince	Нет сети — данные от {0}	Offline — data from {0}
+# Настройки
+SettingsAppearance.Text	Внешний вид	Appearance
+SettingsTheme.Header	Тема	Theme
+ThemeSystem.Content	Как в системе	System default
+ThemeLight.Content	Светлая	Light
+ThemeDark.Content	Тёмная	Dark
+SettingsAbout.Text	О приложении	About
+SettingsVersion.Header	Melogold	Melogold
+VersionFormat	Версия {0}	Version {0}
+SettingsDiagnostics.Header	Диагностика	Diagnostics
+SettingsDiagnostics.Description	Журналы приложения: пригодятся, если что-то не работает	App logs, useful if something doesn't work
+OpenLogs.Content	Открыть папку	Open folder
+SettingsSource.Header	Исходный код	Source code
+SettingsSource.Description	GPL-3.0, GitHub	GPL-3.0, GitHub
+OpenSource.Content	Открыть	Open
+SettingsWithoutAccount.Header	Работает без аккаунта	Works without an account
+SettingsWithoutAccount.Description	Войдите, чтобы Избранное, плейлисты и сохранённое совпадали на всех устройствах	Sign in to keep Favorites, playlists and saved items the same on all your devices
+SignIn	Войти	Sign in
+SettingsServer.Header	Сервер	Server
+# Пустые разделы
+ComingSoon	Скоро здесь	Coming soon

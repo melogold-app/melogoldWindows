@@ -12,6 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Melogold.Core.Tests" />
+    <InternalsVisibleTo Include="Melogold.Tests" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- API сервера Melogold (контракт melogoldServer/docs/API.md), аккаунт и синхронизация библиотеки. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Melogold.Server</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Melogold.Core\Melogold.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Melogold.Tests" />
+  </ItemGroup>
+</Project>

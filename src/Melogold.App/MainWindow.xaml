@@ -4,10 +4,75 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Melogold">
-    <Window.SystemBackdrop>
-        <MicaBackdrop />
-    </Window.SystemBackdrop>
-    <Grid>
-        <TextBlock Text="Melogold" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource TitleTextBlockStyle}" />
+
+    <Grid x:Name="Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Строка заголовка: «Назад», меню-гамбургер в узком окне, иконка, «Melogold», поиск по центру (§5.1) -->
+        <TitleBar
+            x:Name="AppTitleBar"
+            x:Uid="AppTitleBar"
+            Title="Melogold"
+            IsBackButtonVisible="True"
+            IsPaneToggleButtonVisible="False"
+            BackRequested="OnTitleBarBackRequested"
+            PaneToggleRequested="OnTitleBarPaneToggleRequested">
+            <TitleBar.IconSource>
+                <ImageIconSource ImageSource="ms-appx:///Assets/melogold-256.png" />
+            </TitleBar.IconSource>
+            <AutoSuggestBox
+                x:Name="SearchBox"
+                x:Uid="SearchBox"
+                MinWidth="240"
+                MaxWidth="480"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center"
+                PlaceholderText="Search"
+                QueryIcon="Find"
+                UpdateTextOnSelect="False"
+                QuerySubmitted="OnSearchQuerySubmitted"
+                SuggestionChosen="OnSearchSuggestionChosen"
+                TextChanged="OnSearchTextChanged" />
+        </TitleBar>
+
+        <NavigationView
+            x:Name="Nav"
+            Grid.Row="1"
+            PaneDisplayMode="Auto"
+            IsBackButtonVisible="Collapsed"
+            IsPaneToggleButtonVisible="False"
+            IsSettingsVisible="True"
+            IsTitleBarAutoPaddingEnabled="False"
+            OpenPaneLength="240"
+            DisplayModeChanged="OnNavDisplayModeChanged"
+            ItemInvoked="OnNavItemInvoked">
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Uid="NavTrends" Content="Trends" Tag="trends">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE9D2;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Uid="NavNew" Content="New" Tag="new">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE734;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Uid="NavLibrary" Content="Library" Tag="library">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8F1;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <!-- Стеки разделов: у каждого свой Frame, видим один -->
+            <Grid x:Name="SectionHost" />
+        </NavigationView>
+
+        <!-- Панель воспроизведения во всю ширину окна (§5.2) -->
+        <Border x:Name="PlayerHost" Grid.Row="2" />
     </Grid>
 </Window>

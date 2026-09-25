@@ -1,6 +1,8 @@
+using Melogold.Core.Domain;
+using Melogold.Core.Music;
 using System.Text.Json.Nodes;
 
-namespace Melogold.Core.Music;
+namespace Melogold.InnerTube;
 
 /// <summary>Фильтр выдачи YouTube Music (параметры чипов поиска).</summary>
 public enum MusicSearchFilter

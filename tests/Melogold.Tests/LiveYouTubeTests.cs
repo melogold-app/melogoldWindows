@@ -1,8 +1,10 @@
 using System.Globalization;
 using Melogold.Core.Music;
+using Melogold.InnerTube;
+using Melogold.Playback;
 using Xunit;
 
-namespace Melogold.Core.Tests;
+namespace Melogold.Tests;
 
 /// <summary>
 /// Живые проверки парсеров на настоящих ответах YouTube (как ночной canaryTest Android). Идут только с

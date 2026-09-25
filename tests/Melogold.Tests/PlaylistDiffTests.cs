@@ -1,7 +1,7 @@
 using Melogold.Core.Domain;
 using Xunit;
 
-namespace Melogold.Core.Tests;
+namespace Melogold.Tests;
 
 public class PlaylistDiffTests
 {

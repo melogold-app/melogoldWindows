@@ -8,6 +8,25 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Отступы страниц как в «Параметрах» Windows 11 -->
+            <Thickness x:Key="PageContentMargin">36,24,36,36</Thickness>
+            <x:Double x:Key="PageMaxWidth">1200</x:Double>
+
+            <Style x:Key="PageTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
+                <Setter Property="Margin" Value="0,0,0,20" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+
+            <Style x:Key="SectionTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextBlockStyle}">
+                <Setter Property="Margin" Value="0,24,0,12" />
+            </Style>
+
+            <!-- Группа карточек настроек -->
+            <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+            <Style x:Key="SettingsSectionHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+                <Setter Property="Margin" Value="1,28,0,8" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

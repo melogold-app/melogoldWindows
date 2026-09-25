@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Клиент YouTube Music и обычного YouTube (порт providers/innertube Android): поиск, страницы, «Далее», тексты, player. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Melogold.InnerTube</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Melogold.Core\Melogold.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Melogold.Tests" />
+  </ItemGroup>
+</Project>

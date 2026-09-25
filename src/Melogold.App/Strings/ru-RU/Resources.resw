@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="AppTitleBar.Title" xml:space="preserve"><value>Melogold</value></data>
+  <data name="NavTrends.Content" xml:space="preserve"><value>Тренды</value></data>
+  <data name="NavNew.Content" xml:space="preserve"><value>Новое</value></data>
+  <data name="NavLibrary.Content" xml:space="preserve"><value>Библиотека</value></data>
+  <data name="NavSettings" xml:space="preserve"><value>Настройки</value></data>
+  <data name="SearchBox.PlaceholderText" xml:space="preserve"><value>Поиск</value></data>
+  <data name="Back" xml:space="preserve"><value>Назад</value></data>
+  <data name="TrendsTitle.Text" xml:space="preserve"><value>Тренды</value></data>
+  <data name="NewTitle.Text" xml:space="preserve"><value>Новое</value></data>
+  <data name="LibraryTitle.Text" xml:space="preserve"><value>Библиотека</value></data>
+  <data name="SettingsTitle.Text" xml:space="preserve"><value>Настройки</value></data>
+  <data name="ErrorOffline" xml:space="preserve"><value>Нет соединения с YouTube. Проверьте сеть или VPN</value></data>
+  <data name="ErrorBlocked" xml:space="preserve"><value>YouTube не ответил: проверка на бота или блокировка. Попробуйте позже или смените сеть</value></data>
+  <data name="ErrorParser" xml:space="preserve"><value>YouTube изменил страницу. Исправление придёт с обновлением</value></data>
+  <data name="ErrorUnknown" xml:space="preserve"><value>Что-то пошло не так</value></data>
+  <data name="Retry" xml:space="preserve"><value>Повторить</value></data>
+  <data name="CheckUpdates" xml:space="preserve"><value>Проверить обновления</value></data>
+  <data name="Diagnostics" xml:space="preserve"><value>Диагностика</value></data>
+  <data name="NothingFound" xml:space="preserve"><value>Ничего не нашлось</value></data>
+  <data name="OfflineSince" xml:space="preserve"><value>Нет сети — данные от {0}</value></data>
+  <data name="SettingsAppearance.Text" xml:space="preserve"><value>Внешний вид</value></data>
+  <data name="SettingsTheme.Header" xml:space="preserve"><value>Тема</value></data>
+  <data name="ThemeSystem.Content" xml:space="preserve"><value>Как в системе</value></data>
+  <data name="ThemeLight.Content" xml:space="preserve"><value>Светлая</value></data>
+  <data name="ThemeDark.Content" xml:space="preserve"><value>Тёмная</value></data>
+  <data name="SettingsAbout.Text" xml:space="preserve"><value>О приложении</value></data>
+  <data name="SettingsVersion.Header" xml:space="preserve"><value>Melogold</value></data>
+  <data name="VersionFormat" xml:space="preserve"><value>Версия {0}</value></data>
+  <data name="SettingsDiagnostics.Header" xml:space="preserve"><value>Диагностика</value></data>
+  <data name="SettingsDiagnostics.Description" xml:space="preserve"><value>Журналы приложения: пригодятся, если что-то не работает</value></data>
+  <data name="OpenLogs.Content" xml:space="preserve"><value>Открыть папку</value></data>
+  <data name="SettingsSource.Header" xml:space="preserve"><value>Исходный код</value></data>
+  <data name="SettingsSource.Description" xml:space="preserve"><value>GPL-3.0, GitHub</value></data>
+  <data name="OpenSource.Content" xml:space="preserve"><value>Открыть</value></data>
+  <data name="SettingsWithoutAccount.Header" xml:space="preserve"><value>Работает без аккаунта</value></data>
+  <data name="SettingsWithoutAccount.Description" xml:space="preserve"><value>Войдите, чтобы Избранное, плейлисты и сохранённое совпадали на всех устройствах</value></data>
+  <data name="SignIn" xml:space="preserve"><value>Войти</value></data>
+  <data name="SettingsServer.Header" xml:space="preserve"><value>Сервер</value></data>
+  <data name="ComingSoon" xml:space="preserve"><value>Скоро здесь</value></data>
+</root>

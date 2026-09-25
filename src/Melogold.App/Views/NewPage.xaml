@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Melogold.App.Views.NewPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer x:Name="Scroller">
+        <StackPanel Margin="{StaticResource PageContentMargin}" MaxWidth="{StaticResource PageMaxWidth}">
+            <TextBlock x:Uid="NewTitle" Style="{StaticResource PageTitleStyle}" Text="New" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

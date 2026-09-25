@@ -1,10 +1,12 @@
+using Melogold.Core.Domain;
+using Melogold.Core.Music;
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
 
-namespace Melogold.Core.Music;
+namespace Melogold.InnerTube;
 
 /// <summary>Клиент InnerTube: имя, версия, заголовки. Свой User-Agent у каждого (REWRITE §4.14.1 Android).</summary>
 public sealed record ClientProfile(
@@ -19,7 +21,8 @@ public sealed record ClientProfile(
     string? DeviceModel = null,
     string? OsName = null,
     string? OsVersion = null,
-    int? AndroidSdkVersion = null)
+    int? AndroidSdkVersion = null,
+    string? MediaUserAgent = null)
 {
     /// <summary>YouTube Music в браузере: поиск, страницы, очередь.</summary>
     public static readonly ClientProfile WebRemix = new(
@@ -43,7 +46,8 @@ public sealed record ClientProfile(
     public static readonly ClientProfile AndroidVr = new(
         "ANDROID_VR", 28, "1.65.10", "www.youtube.com",
         "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip",
-        DeviceMake: "Oculus", DeviceModel: "Quest 3", OsName: "Android", OsVersion: "12L", AndroidSdkVersion: 32);
+        DeviceMake: "Oculus", DeviceModel: "Quest 3", OsName: "Android", OsVersion: "12L", AndroidSdkVersion: 32,
+        MediaUserAgent: "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
 
     /// <summary>Только синхронный текст YouTube Music (<c>timedLyricsModel</c>).</summary>
     public static readonly ClientProfile AndroidMusic = new(

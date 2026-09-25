@@ -2,7 +2,7 @@ using System.Text.Json;
 using Melogold.Core.Domain;
 using Xunit;
 
-namespace Melogold.Core.Tests;
+namespace Melogold.Tests;
 
 /// <summary>Векторы из <c>spec/</c>: те же файлы проверяют сервер и Android.</summary>
 public class SpecVectorTests
@@ -24,7 +24,7 @@ public class SpecVectorTests
         foreach (var v in vectors)
         {
             var expected = v.GetProperty("hwid").GetString();
-            Assert.Equal(expected, Domain.Hwid.Compute(v.GetProperty("platformId").GetString()!, v.GetProperty("serverId").GetString()!));
+            Assert.Equal(expected, Melogold.Core.Domain.Hwid.Compute(v.GetProperty("platformId").GetString()!, v.GetProperty("serverId").GetString()!));
         }
     }
 

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Приложение Melogold: WinUI 3 без MSIX (WindowsPackageType=None), Windows App SDK внутри папки приложения.
-       Установка и обновления — Velopack из GitHub Releases (release.yml), без прав администратора. -->
+       Установка — Inno Setup без прав администратора, обновления — update.json из GitHub Releases (docs/PROMPT.md §3). -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
@@ -21,8 +21,9 @@
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <SelfContained>true</SelfContained>
-    <!-- Main свой (Program.cs): Velopack обрабатывает события установки до старта WinUI -->
+    <!-- Main свой (Program.cs): один экземпляр проверяется до старта WinUI -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <DefaultLanguage>en-US</DefaultLanguage>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Release'">true</PublishReadyToRun>
   </PropertyGroup>
 
@@ -37,12 +38,17 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <PackageReference Include="Velopack" />
     <PackageReference Include="QRCoder" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Melogold.Core\Melogold.Core.csproj" />
+    <ProjectReference Include="..\Melogold.InnerTube\Melogold.InnerTube.csproj" />
+    <ProjectReference Include="..\Melogold.Server\Melogold.Server.csproj" />
+    <ProjectReference Include="..\Melogold.Playback\Melogold.Playback.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">

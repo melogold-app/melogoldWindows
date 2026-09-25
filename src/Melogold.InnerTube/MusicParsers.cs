@@ -1,7 +1,9 @@
+using Melogold.Core.Domain;
+using Melogold.Core.Music;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
-namespace Melogold.Core.Music;
+namespace Melogold.InnerTube;
 
 /// <summary>
 /// Разбор рендереров YouTube Music (WEB_REMIX). Тип элемента определяется по переходу (<c>pageType</c>,
@@ -197,7 +199,7 @@ internal static partial class MusicParsers
             AlbumId = trackMeta.AlbumId,
             AlbumTitle = trackMeta.AlbumTitle,
             DurationText = durationText,
-            DurationMs = Domain.Durations.ParseText(durationText),
+            DurationMs = Durations.ParseText(durationText),
             ThumbnailUrl = thumbnail,
             Explicit = IsExplicit(r),
             VideoType = VideoTypeOf(musicVideoType),
@@ -289,7 +291,7 @@ internal static partial class MusicParsers
                 VideoType = VideoTypeOf(musicVideoType),
                 ViewsText = meta.Views,
                 DurationText = meta.Duration,
-                DurationMs = Domain.Durations.ParseText(meta.Duration),
+                DurationMs = Durations.ParseText(meta.Duration),
             };
         }
         return null;
@@ -325,7 +327,7 @@ internal static partial class MusicParsers
             AlbumId = meta.AlbumId,
             AlbumTitle = meta.AlbumTitle,
             DurationText = duration,
-            DurationMs = Domain.Durations.ParseText(duration),
+            DurationMs = Durations.ParseText(duration),
             ThumbnailUrl = r.At("thumbnail", "thumbnails").BestThumbnail(),
             Explicit = IsExplicit(r),
             VideoType = VideoTypeOf(musicVideoType),

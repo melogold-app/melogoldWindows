@@ -2,7 +2,6 @@ using System.Runtime.InteropServices;
 using Melogold.App.Services;
 using Microsoft.UI.Dispatching;
 using Microsoft.Windows.AppLifecycle;
-using Velopack;
 
 namespace Melogold.App;
 
@@ -11,12 +10,14 @@ public static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        // Установка, обновление и удаление через Velopack приходят сюда аргументами: обработать и выйти до WinUI
-        VelopackApp.Build()
-            .OnFirstRun(_ => FirstRun.Mark())
-            .Run();
-
         WinRT.ComWrappersSupport.InitializeComWrappers();
+
+        // Для проверки перевода: MELOGOLD_LANG=ru-RU или en-US (обычно язык берётся из системы)
+        if (Environment.GetEnvironmentVariable("MELOGOLD_LANG") is { Length: > 0 } language)
+        {
+            Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language;
+            System.Globalization.CultureInfo.CurrentUICulture = new System.Globalization.CultureInfo(language);
+        }
 
         // Один экземпляр: второй запуск (в том числе ссылка melogold://) передаётся первому и завершается
         var instance = AppInstance.FindOrRegisterForKey("Melogold.Main");

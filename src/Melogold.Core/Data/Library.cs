@@ -1,0 +1,624 @@
+using System.Text.Json;
+using Melogold.Core.Domain;
+using Melogold.Core.Music;
+using Microsoft.Data.Sqlite;
+
+namespace Melogold.Core.Data;
+
+[Flags]
+public enum LibraryChange
+{
+    None = 0,
+    Likes = 1,
+    Playlists = 2,
+    Bookmarks = 4,
+    History = 8,
+    Tracks = 16,
+    Searches = 32,
+    Blocks = 64,
+    All = Likes | Playlists | Bookmarks | History | Tracks | Searches | Blocks,
+}
+
+/// <summary>Свой плейлист (в Библиотеке): <see cref="SyncId"/> — UUID сервера, если плейлист синхронизирован.</summary>
+public sealed record LocalPlaylist(long Id, string? SyncId, string Name, string? BrowseId, string? ThumbnailUrl, long CreatedAt, int TrackCount, IReadOnlyList<string> Mosaic);
+
+public sealed record HistoryEntry(Track Track, long PlayedAt);
+
+public sealed record TopEntry(Track Track, long PlayTimeMs);
+
+/// <summary>Трек плейлиста с порядком и ключом сервера.</summary>
+public sealed record PlaylistEntry(Track Track, int Position, string? SortKey);
+
+/// <summary>
+/// Все записи в библиотеку идут отсюда (REWRITE §0, принцип 7): экраны, плеер и синхронизация. После каждой записи —
+/// <see cref="Changed"/>, по нему обновляются экраны и через 2 с запускается синхронизация.
+/// </summary>
+public sealed class Library(LibraryDatabase db)
+{
+    public LibraryDatabase Database { get; } = db;
+
+    public event Action<LibraryChange>? Changed;
+
+    public void Notify(LibraryChange change)
+    {
+        if (change != LibraryChange.None) Changed?.Invoke(change);
+    }
+
+    // ---------- Треки ----------
+
+    internal const string TrackColumns = "video_id, title, artists_text, artists_json, album_id, album_title, duration_ms, duration_text, thumbnail_url, explicit, video_type, metadata_stub, liked_at, total_play_ms";
+
+    internal static Track ReadTrack(SqliteDataReader r, int o = 0)
+    {
+        var artistsJson = r.IsDBNull(o + 3) ? null : r.GetString(o + 3);
+        IReadOnlyList<ArtistRef> artists = [];
+        if (artistsJson is not null)
+        {
+            try
+            {
+                artists = JsonSerializer.Deserialize<List<ArtistRef>>(artistsJson, JsonOptions) ?? [];
+            }
+            catch (JsonException)
+            {
+            }
+        }
+        return new Track
+        {
+            VideoId = r.GetString(o),
+            Title = r.GetString(o + 1),
+            ArtistsText = r.IsDBNull(o + 2) ? null : r.GetString(o + 2),
+            Artists = artists,
+            AlbumId = r.IsDBNull(o + 4) ? null : r.GetString(o + 4),
+            AlbumTitle = r.IsDBNull(o + 5) ? null : r.GetString(o + 5),
+            DurationMs = r.IsDBNull(o + 6) ? null : r.GetInt64(o + 6),
+            DurationText = r.IsDBNull(o + 7) ? null : r.GetString(o + 7),
+            ThumbnailUrl = r.IsDBNull(o + 8) ? null : r.GetString(o + 8),
+            Explicit = r.GetInt64(o + 9) != 0,
+            VideoType = r.IsDBNull(o + 10) ? null : r.GetString(o + 10),
+        };
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    /// <summary>
+    /// Вставляет трек или обновляет его метаданные: пустые поля новой версии не затирают известные, заглушка
+    /// (название = videoId) получает настоящее название.
+    /// </summary>
+    internal static void UpsertTrack(SqliteConnection c, SqliteTransaction t, Track track, bool stub = false)
+    {
+        LibraryDatabase.Exec(c, t, """
+            INSERT INTO tracks (video_id, title, artists_text, artists_json, album_id, album_title, duration_ms, duration_text,
+                                thumbnail_url, explicit, video_type, metadata_stub, created_at)
+            VALUES ($id, $title, $artists, $artistsJson, $albumId, $albumTitle, $durationMs, $durationText, $thumb, $explicit, $type, $stub, $now)
+            ON CONFLICT(video_id) DO UPDATE SET
+                title = CASE WHEN $stub = 0 THEN excluded.title ELSE tracks.title END,
+                artists_text = COALESCE(excluded.artists_text, tracks.artists_text),
+                artists_json = COALESCE(excluded.artists_json, tracks.artists_json),
+                album_id = COALESCE(excluded.album_id, tracks.album_id),
+                album_title = COALESCE(excluded.album_title, tracks.album_title),
+                duration_ms = COALESCE(excluded.duration_ms, tracks.duration_ms),
+                duration_text = COALESCE(excluded.duration_text, tracks.duration_text),
+                thumbnail_url = COALESCE(excluded.thumbnail_url, tracks.thumbnail_url),
+                explicit = MAX(excluded.explicit, tracks.explicit),
+                video_type = COALESCE(tracks.video_type, excluded.video_type),
+                metadata_stub = CASE WHEN $stub = 0 THEN 0 ELSE tracks.metadata_stub END;
+            """,
+            ("$id", track.VideoId), ("$title", track.Title), ("$artists", track.ArtistsText),
+            ("$artistsJson", track.Artists.Count > 0 ? JsonSerializer.Serialize(track.Artists, JsonOptions) : null),
+            ("$albumId", track.AlbumId), ("$albumTitle", track.AlbumTitle), ("$durationMs", track.DurationMs ?? Durations.ParseText(track.DurationText)),
+            ("$durationText", track.DurationText ?? (track.DurationMs is { } ms ? Durations.Format(ms) : null)),
+            ("$thumb", track.ThumbnailUrl), ("$explicit", track.Explicit ? 1 : 0), ("$type", track.VideoType), ("$stub", stub ? 1 : 0),
+            ("$now", IsoTime.NowMs()));
+    }
+
+    public void SaveTracks(IEnumerable<Track> tracks)
+    {
+        Database.Write((c, t) =>
+        {
+            foreach (var track in tracks) UpsertTrack(c, t, track);
+        });
+    }
+
+    public Track? GetTrack(string videoId) => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = $"SELECT {TrackColumns} FROM tracks WHERE video_id = $id";
+        command.Parameters.AddWithValue("$id", videoId);
+        using var r = command.ExecuteReader();
+        return r.Read() ? ReadTrack(r) : null;
+    });
+
+    private static List<Track> Tracks(SqliteConnection c, string sql, params (string, object?)[] parameters)
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = sql;
+        foreach (var (name, value) in parameters) command.Parameters.AddWithValue(name, value ?? DBNull.Value);
+        using var r = command.ExecuteReader();
+        var list = new List<Track>();
+        while (r.Read()) list.Add(ReadTrack(r));
+        return list;
+    }
+
+    // ---------- Избранное ----------
+
+    public bool IsLiked(string videoId) => Database.Read(c =>
+        LibraryDatabase.Scalar(c, "SELECT liked_at IS NOT NULL FROM tracks WHERE video_id = $id", ("$id", videoId)) is long v && v != 0);
+
+    public HashSet<string> LikedIds() => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT video_id FROM tracks WHERE liked_at IS NOT NULL";
+        using var r = command.ExecuteReader();
+        var set = new HashSet<string>();
+        while (r.Read()) set.Add(r.GetString(0));
+        return set;
+    });
+
+    public List<Track> Favorites() => Database.Read(c => Tracks(c, $"SELECT {TrackColumns} FROM tracks WHERE liked_at IS NOT NULL ORDER BY liked_at DESC"));
+
+    public void SetLiked(Track track, bool liked)
+    {
+        Database.Write((c, t) =>
+        {
+            UpsertTrack(c, t, track);
+            LibraryDatabase.Exec(c, t,
+                liked ? "UPDATE tracks SET liked_at = COALESCE(liked_at, $now) WHERE video_id = $id" : "UPDATE tracks SET liked_at = NULL WHERE video_id = $id",
+                ("$id", track.VideoId), ("$now", IsoTime.NowMs()));
+        });
+        Notify(LibraryChange.Likes);
+    }
+
+    // ---------- Альбомы и исполнители ----------
+
+    public bool IsAlbumSaved(string browseId) => Database.Read(c =>
+        LibraryDatabase.Scalar(c, "SELECT bookmarked_at IS NOT NULL FROM albums WHERE browse_id = $id", ("$id", browseId)) is long v && v != 0);
+
+    public void SetAlbumSaved(AlbumItem album, bool saved)
+    {
+        Database.Write((c, t) => UpsertAlbum(c, t, album, saved ? IsoTime.NowMs() : null, true));
+        Notify(LibraryChange.Bookmarks);
+    }
+
+    internal static void UpsertAlbum(SqliteConnection c, SqliteTransaction t, AlbumItem album, long? bookmarkedAt, bool setBookmark)
+    {
+        LibraryDatabase.Exec(c, t, """
+            INSERT INTO albums (browse_id, title, artists_text, year, thumbnail_url, playlist_id, bookmarked_at)
+            VALUES ($id, $title, $artists, $year, $thumb, $playlist, $at)
+            ON CONFLICT(browse_id) DO UPDATE SET
+                title = COALESCE(excluded.title, albums.title),
+                artists_text = COALESCE(excluded.artists_text, albums.artists_text),
+                year = COALESCE(excluded.year, albums.year),
+                thumbnail_url = COALESCE(excluded.thumbnail_url, albums.thumbnail_url),
+                playlist_id = COALESCE(excluded.playlist_id, albums.playlist_id),
+                bookmarked_at = CASE WHEN $set = 1 THEN (CASE WHEN $at IS NULL THEN NULL ELSE COALESCE(albums.bookmarked_at, $at) END) ELSE albums.bookmarked_at END;
+            """,
+            ("$id", album.BrowseId), ("$title", album.Title), ("$artists", album.ArtistsText), ("$year", album.Year),
+            ("$thumb", album.ThumbnailUrl), ("$playlist", album.PlaylistId), ("$at", bookmarkedAt), ("$set", setBookmark ? 1 : 0));
+    }
+
+    public List<AlbumItem> SavedAlbums() => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT browse_id, title, artists_text, year, thumbnail_url, playlist_id FROM albums WHERE bookmarked_at IS NOT NULL ORDER BY bookmarked_at DESC";
+        using var r = command.ExecuteReader();
+        var list = new List<AlbumItem>();
+        while (r.Read())
+        {
+            list.Add(new AlbumItem
+            {
+                BrowseId = r.GetString(0),
+                Title = r.IsDBNull(1) ? r.GetString(0) : r.GetString(1),
+                ArtistsText = r.IsDBNull(2) ? null : r.GetString(2),
+                Year = r.IsDBNull(3) ? null : r.GetString(3),
+                ThumbnailUrl = r.IsDBNull(4) ? null : r.GetString(4),
+                PlaylistId = r.IsDBNull(5) ? null : r.GetString(5),
+            });
+        }
+        return list;
+    });
+
+    public bool IsArtistSaved(string browseId) => Database.Read(c =>
+        LibraryDatabase.Scalar(c, "SELECT bookmarked_at IS NOT NULL FROM artists WHERE browse_id = $id", ("$id", browseId)) is long v && v != 0);
+
+    public void SetArtistSaved(ArtistItem artist, bool saved)
+    {
+        Database.Write((c, t) => UpsertArtist(c, t, artist, saved ? IsoTime.NowMs() : null, true));
+        Notify(LibraryChange.Bookmarks);
+    }
+
+    internal static void UpsertArtist(SqliteConnection c, SqliteTransaction t, ArtistItem artist, long? bookmarkedAt, bool setBookmark)
+    {
+        LibraryDatabase.Exec(c, t, """
+            INSERT INTO artists (browse_id, name, thumbnail_url, is_channel, bookmarked_at)
+            VALUES ($id, $name, $thumb, $channel, $at)
+            ON CONFLICT(browse_id) DO UPDATE SET
+                name = COALESCE(excluded.name, artists.name),
+                thumbnail_url = COALESCE(excluded.thumbnail_url, artists.thumbnail_url),
+                is_channel = excluded.is_channel,
+                bookmarked_at = CASE WHEN $set = 1 THEN (CASE WHEN $at IS NULL THEN NULL ELSE COALESCE(artists.bookmarked_at, $at) END) ELSE artists.bookmarked_at END;
+            """,
+            ("$id", artist.BrowseId), ("$name", artist.Name), ("$thumb", artist.ThumbnailUrl), ("$channel", artist.IsChannel ? 1 : 0),
+            ("$at", bookmarkedAt), ("$set", setBookmark ? 1 : 0));
+    }
+
+    public List<ArtistItem> SavedArtists() => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT browse_id, name, thumbnail_url, is_channel FROM artists WHERE bookmarked_at IS NOT NULL ORDER BY bookmarked_at DESC";
+        using var r = command.ExecuteReader();
+        var list = new List<ArtistItem>();
+        while (r.Read())
+        {
+            list.Add(new ArtistItem
+            {
+                BrowseId = r.GetString(0),
+                Name = r.IsDBNull(1) ? r.GetString(0) : r.GetString(1),
+                ThumbnailUrl = r.IsDBNull(2) ? null : r.GetString(2),
+                IsChannel = r.GetInt64(3) != 0,
+            });
+        }
+        return list;
+    });
+
+    // ---------- Плейлисты ----------
+
+    public List<LocalPlaylist> Playlists() => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = """
+            SELECT p.id, p.sync_id, p.name, p.browse_id, p.thumbnail_url, p.created_at,
+                   (SELECT COUNT(*) FROM playlist_items i WHERE i.playlist_id = p.id)
+            FROM playlists p ORDER BY p.created_at DESC, p.id DESC
+            """;
+        using var r = command.ExecuteReader();
+        var list = new List<(long, string?, string, string?, string?, long, int)>();
+        while (r.Read())
+        {
+            list.Add((r.GetInt64(0), r.IsDBNull(1) ? null : r.GetString(1), r.GetString(2), r.IsDBNull(3) ? null : r.GetString(3),
+                r.IsDBNull(4) ? null : r.GetString(4), r.GetInt64(5), r.GetInt32(6)));
+        }
+        return list.Select(p => new LocalPlaylist(p.Item1, p.Item2, p.Item3, p.Item4, p.Item5, p.Item6, p.Item7, Mosaic(c, p.Item1))).ToList();
+    });
+
+    private static List<string> Mosaic(SqliteConnection c, long playlistId)
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = """
+            SELECT t.thumbnail_url FROM playlist_items i JOIN tracks t ON t.video_id = i.video_id
+            WHERE i.playlist_id = $id AND t.thumbnail_url IS NOT NULL ORDER BY i.position LIMIT 4
+            """;
+        command.Parameters.AddWithValue("$id", playlistId);
+        using var r = command.ExecuteReader();
+        var list = new List<string>();
+        while (r.Read()) list.Add(r.GetString(0));
+        return list;
+    }
+
+    public LocalPlaylist? GetPlaylist(long id) => Playlists().FirstOrDefault(p => p.Id == id);
+
+    public List<Track> PlaylistTracks(long playlistId) => Database.Read(c => Tracks(c,
+        $"SELECT {string.Join(", ", TrackColumns.Split(", ").Select(x => "t." + x))} FROM playlist_items i JOIN tracks t ON t.video_id = i.video_id WHERE i.playlist_id = $id ORDER BY i.position",
+        ("$id", playlistId)));
+
+    public long CreatePlaylist(string name, IEnumerable<Track>? tracks = null, string? browseId = null, string? thumbnailUrl = null)
+    {
+        var id = Database.Write((c, t) =>
+        {
+            LibraryDatabase.Exec(c, t, "INSERT INTO playlists (name, browse_id, thumbnail_url, created_at) VALUES ($name, $browse, $thumb, $now)",
+                ("$name", Utf16.Truncate(name.Trim().Length == 0 ? "Без названия" : name.Trim(), 200)), ("$browse", browseId), ("$thumb", thumbnailUrl), ("$now", IsoTime.NowMs()));
+            var newId = (long)LibraryDatabase.Scalar(c, "SELECT last_insert_rowid()")!;
+            if (tracks is not null) AppendItems(c, t, newId, tracks);
+            return newId;
+        });
+        Notify(LibraryChange.Playlists);
+        return id;
+    }
+
+    public void RenamePlaylist(long id, string name)
+    {
+        Database.Write((c, t) => LibraryDatabase.Exec(c, t, "UPDATE playlists SET name = $name WHERE id = $id",
+            ("$name", Utf16.Truncate(name.Trim(), 200)), ("$id", id)));
+        Notify(LibraryChange.Playlists);
+    }
+
+    public void DeletePlaylist(long id)
+    {
+        Database.Write((c, t) =>
+        {
+            LibraryDatabase.Exec(c, t, "DELETE FROM playlist_items WHERE playlist_id = $id", ("$id", id));
+            LibraryDatabase.Exec(c, t, "DELETE FROM playlists WHERE id = $id", ("$id", id));
+        });
+        Notify(LibraryChange.Playlists);
+    }
+
+    /// <summary>Добавить в конец; трек встречается в плейлисте не больше одного раза (DESIGN §3.2). Возвращает число добавленных.</summary>
+    public int AddToPlaylist(long playlistId, IEnumerable<Track> tracks)
+    {
+        var added = Database.Write((c, t) => AppendItems(c, t, playlistId, tracks));
+        if (added > 0) Notify(LibraryChange.Playlists);
+        return added;
+    }
+
+    private static int AppendItems(SqliteConnection c, SqliteTransaction t, long playlistId, IEnumerable<Track> tracks)
+    {
+        var next = Convert.ToInt32(LibraryDatabase.Scalar(c, "SELECT COALESCE(MAX(position) + 1, 0) FROM playlist_items WHERE playlist_id = $id", ("$id", playlistId)));
+        var added = 0;
+        var now = IsoTime.NowMs();
+        foreach (var track in tracks)
+        {
+            UpsertTrack(c, t, track);
+            added += LibraryDatabase.Exec(c, t,
+                "INSERT OR IGNORE INTO playlist_items (playlist_id, video_id, position, added_at) VALUES ($p, $v, $pos, $now)",
+                ("$p", playlistId), ("$v", track.VideoId), ("$pos", next + added), ("$now", now));
+        }
+        return added;
+    }
+
+    public void RemoveFromPlaylist(long playlistId, string videoId)
+    {
+        Database.Write((c, t) =>
+        {
+            LibraryDatabase.Exec(c, t, "DELETE FROM playlist_items WHERE playlist_id = $p AND video_id = $v", ("$p", playlistId), ("$v", videoId));
+            Renumber(c, t, playlistId);
+        });
+        Notify(LibraryChange.Playlists);
+    }
+
+    /// <summary>Перенести трек на место <paramref name="newIndex"/> (0..n-1).</summary>
+    public void MoveInPlaylist(long playlistId, string videoId, int newIndex)
+    {
+        Database.Write((c, t) =>
+        {
+            var order = VideoIds(c, playlistId);
+            if (!order.Remove(videoId)) return;
+            order.Insert(Math.Clamp(newIndex, 0, order.Count), videoId);
+            for (var i = 0; i < order.Count; i++)
+                LibraryDatabase.Exec(c, t, "UPDATE playlist_items SET position = $pos WHERE playlist_id = $p AND video_id = $v", ("$pos", i), ("$p", playlistId), ("$v", order[i]));
+        });
+        Notify(LibraryChange.Playlists);
+    }
+
+    internal static List<string> VideoIds(SqliteConnection c, long playlistId)
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT video_id FROM playlist_items WHERE playlist_id = $id ORDER BY position";
+        command.Parameters.AddWithValue("$id", playlistId);
+        using var r = command.ExecuteReader();
+        var list = new List<string>();
+        while (r.Read()) list.Add(r.GetString(0));
+        return list;
+    }
+
+    private static void Renumber(SqliteConnection c, SqliteTransaction t, long playlistId)
+    {
+        var order = VideoIds(c, playlistId);
+        for (var i = 0; i < order.Count; i++)
+            LibraryDatabase.Exec(c, t, "UPDATE playlist_items SET position = $pos WHERE playlist_id = $p AND video_id = $v", ("$pos", i), ("$p", playlistId), ("$v", order[i]));
+    }
+
+    /// <summary>Плейлисты, в которых есть трек (галочки в «Добавить в плейлист…»).</summary>
+    public HashSet<long> PlaylistsContaining(string videoId) => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT playlist_id FROM playlist_items WHERE video_id = $v";
+        command.Parameters.AddWithValue("$v", videoId);
+        using var r = command.ExecuteReader();
+        var set = new HashSet<long>();
+        while (r.Read()) set.Add(r.GetInt64(0));
+        return set;
+    });
+
+    // ---------- История (DESIGN §3.11) ----------
+
+    /// <summary>
+    /// Прослушивание (сеанс ≥ 5 с): одной транзакцией трек, событие с UUID и счётчик времени (DESIGN §3.11.4).
+    /// </summary>
+    public void RecordPlay(Track track, long playTimeMs, long endedAtMs)
+    {
+        if (playTimeMs < 5000) return;
+        Database.Write((c, t) =>
+        {
+            UpsertTrack(c, t, track);
+            LibraryDatabase.Exec(c, t, "INSERT INTO play_events (event_id, video_id, played_at, play_time_ms) VALUES ($e, $v, $at, $ms)",
+                ("$e", Guid.NewGuid().ToString()), ("$v", track.VideoId), ("$at", endedAtMs), ("$ms", playTimeMs));
+            LibraryDatabase.Exec(c, t, "UPDATE tracks SET total_play_ms = total_play_ms + $ms WHERE video_id = $v", ("$ms", playTimeMs), ("$v", track.VideoId));
+        });
+        Notify(LibraryChange.History);
+    }
+
+    /// <summary>«Недавние»: последние 100 разных треков по последнему прослушиванию (DESIGN §3.11.7).</summary>
+    public List<HistoryEntry> RecentHistory(int limit = 100) => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = $"""
+            SELECT {string.Join(", ", TrackColumns.Split(", ").Select(x => "t." + x))}, h.last
+            FROM (SELECT video_id, MAX(played_at) AS last FROM play_events GROUP BY video_id ORDER BY last DESC LIMIT $limit) h
+            JOIN tracks t ON t.video_id = h.video_id ORDER BY h.last DESC
+            """;
+        command.Parameters.AddWithValue("$limit", limit);
+        using var r = command.ExecuteReader();
+        var list = new List<HistoryEntry>();
+        while (r.Read()) list.Add(new HistoryEntry(ReadTrack(r), r.GetInt64(14)));
+        return list;
+    });
+
+    /// <summary>«Чаще всего» за период: Σ времени событий; за всё время — счётчик трека (DESIGN §3.11.7).</summary>
+    public List<TopEntry> MostPlayed(long? sinceMs, int limit = 100) => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        var columns = string.Join(", ", TrackColumns.Split(", ").Select(x => "t." + x));
+        command.CommandText = sinceMs is null
+            ? $"SELECT {columns}, t.total_play_ms FROM tracks t WHERE t.total_play_ms > 0 ORDER BY t.total_play_ms DESC LIMIT $limit"
+            : $"""
+               SELECT {columns}, s.total FROM (SELECT video_id, SUM(play_time_ms) AS total FROM play_events WHERE played_at >= $since GROUP BY video_id ORDER BY total DESC LIMIT $limit) s
+               JOIN tracks t ON t.video_id = s.video_id ORDER BY s.total DESC
+               """;
+        command.Parameters.AddWithValue("$limit", limit);
+        if (sinceMs is { } since) command.Parameters.AddWithValue("$since", since);
+        using var r = command.ExecuteReader();
+        var list = new List<TopEntry>();
+        while (r.Read()) list.Add(new TopEntry(ReadTrack(r), r.GetInt64(14)));
+        return list;
+    });
+
+    /// <summary>«Очистить историю»: события удаляются, счётчики остаются, как в ViTune (DESIGN §3.11.5).</summary>
+    public void ClearHistory()
+    {
+        Database.Write((c, t) => LibraryDatabase.Exec(c, t, "DELETE FROM play_events"));
+        Notify(LibraryChange.History);
+    }
+
+    /// <summary>«Убрать из истории»: трек пропадает из Истории и «Чаще всего», счётчик обнуляется.</summary>
+    public void RemoveFromHistory(string videoId)
+    {
+        Database.Write((c, t) =>
+        {
+            LibraryDatabase.Exec(c, t, "DELETE FROM play_events WHERE video_id = $v", ("$v", videoId));
+            LibraryDatabase.Exec(c, t, "UPDATE tracks SET total_play_ms = 0 WHERE video_id = $v", ("$v", videoId));
+        });
+        Notify(LibraryChange.History);
+    }
+
+    /// <summary>Затравки «Для вас» (REWRITE §4.10.5): последний лайк, самый частый за 30 дней, последний прослушанный.</summary>
+    public List<Track> ForYouSeeds()
+    {
+        var seeds = new List<Track>();
+        var favorites = Favorites();
+        if (favorites.Count > 0) seeds.Add(favorites[0]);
+        var top = MostPlayed(IsoTime.NowMs() - 30L * 24 * 3600 * 1000, 1);
+        if (top.Count > 0) seeds.Add(top[0].Track);
+        var recent = RecentHistory(1);
+        if (recent.Count > 0) seeds.Add(recent[0].Track);
+        return seeds.DistinctBy(t => t.VideoId).ToList();
+    }
+
+    // ---------- Поиск ----------
+
+    public void AddSearch(string query)
+    {
+        query = query.Trim();
+        if (query.Length == 0) return;
+        Database.Write((c, t) =>
+        {
+            LibraryDatabase.Exec(c, t, "INSERT INTO search_history (query, searched_at) VALUES ($q, $now) ON CONFLICT(query) DO UPDATE SET searched_at = excluded.searched_at",
+                ("$q", Utf16.Truncate(query, 200)), ("$now", IsoTime.NowMs()));
+            LibraryDatabase.Exec(c, t, "DELETE FROM search_history WHERE query NOT IN (SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 50)");
+        });
+        Notify(LibraryChange.Searches);
+    }
+
+    public List<string> RecentSearches(int limit = 12) => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT query FROM search_history ORDER BY searched_at DESC LIMIT $limit";
+        command.Parameters.AddWithValue("$limit", limit);
+        using var r = command.ExecuteReader();
+        var list = new List<string>();
+        while (r.Read()) list.Add(r.GetString(0));
+        return list;
+    });
+
+    public void RemoveSearch(string query)
+    {
+        Database.Write((c, t) => LibraryDatabase.Exec(c, t, "DELETE FROM search_history WHERE query = $q", ("$q", query)));
+        Notify(LibraryChange.Searches);
+    }
+
+    public void ClearSearches()
+    {
+        Database.Write((c, t) => LibraryDatabase.Exec(c, t, "DELETE FROM search_history"));
+        Notify(LibraryChange.Searches);
+    }
+
+    /// <summary>Поиск по своей библиотеке («В библиотеке» при вводе).</summary>
+    public List<Track> SearchLibrary(string query, int limit = 5)
+    {
+        var pattern = "%" + query.Trim().Replace("%", "").Replace("_", "") + "%";
+        return Database.Read(c => Tracks(c,
+            $"""
+             SELECT {TrackColumns} FROM tracks
+             WHERE (liked_at IS NOT NULL OR total_play_ms > 0 OR video_id IN (SELECT video_id FROM playlist_items))
+               AND (title LIKE $q OR artists_text LIKE $q)
+             ORDER BY liked_at IS NULL, total_play_ms DESC LIMIT $limit
+             """, ("$q", pattern), ("$limit", limit)));
+    }
+
+    // ---------- Тексты ----------
+
+    public (string? Synced, string? Plain, string? Source)? GetLyrics(string videoId) => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT synced, plain, source FROM lyrics WHERE video_id = $v";
+        command.Parameters.AddWithValue("$v", videoId);
+        using var r = command.ExecuteReader();
+        if (!r.Read()) return ((string?, string?, string?)?)null;
+        return (r.IsDBNull(0) ? null : r.GetString(0), r.IsDBNull(1) ? null : r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2));
+    });
+
+    public void SaveLyrics(string videoId, string? synced, string? plain, string? source) =>
+        Database.Write((c, t) => LibraryDatabase.Exec(c, t,
+            "INSERT OR REPLACE INTO lyrics (video_id, synced, plain, source, fetched_at) VALUES ($v, $s, $p, $src, $now)",
+            ("$v", videoId), ("$s", synced), ("$p", plain), ("$src", source), ("$now", IsoTime.NowMs())));
+
+    // ---------- «Не показывать» ----------
+
+    public HashSet<string> HiddenTracks() => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT key FROM content_blocks WHERE type = 'track'";
+        using var r = command.ExecuteReader();
+        var set = new HashSet<string>();
+        while (r.Read()) set.Add(r.GetString(0));
+        return set;
+    });
+
+    public void SetTrackHidden(Track track, bool hidden)
+    {
+        Database.Write((c, t) => LibraryDatabase.Exec(c, t, hidden
+                ? "INSERT OR REPLACE INTO content_blocks (type, key, level, title, subtitle, thumbnail_url, blocked_at) VALUES ('track', $k, 'hide', $title, $sub, $thumb, $now)"
+                : "DELETE FROM content_blocks WHERE type = 'track' AND key = $k",
+            ("$k", track.VideoId), ("$title", track.Title), ("$sub", track.ArtistsText), ("$thumb", track.ThumbnailUrl), ("$now", IsoTime.NowMs())));
+        Notify(LibraryChange.Blocks);
+    }
+
+    public List<Track> HiddenTrackList() => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT key, title, subtitle, thumbnail_url FROM content_blocks WHERE type = 'track' ORDER BY blocked_at DESC";
+        using var r = command.ExecuteReader();
+        var list = new List<Track>();
+        while (r.Read())
+        {
+            list.Add(new Track
+            {
+                VideoId = r.GetString(0),
+                Title = r.IsDBNull(1) ? r.GetString(0) : r.GetString(1),
+                ArtistsText = r.IsDBNull(2) ? null : r.GetString(2),
+                ThumbnailUrl = r.IsDBNull(3) ? null : r.GetString(3),
+            });
+        }
+        return list;
+    });
+
+    // ---------- Состояние приложения ----------
+
+    public string? GetState(string key) => Database.Read(c => LibraryDatabase.Scalar(c, "SELECT value FROM app_state WHERE key = $k", ("$k", key)) as string);
+
+    public void SetState(string key, string? value) => Database.Write((c, t) =>
+        LibraryDatabase.Exec(c, t, value is null ? "DELETE FROM app_state WHERE key = $k" : "INSERT OR REPLACE INTO app_state (key, value) VALUES ($k, $v)", ("$k", key), ("$v", value)));
+
+    /// <summary>Отпечаток библиотеки: меняется от любой правки Избранного, плейлистов и закладок (в том числе перестановки).</summary>
+    public string LibraryFingerprint() => Database.Read(c => string.Join("|",
+        LibraryDatabase.Scalar(c, "SELECT COUNT(*) || ':' || COALESCE(SUM(liked_at), 0) FROM tracks WHERE liked_at IS NOT NULL"),
+        LibraryDatabase.Scalar(c, "SELECT COUNT(*) || ':' || COALESCE(SUM(length(name) + id), 0) || ':' || COALESCE(SUM(length(thumbnail_url)), 0) FROM playlists"),
+        LibraryDatabase.Scalar(c, "SELECT COUNT(*) || ':' || COALESCE(SUM(position * length(video_id) + playlist_id), 0) FROM playlist_items"),
+        LibraryDatabase.Scalar(c, "SELECT COUNT(*) FROM albums WHERE bookmarked_at IS NOT NULL"),
+        LibraryDatabase.Scalar(c, "SELECT COUNT(*) FROM artists WHERE bookmarked_at IS NOT NULL")));
+
+    /// <summary>Сколько всего в библиотеке — для диалога первой синхронизации.</summary>
+    public (int Likes, int Playlists, int Albums, int Artists) Counts() => Database.Read(c => (
+        Convert.ToInt32(LibraryDatabase.Scalar(c, "SELECT COUNT(*) FROM tracks WHERE liked_at IS NOT NULL")),
+        Convert.ToInt32(LibraryDatabase.Scalar(c, "SELECT COUNT(*) FROM playlists")),
+        Convert.ToInt32(LibraryDatabase.Scalar(c, "SELECT COUNT(*) FROM albums WHERE bookmarked_at IS NOT NULL")),
+        Convert.ToInt32(LibraryDatabase.Scalar(c, "SELECT COUNT(*) FROM artists WHERE bookmarked_at IS NOT NULL"))));
+}

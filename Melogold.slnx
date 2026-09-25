@@ -1,11 +1,16 @@
 <Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="ARM64" />
+  </Configurations>
   <Folder Name="/src/">
-    <Project Path="src/Melogold.App/Melogold.App.csproj">
-      <Platform Project="x64" />
-    </Project>
+    <Project Path="src/Melogold.App/Melogold.App.csproj" />
     <Project Path="src/Melogold.Core/Melogold.Core.csproj" />
+    <Project Path="src/Melogold.InnerTube/Melogold.InnerTube.csproj" />
+    <Project Path="src/Melogold.Playback/Melogold.Playback.csproj" />
+    <Project Path="src/Melogold.Server/Melogold.Server.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Melogold.Core.Tests/Melogold.Core.Tests.csproj" />
+    <Project Path="tests/Melogold.Tests/Melogold.Tests.csproj" />
   </Folder>
 </Solution>

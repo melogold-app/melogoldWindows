@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [x64, ARM64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Сборка приложения (${{ matrix.platform }})
+        run: dotnet build src/Melogold.App/Melogold.App.csproj -c Release -p:Platform=${{ matrix.platform }}
+
+      - name: Тесты
+        if: matrix.platform == 'x64'
+        run: dotnet test tests/Melogold.Tests -c Release

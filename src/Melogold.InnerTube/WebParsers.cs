@@ -1,7 +1,9 @@
+using Melogold.Core.Domain;
+using Melogold.Core.Music;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
-namespace Melogold.Core.Music;
+namespace Melogold.InnerTube;
 
 /// <summary>
 /// Разбор ответов обычного YouTube (клиент WEB, REWRITE §4.8.1–§4.8.2 Android): <c>videoRenderer</c>,
@@ -90,7 +92,7 @@ internal static partial class WebParsers
             Artists = channelName is null ? [] : [new ArtistRef(owner.BrowseId, channelName)],
             ArtistsText = channelName,
             DurationText = duration,
-            DurationMs = Domain.Durations.ParseText(duration),
+            DurationMs = Durations.ParseText(duration),
             ThumbnailUrl = r.At("thumbnail", "thumbnails").BestThumbnail(),
             VideoType = isLive ? "live" : "ugc",
             ViewsText = r.At("shortViewCountText").Text() ?? r.At("viewCountText").Text(),
@@ -144,7 +146,7 @@ internal static partial class WebParsers
                     Artists = channelName is null ? [] : [new ArtistRef(channelId, channelName)],
                     ArtistsText = channelName,
                     DurationText = badge,
-                    DurationMs = Domain.Durations.ParseText(badge),
+                    DurationMs = Durations.ParseText(badge),
                     ThumbnailUrl = thumbnail,
                     VideoType = badge is null && r.FindAll("thumbnailBadgeViewModel").Any(b => b.Str("badgeStyle") == "THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE") ? "live" : "ugc",
                     ViewsText = rows.LastOrDefault()?.FirstOrDefault(),

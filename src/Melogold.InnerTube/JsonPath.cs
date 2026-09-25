@@ -1,9 +1,11 @@
+using Melogold.Core.Domain;
+using Melogold.Core.Music;
 using System.Text.Json.Nodes;
 
-namespace Melogold.Core.Music;
+namespace Melogold.InnerTube;
 
 /// <summary>Навигация по ответам InnerTube: пути, <c>runs</c>, обложки. Всё терпит отсутствующие ключи.</summary>
-internal static class J
+public static class J
 {
     /// <summary>Узел по пути: строки — ключи объектов, числа — индексы массивов.</summary>
     public static JsonNode? At(this JsonNode? node, params object[] path)
@@ -112,7 +114,7 @@ internal static class J
 }
 
 /// <summary>Кусок текста с возможным переходом.</summary>
-internal readonly record struct Run(JsonNode Node)
+public readonly record struct Run(JsonNode Node)
 {
     public string Text => Node.Str("text") ?? "";
     public string? BrowseId => Node.Str("navigationEndpoint", "browseEndpoint", "browseId");

@@ -70,7 +70,7 @@ PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Ещё	
 PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Ещё	More
 ResolvingText.Text	Получаем поток…	Getting the stream…
 RetryLink.Content	Повторить	Retry
-MenuStreamInfo.Text	Сведения о потоке	Stream info
+MenuStreamInfo	Сведения о потоке	Stream info
 StreamInfoTitle	Сведения о потоке	Stream info
 StreamBitrate	Битрейт	Bitrate
 StreamSource	Клиент	Client
@@ -336,7 +336,6 @@ PlayerLyrics	Текст	Lyrics
 NowPlaying	Сейчас играет	Now playing
 NowPlayingArtwork	Обложка	Artwork
 CollapsePlayer	Свернуть плеер	Collapse player
-LyricsMenu	Меню текста	Lyrics menu
 LyricsLoading	Загрузка текста	Loading lyrics
 LyricsUnavailable	Текст песни недоступен	Lyrics are not available
 LyricsLoadFailed	Не удалось загрузить текст	Couldn't load the lyrics
@@ -361,6 +360,8 @@ LyricsLater01	Позже на 0,1 с	0.1 s later
 LyricsEarlier05	Раньше на 0,5 с	0.5 s earlier
 LyricsLater05	Позже на 0,5 с	0.5 s later
 LyricsResetShiftFormat	Сбросить сдвиг ({0} с)	Reset the shift ({0} s)
+LyricsOffset	Сдвиг текста	Lyrics offset
+LyricsOffsetFormat	Сдвиг текста · {0} с	Lyrics offset · {0} s
 ChooseLyricTrack	Выберите трек с текстом	Choose a track with lyrics
 NoLyricsFound	Тексты песен не найдены	No lyrics found
 # Отделка плеера: очередь, таймер сна, мини-плеер, воспроизведение

@@ -165,7 +165,7 @@
             </Grid>
         </StackPanel>
 
-        <!-- Справа: «Текст», громкость и «…» -->
+        <!-- Справа: «Текст», «Очередь», громкость, мини-плеер и «…» -->
         <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal" Spacing="4">
             <ToggleButton
                 x:Name="LyricsButton"
@@ -204,22 +204,14 @@
                 Click="OnMiniClick">
                 <FontIcon Glyph="&#xE944;" />
             </Button>
-            <Button x:Uid="PlayerMore" Style="{StaticResource PlayerIconButtonStyle}" IsEnabled="{x:Bind ViewModel.HasTrack, Mode=OneWay}">
+            <!-- «…»: одно меню на всё — трек, текст, таймер сна, сведения о потоке (собирается при нажатии) -->
+            <Button
+                x:Name="MoreButton"
+                x:Uid="PlayerMore"
+                Style="{StaticResource PlayerIconButtonStyle}"
+                IsEnabled="{x:Bind ViewModel.HasTrack, Mode=OneWay}"
+                Click="OnMoreClick">
                 <FontIcon Glyph="&#xE712;" />
-                <Button.Flyout>
-                    <MenuFlyout x:Name="MoreMenu" Placement="TopEdgeAlignedRight" Opening="OnMoreOpening">
-                        <MenuFlyoutSubItem x:Name="SleepMenu">
-                            <MenuFlyoutSubItem.Icon>
-                                <FontIcon Glyph="&#xE708;" />
-                            </MenuFlyoutSubItem.Icon>
-                        </MenuFlyoutSubItem>
-                        <MenuFlyoutItem x:Uid="MenuStreamInfo" Text="Stream info" Click="OnStreamInfoClick">
-                            <MenuFlyoutItem.Icon>
-                                <FontIcon Glyph="&#xE946;" />
-                            </MenuFlyoutItem.Icon>
-                        </MenuFlyoutItem>
-                    </MenuFlyout>
-                </Button.Flyout>
             </Button>
         </StackPanel>
 

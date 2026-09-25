@@ -69,7 +69,7 @@
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Ещё</value></data>
   <data name="ResolvingText.Text" xml:space="preserve"><value>Получаем поток…</value></data>
   <data name="RetryLink.Content" xml:space="preserve"><value>Повторить</value></data>
-  <data name="MenuStreamInfo.Text" xml:space="preserve"><value>Сведения о потоке</value></data>
+  <data name="MenuStreamInfo" xml:space="preserve"><value>Сведения о потоке</value></data>
   <data name="StreamInfoTitle" xml:space="preserve"><value>Сведения о потоке</value></data>
   <data name="StreamBitrate" xml:space="preserve"><value>Битрейт</value></data>
   <data name="StreamSource" xml:space="preserve"><value>Клиент</value></data>
@@ -329,7 +329,6 @@
   <data name="NowPlaying" xml:space="preserve"><value>Сейчас играет</value></data>
   <data name="NowPlayingArtwork" xml:space="preserve"><value>Обложка</value></data>
   <data name="CollapsePlayer" xml:space="preserve"><value>Свернуть плеер</value></data>
-  <data name="LyricsMenu" xml:space="preserve"><value>Меню текста</value></data>
   <data name="LyricsLoading" xml:space="preserve"><value>Загрузка текста</value></data>
   <data name="LyricsUnavailable" xml:space="preserve"><value>Текст песни недоступен</value></data>
   <data name="LyricsLoadFailed" xml:space="preserve"><value>Не удалось загрузить текст</value></data>
@@ -354,6 +353,8 @@
   <data name="LyricsEarlier05" xml:space="preserve"><value>Раньше на 0,5 с</value></data>
   <data name="LyricsLater05" xml:space="preserve"><value>Позже на 0,5 с</value></data>
   <data name="LyricsResetShiftFormat" xml:space="preserve"><value>Сбросить сдвиг ({0} с)</value></data>
+  <data name="LyricsOffset" xml:space="preserve"><value>Сдвиг текста</value></data>
+  <data name="LyricsOffsetFormat" xml:space="preserve"><value>Сдвиг текста · {0} с</value></data>
   <data name="ChooseLyricTrack" xml:space="preserve"><value>Выберите трек с текстом</value></data>
   <data name="NoLyricsFound" xml:space="preserve"><value>Тексты песен не найдены</value></data>
   <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Очередь</value></data>

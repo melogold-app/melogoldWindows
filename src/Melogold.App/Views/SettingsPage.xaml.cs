@@ -19,6 +19,7 @@ public sealed partial class SettingsPage : Page, IScrollToTop
     private readonly Library _library = App.Services.GetRequiredService<Library>();
     private readonly ImageCache _images = App.Services.GetRequiredService<ImageCache>();
     private readonly SongCache _songs = App.Services.GetRequiredService<SongCache>();
+    private readonly Melogold.Playback.PlayerEngine _engine = App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>();
     private bool _ready;
 
     /// <summary>«Максимальный размер», МБ — варианты Android (<c>CoilDiskCacheSize</c>, <c>ExoPlayerDiskCacheSize</c>); 0 — без ограничений.</summary>
@@ -47,13 +48,17 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         RegisterButton.Content = Loc.Get("AccountRegister");
         _account.StateChanged += _ => DispatcherQueue.TryEnqueue(ShowAccount);
         _sync.StatusChanged += _ => DispatcherQueue.TryEnqueue(ShowAccount);
+        // Поток приходит позже, чем открылась страница: «Сведения о потоке» включаются, как только он есть
+        _engine.StateChanged += () => DispatcherQueue.TryEnqueue(ShowStreamInfo);
         // «2 минуты назад» стареет, кэш растёт: при каждом показе — заново
         Loaded += (_, _) =>
         {
             ShowAccount();
+            ShowStreamInfo();
             _ = ShowStorageAsync();
         };
         ShowAccount();
+        ShowStreamInfo();
         _ready = true;
     }
 
@@ -90,9 +95,10 @@ public sealed partial class SettingsPage : Page, IScrollToTop
                 break;
         }
         ServerCard.Description = AccountTexts.Host(_account.ServerUrl);
-        // «Сведения о потоке» — когда что-то играет
-        StreamInfoCard.IsEnabled = App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>().Stream is not null;
     }
+
+    /// <summary>«Сведения о потоке» — когда что-то играет.</summary>
+    private void ShowStreamInfo() => StreamInfoCard.IsEnabled = _engine.Stream is not null;
 
     private void OnAccountClick(object sender, RoutedEventArgs e)
     {

@@ -5,6 +5,7 @@ using Melogold.Core.Domain;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 
 namespace Melogold.App.Controls;
@@ -57,8 +58,6 @@ public sealed partial class PlayerBar : UserControl
         App.Services.GetRequiredService<TrackActions>().OpenArtist(track, SubtitleLink);
     }
 
-    private async void OnStreamInfoClick(object sender, RoutedEventArgs e) => await StreamInfoDialog.ShowAsync(XamlRoot, ViewModel.Engine);
-
     /// <summary>«Очередь»: панель справа.</summary>
     private void OnQueueClick(object sender, RoutedEventArgs e) => App.Current?.Window?.ToggleQueue();
 
@@ -68,31 +67,54 @@ public sealed partial class PlayerBar : UserControl
     private void OnMiniClick(object sender, RoutedEventArgs e) => App.Current?.Window?.OpenMiniPlayer();
 
     /// <summary>
-    /// Таймер сна (§4): 15, 30, 45 или 60 минут и «До конца трека»; заведённый — с остатком и «Выключить таймер».
-    /// Пункты собираются при открытии меню синхронно: всё известно заранее, меню не дёргается.
+    /// «…» — одно меню на всё, как на Android (REWRITE §3.10.5), а не своё у текста: играющий трек теми же пунктами,
+    /// что в списках (кроме «Играть следующим», «В конец очереди» и ♡ — он рядом), группа «Текст», пока текст на
+    /// экране, таймер сна и сведения о потоке, в конце — «Не показывать этот трек». Собирается при нажатии синхронно:
+    /// всё известно заранее, меню не дёргается.
     /// </summary>
-    private void OnMoreOpening(object sender, object e)
+    private void OnMoreClick(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Track is not { } track) return;
+        var menu = new MenuFlyout { Placement = FlyoutPlacementMode.TopEdgeAlignedRight };
+        App.Services.GetRequiredService<TrackActions>().AddItems(menu.Items, track, new TrackContext.Player(), beforeRemovals: items =>
+        {
+            App.Current?.Window?.NowPlaying.AddLyricsItems(items);
+            items.Add(new MenuFlyoutSeparator());
+            items.Add(SleepMenu());
+            var info = new MenuFlyoutItem { Text = Loc.Get("MenuStreamInfo"), Icon = new FontIcon { Glyph = "" } };
+            info.Click += async (_, _) => await StreamInfoDialog.ShowAsync(XamlRoot, ViewModel.Engine);
+            items.Add(info);
+        }, anchor: MoreButton);
+        menu.ShowAt(MoreButton);
+    }
+
+    /// <summary>Таймер сна (§4): 15, 30, 45 или 60 минут и «До конца трека»; заведённый — с остатком и «Выключить таймер».</summary>
+    private MenuFlyoutSubItem SleepMenu()
     {
         var engine = ViewModel.Engine;
-        SleepMenu.Items.Clear();
-        SleepMenu.Text = engine.SleepAt is { } at
-            ? Loc.Format("SleepTimerLeftFormat", Loc.Plural("MinutesLeft", Math.Max(1, (long)Math.Ceiling((at - DateTimeOffset.Now).TotalMinutes))))
-            : engine.SleepAtTrackEnd ? Loc.Format("SleepTimerLeftFormat", Loc.Get("SleepUntilTrackEnd")) : Loc.Get("SleepTimer");
+        var menu = new MenuFlyoutSubItem
+        {
+            Icon = new FontIcon { Glyph = "" },
+            Text = engine.SleepAt is { } at
+                ? Loc.Format("SleepTimerLeftFormat", Loc.Plural("MinutesLeft", Math.Max(1, (long)Math.Ceiling((at - DateTimeOffset.Now).TotalMinutes))))
+                : engine.SleepAtTrackEnd ? Loc.Format("SleepTimerLeftFormat", Loc.Get("SleepUntilTrackEnd")) : Loc.Get("SleepTimer"),
+        };
         foreach (var minutes in new[] { 15, 30, 45, 60 })
         {
             var item = new MenuFlyoutItem { Text = Loc.Plural("Minutes", minutes) };
             item.Click += (_, _) => engine.SetSleepTimer(TimeSpan.FromMinutes(minutes));
-            SleepMenu.Items.Add(item);
+            menu.Items.Add(item);
         }
         var trackEnd = new MenuFlyoutItem { Text = Loc.Get("SleepUntilTrackEnd") };
         trackEnd.Click += (_, _) => engine.SetSleepAtTrackEnd();
-        SleepMenu.Items.Add(trackEnd);
+        menu.Items.Add(trackEnd);
         if (engine.SleepTimerSet)
         {
-            SleepMenu.Items.Add(new MenuFlyoutSeparator());
+            menu.Items.Add(new MenuFlyoutSeparator());
             var off = new MenuFlyoutItem { Text = Loc.Get("SleepTimerOff") };
             off.Click += (_, _) => engine.CancelSleepTimer();
-            SleepMenu.Items.Add(off);
+            menu.Items.Add(off);
         }
+        return menu;
     }
 }

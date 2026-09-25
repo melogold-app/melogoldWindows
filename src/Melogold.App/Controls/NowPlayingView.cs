@@ -43,8 +43,6 @@ public sealed partial class NowPlayingView : Grid
     private readonly TextBlock _plain = new() { FontSize = 22, LineHeight = 34, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, Margin = new Thickness(0, 24, 0, 48) };
     private readonly StackPanel _message = new() { Spacing = 12, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly TextBlock _source = new() { FontSize = 12, Margin = new Thickness(16, 8, 16, 0) };
-    private readonly Button _menuButton = new();
-    private readonly MenuFlyout _menu = new() { Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.BottomEdgeAlignedRight };
     private readonly Button _close = new();
     private readonly List<TextBlock> _secondaryTexts = [];
     private ArtworkPalette? _palette;
@@ -59,7 +57,7 @@ public sealed partial class NowPlayingView : Grid
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-        // Верх: «Свернуть», переключатель в узком окне, меню текста
+        // Верх: «Свернуть» и переключатель в узком окне. Меню текста — в «…» панели плеера, одно на всё
         var top = new Grid { Padding = new Thickness(16, 8, 16, 0) };
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -77,15 +75,9 @@ public sealed partial class NowPlayingView : Grid
             _showLyricsInNarrow = (string?)_mode.SelectedItem?.Tag == "lyrics";
             Arrange();
         };
-        SetColumn(_mode, 1);
+        // Посередине окна, а не колонки между кнопками
+        SetColumnSpan(_mode, 3);
         top.Children.Add(_mode);
-        _menuButton.Content = new FontIcon { Glyph = "", FontSize = 16 };
-        _menuButton.Style = (Style)Application.Current.Resources["PlayerIconButtonStyle"];
-        AutomationProperties.SetName(_menuButton, Loc.Get("LyricsMenu"));
-        ToolTipService.SetToolTip(_menuButton, Loc.Get("LyricsMenu"));
-        _menuButton.Flyout = _menu;
-        SetColumn(_menuButton, 2);
-        top.Children.Add(_menuButton);
         Children.Add(top);
 
         // Обложка, название, исполнитель
@@ -364,7 +356,6 @@ public sealed partial class NowPlayingView : Grid
             LyricsSources.Melogold => Loc.Get("LyricsSourceMelogold"),
             _ => "",
         };
-        BuildMenu();
     }
 
     private TextBlock Message(string text) => new()
@@ -384,30 +375,40 @@ public sealed partial class NowPlayingView : Grid
     }
 
     /// <summary>
-    /// Меню текста (§5.2): переключатель подписан по тому, что на экране; «Найти текст» — LRCLIB и файл; сдвиг
-    /// ±0,1 и ±0,5 с. Собирается заранее, при смене текста, — при открытии меню не дёргается.
+    /// Группа «Текст» меню «…» панели плеера (§5.2), пока текст на экране: переключатель подписан по тому, что на
+    /// экране; «Найти другой текст» — LRCLIB и файл; «Редактировать текст»; «Сдвиг текста» на ±0,1 и ±0,5 с.
+    /// Как на Android (REWRITE §3.10.5): одно меню у плеера, отдельного меню текста нет.
     /// </summary>
-    private void BuildMenu()
+    public void AddLyricsItems(IList<MenuFlyoutItemBase> items)
     {
-        _menu.Items.Clear();
+        if (!IsOpen || _editor is not null || _lyricsPanel.Visibility != Visibility.Visible || _lyrics.Track is null) return;
+        items.Add(new MenuFlyoutSeparator());
         var state = _lyrics.State;
         if (state is LyricsState.Synced)
-            _menu.Items.Add(Item(Loc.Get("LyricsShowPlain"), "", _lyrics.ToggleSynced));
+            items.Add(Item(Loc.Get("LyricsShowPlain"), "\uED1E", _lyrics.ToggleSynced));
         else if (state is LyricsState.Plain && _lyrics.HasSynced)
-            _menu.Items.Add(Item(Loc.Get("LyricsShowSynced"), "", _lyrics.ToggleSynced));
-        _menu.Items.Add(Item(Loc.Get("LyricsFindMenu"), "", () => _ = FindAsync()));
-        _menu.Items.Add(Item(Loc.Get("LyricsEdit"), "\uE70F", OpenEditor));
+            items.Add(Item(Loc.Get("LyricsShowSynced"), "\uED1E", _lyrics.ToggleSynced));
+        items.Add(Item(Loc.Get("LyricsFindMenu"), "\uE721", () => _ = FindAsync()));
+        items.Add(Item(Loc.Get("LyricsEdit"), "\uE70F", OpenEditor));
         if (state is LyricsState.Synced synced)
         {
-            _menu.Items.Add(new MenuFlyoutSeparator());
-            _menu.Items.Add(Item(Loc.Get("LyricsEarlier05"), null, () => _lyrics.Shift(500)));
-            _menu.Items.Add(Item(Loc.Get("LyricsEarlier01"), null, () => _lyrics.Shift(100)));
-            _menu.Items.Add(Item(Loc.Get("LyricsLater01"), null, () => _lyrics.Shift(-100)));
-            _menu.Items.Add(Item(Loc.Get("LyricsLater05"), null, () => _lyrics.Shift(-500)));
+            var shift = (synced.OffsetMs / 1000.0).ToString("+0.0;-0.0", System.Globalization.CultureInfo.CurrentCulture);
+            var offset = new MenuFlyoutSubItem
+            {
+                Text = synced.OffsetMs == 0 ? Loc.Get("LyricsOffset") : Loc.Format("LyricsOffsetFormat", shift),
+                Icon = new FontIcon { Glyph = "\uE916" },
+            };
+            offset.Items.Add(Item(Loc.Get("LyricsEarlier05"), null, () => _lyrics.Shift(500)));
+            offset.Items.Add(Item(Loc.Get("LyricsEarlier01"), null, () => _lyrics.Shift(100)));
+            offset.Items.Add(Item(Loc.Get("LyricsLater01"), null, () => _lyrics.Shift(-100)));
+            offset.Items.Add(Item(Loc.Get("LyricsLater05"), null, () => _lyrics.Shift(-500)));
             if (synced.OffsetMs != 0)
-                _menu.Items.Add(Item(Loc.Format("LyricsResetShiftFormat", (synced.OffsetMs / 1000.0).ToString("+0.0;-0.0", System.Globalization.CultureInfo.CurrentCulture)), null, _lyrics.ResetShift));
+            {
+                offset.Items.Add(new MenuFlyoutSeparator());
+                offset.Items.Add(Item(Loc.Format("LyricsResetShiftFormat", shift), null, _lyrics.ResetShift));
+            }
+            items.Add(offset);
         }
-        _menuButton.IsEnabled = _lyrics.Track is not null;
     }
 
     private static MenuFlyoutItem Item(string text, string? glyph, Action action)

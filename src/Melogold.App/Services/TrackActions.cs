@@ -35,6 +35,9 @@ public abstract record TrackContext
     }
 
     public sealed record Queue(long ItemId) : TrackContext;
+
+    /// <summary>Играющий трек, меню «…» панели плеера.</summary>
+    public sealed record Player : TrackContext;
 }
 
 /// <summary>
@@ -165,22 +168,43 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
     public MenuFlyout BuildMenu(Track track, TrackContext context, Action? onRemove = null)
     {
         var menu = new MenuFlyout();
+        AddItems(menu.Items, track, context, onRemove);
+        return menu;
+    }
+
+    /// <summary>
+    /// Пункты меню трека в порядке всех клиентов (GLOSSARY «Меню трека»): действия с треком, после черты — то, что его
+    /// убирает. У играющего трека (<see cref="TrackContext.Player"/>) нет «Играть следующим», «В конец очереди» и ♡:
+    /// ♡ рядом, в панели плеера. <paramref name="beforeRemovals"/> добавляет свои группы перед чертой — у плеера это
+    /// текст и таймер сна, как на Android (REWRITE §3.10.5). <paramref name="anchor"/> — где показать выбор исполнителя,
+    /// если он станет известен только после нажатия.
+    /// </summary>
+    public void AddItems(IList<MenuFlyoutItemBase> items, Track track, TrackContext context, Action? onRemove = null,
+        Action<IList<MenuFlyoutItemBase>>? beforeRemovals = null, FrameworkElement? anchor = null)
+    {
+        var player = context is TrackContext.Player;
 
         void Add(string key, string glyph, Action action)
         {
             var item = new MenuFlyoutItem { Text = Loc.Get(key), Icon = new FontIcon { Glyph = glyph } };
             item.Click += (_, _) => action();
-            menu.Items.Add(item);
+            items.Add(item);
         }
 
-        Add("MenuPlayNext", "", () => PlayNext(track));
-        Add("MenuAddToQueue", "", () => AddToQueue(track));
+        if (!player)
+        {
+            Add("MenuPlayNext", "", () => PlayNext(track));
+            Add("MenuAddToQueue", "", () => AddToQueue(track));
+        }
         Add("MenuAddToPlaylist", "", () => PlaylistPicker.Show(track, library, snackbar));
-        menu.Items.Add(new MenuFlyoutSeparator());
+        if (!player) items.Add(new MenuFlyoutSeparator());
         Add("MenuTrackRadio", "", () => engine.StartRadio(track));
-        var liked = library.IsLiked(track.VideoId);
-        Add(liked ? "MenuFavoriteRemove" : "MenuFavoriteAdd", liked ? "" : "", () => ToggleLike(track));
-        menu.Items.Add(new MenuFlyoutSeparator());
+        if (!player)
+        {
+            var liked = library.IsLiked(track.VideoId);
+            Add(liked ? "MenuFavoriteRemove" : "MenuFavoriteAdd", liked ? "" : "", () => ToggleLike(track));
+        }
+        items.Add(new MenuFlyoutSeparator());
         if (track.AlbumId is { } album) Add("MenuGoToAlbum", "", () => navigator.Open(typeof(AlbumPage), album));
         var artists = track.Artists.Where(a => a.Id is not null).ToList();
         var artistKey = track.IsVideo ? "MenuGoToChannel" : "MenuGoToArtist";
@@ -194,10 +218,13 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
                 item.Click += (_, _) => navigator.Open(typeof(ArtistPage), artist.Id);
                 sub.Items.Add(item);
             }
-            menu.Items.Add(sub);
+            items.Add(sub);
         }
+        // У трека без ссылок (из истории, из файла) исполнитель находится при нажатии — так же, как по имени в панели плеера
+        else if (anchor is not null && !string.IsNullOrWhiteSpace(track.ArtistsText)) Add(artistKey, "", () => OpenArtist(track, anchor));
         Add("MenuOtherVersions", "", () => OtherVersions(track));
         Add("MenuCopyLink", "", () => CopyLink(track));
+        beforeRemovals?.Invoke(items);
 
         var removeKey = context switch
         {
@@ -206,15 +233,17 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
             TrackContext.Queue => "MenuRemoveFromQueue",
             _ => null,
         };
-        menu.Items.Add(new MenuFlyoutSeparator());
+        items.Add(new MenuFlyoutSeparator());
         if (removeKey is not null && onRemove is not null) Add(removeKey, "", onRemove);
         var hidden = library.HiddenTracks().Contains(track.VideoId);
         Add(hidden ? "MenuShowAgain" : "MenuDontShow", "", () =>
         {
             library.SetTrackHidden(track, !hidden);
-            if (!hidden) snackbar.Show(Loc.Get("TrackHidden"), Loc.Get("Undo"), () => library.SetTrackHidden(track, false));
+            if (hidden) return;
+            // Играющий трек, который больше не показывать, пропускается, как на Android
+            if (player && engine.Current?.VideoId == track.VideoId) engine.Next();
+            snackbar.Show(Loc.Get("TrackHidden"), Loc.Get("Undo"), () => library.SetTrackHidden(track, false));
         });
-        return menu;
     }
 
     public void ShowMenu(Track track, TrackContext context, FrameworkElement target, Windows.Foundation.Point? at = null, Action? onRemove = null)

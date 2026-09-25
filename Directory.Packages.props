@@ -1,0 +1,17 @@
+<Project>
+  <ItemGroup>
+    <!-- Приложение -->
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.8.260921001" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" />
+    <PackageVersion Include="Velopack" Version="1.2.158" />
+    <PackageVersion Include="QRCoder" Version="1.8.0" />
+
+    <!-- Ядро -->
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+
+    <!-- Тесты -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+</Project>

@@ -9,3 +9,6 @@ Installer/Output/
 publish/
 *.log
 .DS_Store
+Releases/
+*.binlog
+.idea/

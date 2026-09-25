@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Всё, что не зависит от Windows: правила из спецификаций (векторы в spec/), клиент сервера Melogold,
+       InnerTube (YouTube Music и обычный YouTube), локальная база и синхронизация. Тестируется без UI. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Melogold.Core</RootNamespace>
+    <AssemblyName>Melogold.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Melogold.Core.Tests" />
+  </ItemGroup>
+</Project>

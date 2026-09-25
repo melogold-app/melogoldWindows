@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Melogold.App/Melogold.App.csproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="src/Melogold.Core/Melogold.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Melogold.Core.Tests/Melogold.Core.Tests.csproj" />
+  </Folder>
+</Solution>

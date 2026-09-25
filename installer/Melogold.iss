@@ -42,6 +42,9 @@ UninstallDisplayIcon={app}\{#AppExeName}
 UninstallDisplayName={#AppName}
 Compression=lzma2/max
 SolidCompression=yes
+; Сжатие в несколько потоков и отдельным процессом: тот же размер, установщики x64 и ARM64 собираются одновременно
+LZMAUseSeparateProcess=yes
+LZMANumBlockThreads=6
 WizardStyle=modern
 ; Установщик своей архитектуры: ARM64 — только на ARM, x64 — там, где нет ARM
 #if Arch == "arm64"

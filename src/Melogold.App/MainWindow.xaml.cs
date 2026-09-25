@@ -209,6 +209,9 @@ public sealed partial class MainWindow : Window
 
     private void FocusSearch() => SearchBox.Focus(FocusState.Keyboard);
 
+    /// <summary>«Найти музыку» из пустых экранов.</summary>
+    public void FocusSearchBox() => FocusSearch();
+
     private void OnSnackbarAction(object sender, RoutedEventArgs e) => Snackbar.InvokeAction();
 
     // ---------- Поиск (§5.4): до ввода — недавние запросы; при вводе — ссылка, «В библиотеке», подсказки ----------

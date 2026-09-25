@@ -45,7 +45,7 @@ public static class J
     }
 
     public static IEnumerable<JsonNode> Items(this JsonNode? node, params object[] path) =>
-        node.At(path) is JsonArray array ? array.Where(x => x is not null)! : [];
+        node.At(path) is JsonArray array ? array.OfType<JsonNode>() : [];
 
     /// <summary>Первое вложенное значение с ключом (обход в глубину).</summary>
     public static JsonNode? Find(this JsonNode? node, string key)

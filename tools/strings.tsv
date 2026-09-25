@@ -182,3 +182,53 @@ PlayAllForYou	Слушать всё	Play all
 SimilarArtists	Похожие исполнители	Similar artists
 SimilarAlbums	Похожие альбомы	Similar albums
 PlaylistsForYou	Плейлисты для вас	Playlists for you
+LibraryHeader	Библиотека	Library
+Favorites	Избранное	Favorites
+History	История	History
+HistoryHint	Недавние · Чаще всего	Recent · Most played
+ArtistsAndChannels	Исполнители и каналы	Artists & channels
+Tracks_one	{0} трек	{0} track
+Tracks_few	{0} трека	{0} tracks
+Tracks_many	{0} треков	{0} tracks
+Tracks_other	{0} трека	{0} tracks
+Albums_one	{0} альбом	{0} album
+Albums_few	{0} альбома	{0} albums
+Albums_many	{0} альбомов	{0} albums
+Albums_other	{0} альбома	{0} albums
+Artists_one	{0} исполнитель	{0} artist
+Artists_few	{0} исполнителя	{0} artists
+Artists_many	{0} исполнителей	{0} artists
+Artists_other	{0} исполнителя	{0} artists
+NoPlaylistsHint	Здесь появятся ваши плейлисты	Your playlists will appear here
+Filter	Фильтр	Filter
+Sort	Сортировка	Sort
+SortRecent	Дата добавления	Date added
+SortTitle	Название	Title
+SortArtist	Исполнитель	Artist
+FavoritesEmpty	Здесь будет ваша музыка	Your music will be here
+FavoritesEmptyHint	Нажимайте ♡ — треки появятся здесь	Tap ♡ and tracks will show up here
+FindMusic	Найти музыку	Find music
+ClearHistory	Очистить историю…	Clear history…
+HistoryRecent	Недавние	Recent
+HistoryMostPlayed	Чаще всего	Most played
+Days7	7 дней	7 days
+Days30	30 дней	30 days
+Year	Год	Year
+AllTime	Всё время	All time
+HistoryEmpty	Истории пока нет	No history yet
+HistoryEmptyHint	Послушайте что-нибудь — история появится здесь	Play something and your history will show up here
+RemovedFromHistoryFormat	Убрано из истории: «{0}»	Removed from history: “{0}”
+ClearHistoryTitle	Очистить историю?	Clear history?
+ClearHistoryText	Все прослушивания удалятся. Избранное и плейлисты не изменятся	All plays will be deleted. Favorites and playlists stay as they are
+Clear	Очистить	Clear
+PlaylistGone	Плейлист удалён	The playlist was deleted
+Rename	Переименовать	Rename
+DeletePlaylist	Удалить плейлист	Delete playlist
+PlaylistEmpty	В плейлисте пока пусто	This playlist is empty
+PlaylistEmptyHint	Добавляйте треки через «Добавить в плейлист…» в меню трека	Add tracks with “Add to playlist…” in the track menu
+RemovedFromPlaylistFormat	Убрано из плейлиста: «{0}»	Removed from playlist: “{0}”
+PlaylistDeletedFormat	Плейлист «{0}» удалён	Playlist “{0}” deleted
+AlbumsEmpty	Сохранённых альбомов пока нет	No saved albums yet
+AlbumsEmptyHint	Здесь появятся сохранённые альбомы	Saved albums will appear here
+ArtistsEmpty	Подписок пока нет	No subscriptions yet
+ArtistsEmptyHint	Здесь появятся исполнители и каналы, на которые вы подписались	Artists and channels you subscribe to will appear here

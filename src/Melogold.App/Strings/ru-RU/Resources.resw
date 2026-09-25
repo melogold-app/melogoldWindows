@@ -177,4 +177,54 @@
   <data name="SimilarArtists" xml:space="preserve"><value>Похожие исполнители</value></data>
   <data name="SimilarAlbums" xml:space="preserve"><value>Похожие альбомы</value></data>
   <data name="PlaylistsForYou" xml:space="preserve"><value>Плейлисты для вас</value></data>
+  <data name="LibraryHeader" xml:space="preserve"><value>Библиотека</value></data>
+  <data name="Favorites" xml:space="preserve"><value>Избранное</value></data>
+  <data name="History" xml:space="preserve"><value>История</value></data>
+  <data name="HistoryHint" xml:space="preserve"><value>Недавние · Чаще всего</value></data>
+  <data name="ArtistsAndChannels" xml:space="preserve"><value>Исполнители и каналы</value></data>
+  <data name="Tracks_one" xml:space="preserve"><value>{0} трек</value></data>
+  <data name="Tracks_few" xml:space="preserve"><value>{0} трека</value></data>
+  <data name="Tracks_many" xml:space="preserve"><value>{0} треков</value></data>
+  <data name="Tracks_other" xml:space="preserve"><value>{0} трека</value></data>
+  <data name="Albums_one" xml:space="preserve"><value>{0} альбом</value></data>
+  <data name="Albums_few" xml:space="preserve"><value>{0} альбома</value></data>
+  <data name="Albums_many" xml:space="preserve"><value>{0} альбомов</value></data>
+  <data name="Albums_other" xml:space="preserve"><value>{0} альбома</value></data>
+  <data name="Artists_one" xml:space="preserve"><value>{0} исполнитель</value></data>
+  <data name="Artists_few" xml:space="preserve"><value>{0} исполнителя</value></data>
+  <data name="Artists_many" xml:space="preserve"><value>{0} исполнителей</value></data>
+  <data name="Artists_other" xml:space="preserve"><value>{0} исполнителя</value></data>
+  <data name="NoPlaylistsHint" xml:space="preserve"><value>Здесь появятся ваши плейлисты</value></data>
+  <data name="Filter" xml:space="preserve"><value>Фильтр</value></data>
+  <data name="Sort" xml:space="preserve"><value>Сортировка</value></data>
+  <data name="SortRecent" xml:space="preserve"><value>Дата добавления</value></data>
+  <data name="SortTitle" xml:space="preserve"><value>Название</value></data>
+  <data name="SortArtist" xml:space="preserve"><value>Исполнитель</value></data>
+  <data name="FavoritesEmpty" xml:space="preserve"><value>Здесь будет ваша музыка</value></data>
+  <data name="FavoritesEmptyHint" xml:space="preserve"><value>Нажимайте ♡ — треки появятся здесь</value></data>
+  <data name="FindMusic" xml:space="preserve"><value>Найти музыку</value></data>
+  <data name="ClearHistory" xml:space="preserve"><value>Очистить историю…</value></data>
+  <data name="HistoryRecent" xml:space="preserve"><value>Недавние</value></data>
+  <data name="HistoryMostPlayed" xml:space="preserve"><value>Чаще всего</value></data>
+  <data name="Days7" xml:space="preserve"><value>7 дней</value></data>
+  <data name="Days30" xml:space="preserve"><value>30 дней</value></data>
+  <data name="Year" xml:space="preserve"><value>Год</value></data>
+  <data name="AllTime" xml:space="preserve"><value>Всё время</value></data>
+  <data name="HistoryEmpty" xml:space="preserve"><value>Истории пока нет</value></data>
+  <data name="HistoryEmptyHint" xml:space="preserve"><value>Послушайте что-нибудь — история появится здесь</value></data>
+  <data name="RemovedFromHistoryFormat" xml:space="preserve"><value>Убрано из истории: «{0}»</value></data>
+  <data name="ClearHistoryTitle" xml:space="preserve"><value>Очистить историю?</value></data>
+  <data name="ClearHistoryText" xml:space="preserve"><value>Все прослушивания удалятся. Избранное и плейлисты не изменятся</value></data>
+  <data name="Clear" xml:space="preserve"><value>Очистить</value></data>
+  <data name="PlaylistGone" xml:space="preserve"><value>Плейлист удалён</value></data>
+  <data name="Rename" xml:space="preserve"><value>Переименовать</value></data>
+  <data name="DeletePlaylist" xml:space="preserve"><value>Удалить плейлист</value></data>
+  <data name="PlaylistEmpty" xml:space="preserve"><value>В плейлисте пока пусто</value></data>
+  <data name="PlaylistEmptyHint" xml:space="preserve"><value>Добавляйте треки через «Добавить в плейлист…» в меню трека</value></data>
+  <data name="RemovedFromPlaylistFormat" xml:space="preserve"><value>Убрано из плейлиста: «{0}»</value></data>
+  <data name="PlaylistDeletedFormat" xml:space="preserve"><value>Плейлист «{0}» удалён</value></data>
+  <data name="AlbumsEmpty" xml:space="preserve"><value>Сохранённых альбомов пока нет</value></data>
+  <data name="AlbumsEmptyHint" xml:space="preserve"><value>Здесь появятся сохранённые альбомы</value></data>
+  <data name="ArtistsEmpty" xml:space="preserve"><value>Подписок пока нет</value></data>
+  <data name="ArtistsEmptyHint" xml:space="preserve"><value>Здесь появятся исполнители и каналы, на которые вы подписались</value></data>
 </root>

@@ -121,7 +121,7 @@ public sealed partial class MusicListView : ListView
         {
             case Track track:
                 var index = row.Owner.Tracks.IndexOf(track);
-                if (row.Owner.Context is TrackContext.Single || index < 0) Actions.Play([track], 0, new TrackContext.Single());
+                if (row.Owner.Context.PlaysSingle || index < 0) Actions.Play([track], 0, new TrackContext.Single());
                 else Actions.Play(row.Owner.Tracks, index, row.Owner.Context);
                 break;
             default:

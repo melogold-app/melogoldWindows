@@ -13,15 +13,25 @@ namespace Melogold.App.Services;
 /// <summary>Откуда показан трек: от этого зависят «Убрать из…» и правило очереди (REWRITE §2.3).</summary>
 public abstract record TrackContext
 {
-    /// <summary>Выдача поиска, «Недавние», ссылка: одиночный трек и радио.</summary>
-    public sealed record Single : TrackContext;
+    /// <summary>Тап играет трек и радио, а не весь список (REWRITE §2.3).</summary>
+    public virtual bool PlaysSingle => false;
 
-    /// <summary>Альбом, плейлист YouTube, Избранное, «Чаще всего»: играет весь список.</summary>
+    /// <summary>Выдача поиска, ссылка: одиночный трек и радио.</summary>
+    public sealed record Single : TrackContext
+    {
+        public override bool PlaysSingle => true;
+    }
+
+    /// <summary>Альбом, плейлист YouTube, Избранное: играет весь список.</summary>
     public sealed record List : TrackContext;
 
     public sealed record LocalPlaylist(long Id) : TrackContext;
 
-    public sealed record History : TrackContext;
+    /// <summary>История: «Недавние» — трек и радио, «Чаще всего» — список.</summary>
+    public sealed record History(bool PlaysList) : TrackContext
+    {
+        public override bool PlaysSingle => !PlaysList;
+    }
 
     public sealed record Queue(long ItemId) : TrackContext;
 }
@@ -43,7 +53,7 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
         if (index < 0 || index >= tracks.Count) return;
         var previous = engine.Queue.UserAddedCount >= 2 ? engine.Queue.Snapshot((long)engine.Position.TotalMilliseconds) : null;
         var wasPlaying = engine.IsPlaying;
-        if (context is TrackContext.Single) engine.PlaySingle(tracks[index]);
+        if (context.PlaysSingle) engine.PlaySingle(tracks[index]);
         else engine.PlayList(tracks, index);
         if (previous is not null)
         {

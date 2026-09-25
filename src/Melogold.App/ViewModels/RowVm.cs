@@ -70,9 +70,9 @@ public sealed partial class RowVm : ObservableObject
 
     public bool IsTrack => Item is Track;
 
-    public string Title { get; }
+    public string Title { get; } = "";
 
-    public string Subtitle { get; }
+    public string Subtitle { get; } = "";
 
     public string? ArtworkUrl { get; }
 

@@ -37,6 +37,11 @@ public sealed class CardVm
                 Subtitle = track.ArtistsText ?? "";
                 ImageUrl = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 320);
                 break;
+            case Views.LocalPlaylistItem local:
+                Title = local.Name;
+                Subtitle = Loc.Plural("Tracks", local.Count);
+                ImageUrl = Thumbnails.Sized(local.Cover, 320);
+                break;
             case MoodItem mood:
                 Title = mood.Title;
                 IsMood = true;

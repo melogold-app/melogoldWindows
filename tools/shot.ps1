@@ -3,6 +3,8 @@
   Запускает отладочную сборку с отдельной папкой данных, ждёт, снимает только окно Melogold (PrintWindow — даже если
   оно перекрыто другими окнами; чужие окна в снимок не попадают) и закрывает приложение.
     powershell -File tools/shot.ps1 -Out shot.png [-AppArgs "текст или ссылка"] [-Wait 6] [-Keep] [-Lang ru-RU]
+      [-Click "История|Чаще всего"]
+  -Click нажимает элементы по имени (UI Automation, начало имени) по очереди через «|», без мыши и фокуса.
 #>
 param(
     [string]$Out = "shot.png",
@@ -11,7 +13,8 @@ param(
     [switch]$Keep,
     [string]$Exe = "$PSScriptRoot\..\src\Melogold.App\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64\Melogold.exe",
     [string]$DataDir = "$env:TEMP\melogold-dev",
-    [string]$Lang = ""
+    [string]$Lang = "",
+    [string]$Click = ""
 )
 
 Add-Type -AssemblyName System.Drawing
@@ -40,6 +43,25 @@ Start-Sleep -Seconds $Wait
 $p.Refresh()
 if ($p.HasExited) { throw "Melogold exited with code $($p.ExitCode)" }
 $h = $p.MainWindowHandle
+if ($Click) {
+    Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($h)
+    foreach ($name in $Click.Split("|")) {
+        $target = $null
+        $until = (Get-Date).AddSeconds(10)
+        while (-not $target -and (Get-Date) -lt $until) {
+            $target = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
+                Where-Object { $_.Current.Name -like "$name*" -and -not $_.Current.IsOffscreen } | Select-Object -First 1
+            if (-not $target) { Start-Sleep -Milliseconds 300 }
+        }
+        if (-not $target) { throw "element '$name' not found" }
+        $pattern = $null
+        if ($target.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) { $pattern.Invoke() }
+        elseif ($target.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$pattern)) { $pattern.Select() }
+        else { throw "element '$name' can't be invoked" }
+        Start-Sleep -Seconds 3
+    }
+}
 [Win]::ShowWindow($h, 4) | Out-Null   # SW_SHOWNOACTIVATE: из свёрнутого, без перехвата фокуса
 Start-Sleep -Milliseconds 500
 $r = New-Object Win+RECT
@@ -50,7 +72,8 @@ $g = [System.Drawing.Graphics]::FromImage($bmp)
 $hdc = $g.GetHdc()
 [Win]::PrintWindow($h, $hdc, 2) | Out-Null  # PW_RENDERFULLCONTENT: окно целиком, с содержимым DirectComposition
 $g.ReleaseHdc($hdc)
-$bmp.Save((Join-Path (Get-Location) $Out), [System.Drawing.Imaging.ImageFormat]::Png)
+$target = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine((Get-Location).Path, $Out))  # $Out может быть абсолютным
+$bmp.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
 $g.Dispose(); $bmp.Dispose()
 if (-not $Keep) { $p.Kill(); $p.WaitForExit(5000) | Out-Null }
-"saved $Out ${w}x$hgt"
+"saved $target ${w}x$hgt"

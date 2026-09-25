@@ -457,4 +457,44 @@
   <data name="RestoreText" xml:space="preserve"><value>Существующие данные будут перезаписаны. Melogold перезапустится после восстановления базы данных.</value></data>
   <data name="RestoreAction" xml:space="preserve"><value>Восстановить</value></data>
   <data name="RestoreRestartManually" xml:space="preserve"><value>База будет восстановлена при следующем запуске Melogold</value></data>
+  <data name="UpdateLater" xml:space="preserve"><value>Позже</value></data>
+  <data name="UpdateToastText" xml:space="preserve"><value>Нажмите, чтобы посмотреть, что нового, и обновить</value></data>
+  <data name="LyricsEdit" xml:space="preserve"><value>Редактировать текст</value></data>
+  <data name="LyricsEditorTitle" xml:space="preserve"><value>Текст песни</value></data>
+  <data name="LyricsEditorSave" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="LyricsEditorUndo" xml:space="preserve"><value>Отменить</value></data>
+  <data name="LyricsEditorTabText" xml:space="preserve"><value>Текст</value></data>
+  <data name="LyricsEditorTabSync" xml:space="preserve"><value>Синхронизация</value></data>
+  <data name="LyricsEditorTabPreview" xml:space="preserve"><value>Просмотр</value></data>
+  <data name="LyricsEditorTextLabel" xml:space="preserve"><value>Текст песни</value></data>
+  <data name="LyricsEditorTextHint" xml:space="preserve"><value>Каждая строка песни — с новой строки. Подпевку пишите в скобках в конце строки.</value></data>
+  <data name="LyricsEditorNoLines" xml:space="preserve"><value>Сначала добавьте текст на вкладке «Текст»</value></data>
+  <data name="LyricsEditorLines" xml:space="preserve"><value>Строки</value></data>
+  <data name="LyricsEditorWords" xml:space="preserve"><value>Слова</value></data>
+  <data name="LyricsEditorMark" xml:space="preserve"><value>Отметить</value></data>
+  <data name="LyricsEditorEndLine" xml:space="preserve"><value>Конец строки</value></data>
+  <data name="LyricsEditorRewind" xml:space="preserve"><value>Назад на 3 с</value></data>
+  <data name="LyricsEditorNextFormat" xml:space="preserve"><value>Далее: {0}</value></data>
+  <data name="LyricsEditorAllMarked" xml:space="preserve"><value>Всё отмечено</value></data>
+  <data name="LyricsEditorSide" xml:space="preserve"><value>Сторона исполнителя</value></data>
+  <data name="LyricsEditorSideStart" xml:space="preserve"><value>Слева</value></data>
+  <data name="LyricsEditorSideEnd" xml:space="preserve"><value>Справа</value></data>
+  <data name="LyricsEditorEarlier" xml:space="preserve"><value>Раньше на 0,1 с</value></data>
+  <data name="LyricsEditorLater" xml:space="preserve"><value>Позже на 0,1 с</value></data>
+  <data name="LyricsEditorBacking" xml:space="preserve"><value>Подпевка…</value></data>
+  <data name="LyricsEditorBackingLabel" xml:space="preserve"><value>Подпевка</value></data>
+  <data name="LyricsEditorLineLanguage" xml:space="preserve"><value>Язык строки…</value></data>
+  <data name="LyricsEditorLanguage" xml:space="preserve"><value>Язык текста…</value></data>
+  <data name="LyricsEditorLanguageTitle" xml:space="preserve"><value>Язык</value></data>
+  <data name="LyricsEditorLanguageLabel" xml:space="preserve"><value>Код, например ru</value></data>
+  <data name="LyricsEditorClearTime" xml:space="preserve"><value>Сбросить время</value></data>
+  <data name="LyricsEditorExportTtml" xml:space="preserve"><value>Экспорт в TTML…</value></data>
+  <data name="LyricsEditorExportLrc" xml:space="preserve"><value>Экспорт в LRC…</value></data>
+  <data name="LyricsEditorExported" xml:space="preserve"><value>Файл сохранён</value></data>
+  <data name="LyricsEditorSaved" xml:space="preserve"><value>Текст сохранён</value></data>
+  <data name="LyricsEditorDiscardTitle" xml:space="preserve"><value>Закрыть без сохранения?</value></data>
+  <data name="LyricsEditorDiscard" xml:space="preserve"><value>Закрыть</value></data>
+  <data name="LyricsEditorNoTime" xml:space="preserve"><value>—</value></data>
+  <data name="LyricsEditorKeysHint" xml:space="preserve"><value>Enter — отметить · Shift+Enter — конец строки · пробел — пауза</value></data>
+  <data name="MoreOptions" xml:space="preserve"><value>Другие действия</value></data>
 </root>

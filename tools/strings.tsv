@@ -466,3 +466,43 @@ RestoreTitle	Восстановить базу данных?	Restore the databas
 RestoreText	Существующие данные будут перезаписаны. Melogold перезапустится после восстановления базы данных.	Existing data will be overwritten. Melogold will restart after restoring the database.
 RestoreAction	Восстановить	Restore
 RestoreRestartManually	База будет восстановлена при следующем запуске Melogold	The database will be restored the next time Melogold starts
+UpdateLater	Позже	Later
+UpdateToastText	Нажмите, чтобы посмотреть, что нового, и обновить	Click to see what’s new and update
+LyricsEdit	Редактировать текст	Edit lyrics
+LyricsEditorTitle	Текст песни	Lyrics
+LyricsEditorSave	Сохранить	Save
+LyricsEditorUndo	Отменить	Undo
+LyricsEditorTabText	Текст	Text
+LyricsEditorTabSync	Синхронизация	Sync
+LyricsEditorTabPreview	Просмотр	Preview
+LyricsEditorTextLabel	Текст песни	Lyrics
+LyricsEditorTextHint	Каждая строка песни — с новой строки. Подпевку пишите в скобках в конце строки.	One line of the song per line. Put backing vocals in parentheses at the end of a line.
+LyricsEditorNoLines	Сначала добавьте текст на вкладке «Текст»	Add the lyrics on the Text tab first
+LyricsEditorLines	Строки	Lines
+LyricsEditorWords	Слова	Words
+LyricsEditorMark	Отметить	Mark
+LyricsEditorEndLine	Конец строки	End line
+LyricsEditorRewind	Назад на 3 с	Back 3 s
+LyricsEditorNextFormat	Далее: {0}	Next: {0}
+LyricsEditorAllMarked	Всё отмечено	Everything is marked
+LyricsEditorSide	Сторона исполнителя	Singer side
+LyricsEditorSideStart	Слева	Left
+LyricsEditorSideEnd	Справа	Right
+LyricsEditorEarlier	Раньше на 0,1 с	0.1 s earlier
+LyricsEditorLater	Позже на 0,1 с	0.1 s later
+LyricsEditorBacking	Подпевка…	Backing vocals…
+LyricsEditorBackingLabel	Подпевка	Backing vocals
+LyricsEditorLineLanguage	Язык строки…	Line language…
+LyricsEditorLanguage	Язык текста…	Lyrics language…
+LyricsEditorLanguageTitle	Язык	Language
+LyricsEditorLanguageLabel	Код, например ru	Code, e.g. en
+LyricsEditorClearTime	Сбросить время	Clear time
+LyricsEditorExportTtml	Экспорт в TTML…	Export as TTML…
+LyricsEditorExportLrc	Экспорт в LRC…	Export as LRC…
+LyricsEditorExported	Файл сохранён	File saved
+LyricsEditorSaved	Текст сохранён	Lyrics saved
+LyricsEditorDiscardTitle	Закрыть без сохранения?	Close without saving?
+LyricsEditorDiscard	Закрыть	Close
+LyricsEditorNoTime	—	—
+LyricsEditorKeysHint	Enter — отметить · Shift+Enter — конец строки · пробел — пауза	Enter — mark · Shift+Enter — end line · Space — pause
+MoreOptions	Другие действия	More options

@@ -120,10 +120,13 @@ public sealed partial class MainWindow : Window
         Root.PreviewKeyUp += OnRootPreviewKeyUp;
         Root.PointerPressed += OnRootPointerPressed;
 
-        App.Services.GetRequiredService<UpdateService>().PropertyChanged += (_, e) =>
+        var updates = App.Services.GetRequiredService<UpdateService>();
+        updates.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(UpdateService.HasUpdate)) DispatcherQueue.TryEnqueue(ShowUpdateBadge);
         };
+        updates.Found += manifest => DispatcherQueue.TryEnqueue(() => AnnounceUpdate(manifest));
+        Activated += (_, e) => _active = e.WindowActivationState != WindowActivationState.Deactivated;
         // Свой текст не поместился на сервер (413): он останется только здесь
         App.Services.GetRequiredService<Melogold.Server.LibrarySync>().LyricsRejected += _ => DispatcherQueue.TryEnqueue(() => Snackbar.Show(Loc.Get("LyricsTooLarge")));
         // Таймер сна сработал: воспроизведение на паузе — сказать об этом
@@ -264,6 +267,7 @@ public sealed partial class MainWindow : Window
     private void GoBack()
     {
         if (_fullScreen) SetFullScreen(false);
+        else if (NowPlaying.EditorOpen) _ = NowPlaying.CloseEditorAsync();
         else if (NowPlaying.IsOpen) NowPlaying.Close();
         else _navigator.GoBack();
     }
@@ -379,11 +383,53 @@ public sealed partial class MainWindow : Window
         SearchBox.Margin = shift >= 0 ? new Thickness(2 * shift, 0, 0, 0) : new Thickness(0, 0, -2 * shift, 0);
     }
 
-    /// <summary>Есть обновление — <c>InfoBadge</c> с цифрой 1 на пункте «Настройки» (§3).</summary>
+    /// <summary>Есть обновление — значок «!» у пункта «Настройки» (§3), пока оно не установлено.</summary>
     private void ShowUpdateBadge()
     {
         if (Nav.SettingsItem is not NavigationViewItem item) return;
-        item.InfoBadge = App.Services.GetRequiredService<UpdateService>().HasUpdate ? new InfoBadge { Value = 1 } : null;
+        item.InfoBadge = App.Services.GetRequiredService<UpdateService>().HasUpdate
+            ? new InfoBadge { IconSource = new FontIconSource { Glyph = "", FontSize = 10 } }
+            : null;
+    }
+
+    private bool _active = true;
+
+    /// <summary>
+    /// Нашлась новая версия: окно «Вышла новая версия», если Melogold перед глазами, иначе уведомление Windows — нажатие
+    /// по нему открывает то же окно. О каждой версии — один раз; дальше остаётся значок «!» у «Настроек».
+    /// </summary>
+    private void AnnounceUpdate(UpdateManifest manifest)
+    {
+        var settings = App.Services.GetRequiredService<SettingsStore>();
+        if (settings.UpdateAnnouncedVersion == manifest.Version) return;
+        settings.UpdateAnnouncedVersion = manifest.Version;
+        var updates = App.Services.GetRequiredService<UpdateService>();
+        if (_active && AppWindow.IsVisible)
+        {
+            _ = UpdateDialog.ShowAsync(Content.XamlRoot, updates);
+            return;
+        }
+        try
+        {
+            var xml = new Windows.Data.Xml.Dom.XmlDocument();
+            xml.LoadXml("<toast><visual><binding template=\"ToastGeneric\"><text></text><text></text></binding></visual></toast>");
+            var texts = xml.GetElementsByTagName("text");
+            texts[0].AppendChild(xml.CreateTextNode(Loc.Format("UpdateAvailableTitle", manifest.Version)));
+            texts[1].AppendChild(xml.CreateTextNode(Loc.Get("UpdateToastText")));
+            var toast = new Windows.UI.Notifications.ToastNotification(xml);
+            toast.Activated += (_, _) => DispatcherQueue.TryEnqueue(() =>
+            {
+                AppWindow.Show();
+                Activate();
+                _ = UpdateDialog.ShowAsync(Content.XamlRoot, updates);
+            });
+            // Тот же AppUserModelID, что у ярлыка установщика: без ярлыка Windows уведомление не сохраняет
+            Windows.UI.Notifications.ToastNotificationManager.CreateToastNotifier("Melogold.Melogold").Show(toast);
+        }
+        catch (Exception e)
+        {
+            Log.Warn("Update notification not shown", e);
+        }
     }
 
     /// <summary>«Сейчас играет»: страница поверх окна (§5.2).</summary>

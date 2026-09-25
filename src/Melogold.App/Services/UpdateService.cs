@@ -88,6 +88,28 @@ public sealed partial class UpdateService : ObservableObject
 
     partial void OnAvailableChanged(UpdateManifest? value) => OnPropertyChanged(nameof(HasUpdate));
 
+    /// <summary>Проверка нашла версию новее этой: окно «Вышла новая версия» или уведомление Windows.</summary>
+    public event Action<UpdateManifest>? Found;
+
+    private DispatcherQueueTimer? _timer;
+
+    /// <summary>
+    /// Проверки без нажатия: при каждом запуске (через 5 с — окно и воспроизведение важнее) и потом раз в 6 часов, пока
+    /// Melogold открыт.
+    /// </summary>
+    public void Start()
+    {
+        if (State == UpdateState.Disabled || _timer is not null) return;
+        _timer = _dispatcher.CreateTimer();
+        _timer.Interval = TimeSpan.FromSeconds(5);
+        _timer.Tick += (timer, _) =>
+        {
+            timer.Interval = CheckInterval;
+            _ = CheckAsync(force: true);
+        };
+        _timer.Start();
+    }
+
     /// <summary>Проверка; без <paramref name="force"/> — не чаще раза в 6 часов.</summary>
     public async Task CheckAsync(bool force)
     {
@@ -105,6 +127,7 @@ public sealed partial class UpdateService : ObservableObject
             {
                 Available = newer ? manifest : null;
                 State = newer ? UpdateState.Available : UpdateState.UpToDate;
+                if (newer) Found?.Invoke(manifest!);
             });
         }
         catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound)

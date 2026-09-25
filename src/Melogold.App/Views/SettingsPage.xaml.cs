@@ -33,8 +33,8 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         ThemeBox.SelectedIndex = (int)_settings.Theme;
         PauseHistorySwitch.IsOn = _settings.PauseHistory;
         PauseSearchSwitch.IsOn = _settings.PauseSearchHistory;
-        UpdateButton.Content = Loc.Get("UpdateAction");
-        WhatsNewButton.Content = Loc.Get("UpdateWhatsNew");
+        UpdateButton.Content = VersionUpdateButton.Content = Loc.Get("UpdateAction");
+        WhatsNewButton.Content = VersionWhatsNewButton.Content = Loc.Get("UpdateWhatsNew");
         _updates.PropertyChanged += (_, _) => DispatcherQueue.TryEnqueue(ShowUpdate);
         ShowUpdate();
         // Скорость 0,5–2× — одна на все треки (§4)
@@ -144,8 +144,17 @@ public sealed partial class SettingsPage : Page, IScrollToTop
             _ when available is not null => Loc.Format("UpdateVersionNewFormat", AppInfo.Version, available.Version),
             _ => Loc.Format("VersionFormat", AppInfo.Version),
         };
-        CheckUpdatesButton.Visibility = state == UpdateState.Disabled ? Visibility.Collapsed : Visibility.Visible;
+        // Нашлась версия — в этой же карточке «Что нового» и «Обновить» вместо «Проверить обновления»
+        var busy = state is UpdateState.Downloading or UpdateState.Installing;
+        CheckUpdatesButton.Visibility = state == UpdateState.Disabled || available is not null ? Visibility.Collapsed : Visibility.Visible;
         CheckUpdatesButton.IsEnabled = state is not (UpdateState.Checking or UpdateState.Downloading or UpdateState.Installing);
+        CheckUpdatesButton.Content = state == UpdateState.Checking ? Loc.Get("UpdateChecking") : Loc.Get("CheckUpdates");
+        VersionUpdateButton.Visibility = available is not null ? Visibility.Visible : Visibility.Collapsed;
+        VersionUpdateButton.IsEnabled = !busy;
+        VersionWhatsNewButton.Visibility = available?.LocalizedNotes is { Length: > 0 } && !busy ? Visibility.Visible : Visibility.Collapsed;
+        VersionProgress.Visibility = state == UpdateState.Downloading ? Visibility.Visible : Visibility.Collapsed;
+        VersionProgress.Value = _updates.Progress;
+        if (available is not null && busy) VersionCard.Description = state == UpdateState.Downloading ? Loc.Format("UpdateDownloadingFormat", _updates.Progress) : Loc.Get("UpdateInstalling");
     }
 
     private async void OnCheckUpdates(object sender, RoutedEventArgs e) => await _updates.CheckAsync(force: true);

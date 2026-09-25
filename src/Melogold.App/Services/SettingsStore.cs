@@ -92,6 +92,10 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     [ObservableProperty]
     public partial long SongCacheMaxMb { get; set; } = 2048;
 
+    /// <summary>Версия, о которой уже сказали окном или уведомлением: о каждой — один раз, дальше значок «!».</summary>
+    [ObservableProperty]
+    public partial string? UpdateAnnouncedVersion { get; set; }
+
     /// <summary>Сортировки списков по ключу экрана.</summary>
     [ObservableProperty]
     public partial Dictionary<string, string> Sorts { get; set; } = [];
@@ -120,6 +124,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             PauseSearchHistory = data.PauseSearchHistory;
             Sorts = data.Sorts ?? [];
             ImageCacheMaxMb = Math.Max(1, data.ImageCacheMaxMb);
+            UpdateAnnouncedVersion = data.UpdateAnnouncedVersion;
             SongCacheMaxMb = Math.Max(0, data.SongCacheMaxMb);
         }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
@@ -142,7 +147,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
                 Theme = Theme, LastSection = LastSection, Volume = Volume, Muted = Muted, Speed = Speed, NormalizeVolume = NormalizeVolume,
                 Repeat = Repeat, Shuffle = Shuffle, Autoplay = Autoplay, PauseHistory = PauseHistory, ServerUrl = ServerUrl,
                 LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, PauseSearchHistory = PauseSearchHistory, Sorts = Sorts,
-                ImageCacheMaxMb = ImageCacheMaxMb, SongCacheMaxMb = SongCacheMaxMb,
+                ImageCacheMaxMb = ImageCacheMaxMb, SongCacheMaxMb = SongCacheMaxMb, UpdateAnnouncedVersion = UpdateAnnouncedVersion,
             };
             var temp = _path + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(data, Json));
@@ -178,5 +183,6 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         public Dictionary<string, string>? Sorts { get; set; }
         public long ImageCacheMaxMb { get; set; } = 128;
         public long SongCacheMaxMb { get; set; } = 2048;
+        public string? UpdateAnnouncedVersion { get; set; }
     }
 }

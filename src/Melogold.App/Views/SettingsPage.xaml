@@ -153,7 +153,13 @@
                 <toolkit:SettingsCard.HeaderIcon>
                     <ImageIcon Source="ms-appx:///Assets/melogold-256.png" />
                 </toolkit:SettingsCard.HeaderIcon>
-                <Button x:Name="CheckUpdatesButton" x:Uid="CheckUpdatesButton" Content="Check for updates" Click="OnCheckUpdates" />
+                <!-- Проверка и обновление — в одном месте: нашлась версия — здесь же «Обновить» -->
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <ProgressBar x:Name="VersionProgress" Width="160" VerticalAlignment="Center" Visibility="Collapsed" />
+                    <HyperlinkButton x:Name="VersionWhatsNewButton" Click="OnWhatsNew" Visibility="Collapsed" />
+                    <Button x:Name="CheckUpdatesButton" x:Uid="CheckUpdatesButton" Content="Check for updates" Click="OnCheckUpdates" />
+                    <Button x:Name="VersionUpdateButton" Style="{StaticResource AccentButtonStyle}" Click="OnUpdate" Visibility="Collapsed" />
+                </StackPanel>
             </toolkit:SettingsCard>
             <toolkit:SettingsCard x:Uid="SettingsDiagnostics" Header="Diagnostics" Description="App logs">
                 <toolkit:SettingsCard.HeaderIcon>

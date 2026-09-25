@@ -130,9 +130,8 @@ public partial class App : Application
             Services.GetRequiredService<LibrarySync>().Flush(TimeSpan.FromSeconds(3));
         };
         Services.GetRequiredService<LibrarySync>().Start();
-        // Обновления: при старте не чаще раза в 6 часов, чуть позже — окно и воспроизведение важнее
-        var updates = Services.GetRequiredService<UpdateService>();
-        _ = Task.Delay(TimeSpan.FromSeconds(5)).ContinueWith(_ => updates.CheckAsync(force: false), TaskScheduler.FromCurrentSynchronizationContext());
+        // Обновления: при каждом запуске и раз в 6 часов
+        Services.GetRequiredService<UpdateService>().Start();
         if (_args.Length > 0) Services.GetRequiredService<LinkRouter>().OpenArguments(_args);
     }
 

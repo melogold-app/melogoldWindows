@@ -180,6 +180,12 @@ public sealed partial class NowPlayingView : Grid
     public void Close()
     {
         if (!IsOpen) return;
+        // Открыт редактор текста: сначала он — с вопросом, если есть несохранённое
+        if (_editor is not null)
+        {
+            _ = _editor.CloseAsync();
+            return;
+        }
         _lyrics.Active = false;
         _synced.Stop();
         Animate(opening: false);
@@ -288,12 +294,16 @@ public sealed partial class NowPlayingView : Grid
         double side;
         if (wide)
         {
-            // Обложка и текст — один блок посередине окна: обложка до 480 и не выше окна, текст до 760, остальное — поля
-            side = Math.Max(120, Math.Min(Math.Min(480, ActualHeight - 220), (available - _body.ColumnSpacing) * 0.42));
-            var lyrics = Math.Min(760, available - side - _body.ColumnSpacing);
-            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(side) });
-            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(lyrics) });
+            // Две равные колонки по обе стороны от середины окна (там же Play в панели плеера): обложка прижата к середине
+            // слева, текст начинается сразу справа от неё; колонка не шире 760, обложка до 480 и не выше окна
+            var half = Math.Min(760, (available - _body.ColumnSpacing) / 2);
+            side = Math.Max(120, Math.Min(Math.Min(480, ActualHeight - 220), half));
+            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(half) });
+            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(half) });
             _body.HorizontalAlignment = HorizontalAlignment.Center;
+            _artPanel.HorizontalAlignment = HorizontalAlignment.Right;
+            // Ширина — ровно обложка: длинное название переносится под ней и не отодвигает её от середины
+            _artPanel.Width = side;
             SetColumn(_lyricsPanel, 1);
             _artPanel.Visibility = Visibility.Visible;
             _lyricsPanel.Visibility = Visibility.Visible;
@@ -302,6 +312,8 @@ public sealed partial class NowPlayingView : Grid
         {
             side = Math.Max(120, Math.Min(Math.Min(available, 480), ActualHeight - 220));
             _body.HorizontalAlignment = HorizontalAlignment.Stretch;
+            _artPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            _artPanel.Width = double.NaN;
             SetColumn(_lyricsPanel, 0);
             _artPanel.Visibility = _showLyricsInNarrow ? Visibility.Collapsed : Visibility.Visible;
             _lyricsPanel.Visibility = _showLyricsInNarrow ? Visibility.Visible : Visibility.Collapsed;
@@ -335,6 +347,7 @@ public sealed partial class NowPlayingView : Grid
             case LyricsState.NotFound:
                 _message.Children.Add(Message(Loc.Get("LyricsUnavailable")));
                 _message.Children.Add(MessageButton(Loc.Get("LyricsFind"), () => _ = FindAsync()));
+                _message.Children.Add(MessageButton(Loc.Get("LyricsEdit"), OpenEditor));
                 break;
             case LyricsState.Failed:
                 _message.Children.Add(Message(Loc.Get("LyricsLoadFailed")));
@@ -383,6 +396,7 @@ public sealed partial class NowPlayingView : Grid
         else if (state is LyricsState.Plain && _lyrics.HasSynced)
             _menu.Items.Add(Item(Loc.Get("LyricsShowSynced"), "", _lyrics.ToggleSynced));
         _menu.Items.Add(Item(Loc.Get("LyricsFindMenu"), "", () => _ = FindAsync()));
+        _menu.Items.Add(Item(Loc.Get("LyricsEdit"), "\uE70F", OpenEditor));
         if (state is LyricsState.Synced synced)
         {
             _menu.Items.Add(new MenuFlyoutSeparator());
@@ -403,6 +417,31 @@ public sealed partial class NowPlayingView : Grid
         item.Click += (_, _) => action();
         return item;
     }
+
+    private LyricsEditorView? _editor;
+
+    /// <summary>Открыт редактор текста: «Назад» и Esc закрывают сначала его.</summary>
+    public bool EditorOpen => _editor is not null;
+
+    /// <summary>Редактор текста поверх «Сейчас играет»: панель плеера под ним остаётся.</summary>
+    private void OpenEditor()
+    {
+        if (_lyrics.Track is not { } track || _editor is not null) return;
+        _editor = new LyricsEditorView(track, _lyrics.Stored, _lyrics.InitialDraft());
+        SetRowSpan(_editor, 2);
+        _editor.Closed += CloseEditor;
+        Children.Add(_editor);
+    }
+
+    private void CloseEditor()
+    {
+        if (_editor is null) return;
+        Children.Remove(_editor);
+        _editor = null;
+    }
+
+    /// <summary>«Назад» в редакторе: закрыть его, с несохранёнными правками — спросив.</summary>
+    public Task CloseEditorAsync() => _editor?.CloseAsync() ?? Task.CompletedTask;
 
     private async Task FindAsync()
     {

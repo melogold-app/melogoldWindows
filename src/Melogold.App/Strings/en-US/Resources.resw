@@ -457,4 +457,44 @@
   <data name="RestoreText" xml:space="preserve"><value>Existing data will be overwritten. Melogold will restart after restoring the database.</value></data>
   <data name="RestoreAction" xml:space="preserve"><value>Restore</value></data>
   <data name="RestoreRestartManually" xml:space="preserve"><value>The database will be restored the next time Melogold starts</value></data>
+  <data name="UpdateLater" xml:space="preserve"><value>Later</value></data>
+  <data name="UpdateToastText" xml:space="preserve"><value>Click to see what’s new and update</value></data>
+  <data name="LyricsEdit" xml:space="preserve"><value>Edit lyrics</value></data>
+  <data name="LyricsEditorTitle" xml:space="preserve"><value>Lyrics</value></data>
+  <data name="LyricsEditorSave" xml:space="preserve"><value>Save</value></data>
+  <data name="LyricsEditorUndo" xml:space="preserve"><value>Undo</value></data>
+  <data name="LyricsEditorTabText" xml:space="preserve"><value>Text</value></data>
+  <data name="LyricsEditorTabSync" xml:space="preserve"><value>Sync</value></data>
+  <data name="LyricsEditorTabPreview" xml:space="preserve"><value>Preview</value></data>
+  <data name="LyricsEditorTextLabel" xml:space="preserve"><value>Lyrics</value></data>
+  <data name="LyricsEditorTextHint" xml:space="preserve"><value>One line of the song per line. Put backing vocals in parentheses at the end of a line.</value></data>
+  <data name="LyricsEditorNoLines" xml:space="preserve"><value>Add the lyrics on the Text tab first</value></data>
+  <data name="LyricsEditorLines" xml:space="preserve"><value>Lines</value></data>
+  <data name="LyricsEditorWords" xml:space="preserve"><value>Words</value></data>
+  <data name="LyricsEditorMark" xml:space="preserve"><value>Mark</value></data>
+  <data name="LyricsEditorEndLine" xml:space="preserve"><value>End line</value></data>
+  <data name="LyricsEditorRewind" xml:space="preserve"><value>Back 3 s</value></data>
+  <data name="LyricsEditorNextFormat" xml:space="preserve"><value>Next: {0}</value></data>
+  <data name="LyricsEditorAllMarked" xml:space="preserve"><value>Everything is marked</value></data>
+  <data name="LyricsEditorSide" xml:space="preserve"><value>Singer side</value></data>
+  <data name="LyricsEditorSideStart" xml:space="preserve"><value>Left</value></data>
+  <data name="LyricsEditorSideEnd" xml:space="preserve"><value>Right</value></data>
+  <data name="LyricsEditorEarlier" xml:space="preserve"><value>0.1 s earlier</value></data>
+  <data name="LyricsEditorLater" xml:space="preserve"><value>0.1 s later</value></data>
+  <data name="LyricsEditorBacking" xml:space="preserve"><value>Backing vocals…</value></data>
+  <data name="LyricsEditorBackingLabel" xml:space="preserve"><value>Backing vocals</value></data>
+  <data name="LyricsEditorLineLanguage" xml:space="preserve"><value>Line language…</value></data>
+  <data name="LyricsEditorLanguage" xml:space="preserve"><value>Lyrics language…</value></data>
+  <data name="LyricsEditorLanguageTitle" xml:space="preserve"><value>Language</value></data>
+  <data name="LyricsEditorLanguageLabel" xml:space="preserve"><value>Code, e.g. en</value></data>
+  <data name="LyricsEditorClearTime" xml:space="preserve"><value>Clear time</value></data>
+  <data name="LyricsEditorExportTtml" xml:space="preserve"><value>Export as TTML…</value></data>
+  <data name="LyricsEditorExportLrc" xml:space="preserve"><value>Export as LRC…</value></data>
+  <data name="LyricsEditorExported" xml:space="preserve"><value>File saved</value></data>
+  <data name="LyricsEditorSaved" xml:space="preserve"><value>Lyrics saved</value></data>
+  <data name="LyricsEditorDiscardTitle" xml:space="preserve"><value>Close without saving?</value></data>
+  <data name="LyricsEditorDiscard" xml:space="preserve"><value>Close</value></data>
+  <data name="LyricsEditorNoTime" xml:space="preserve"><value>—</value></data>
+  <data name="LyricsEditorKeysHint" xml:space="preserve"><value>Enter — mark · Shift+Enter — end line · Space — pause</value></data>
+  <data name="MoreOptions" xml:space="preserve"><value>More options</value></data>
 </root>

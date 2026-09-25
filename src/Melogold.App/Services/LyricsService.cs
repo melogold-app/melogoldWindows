@@ -208,6 +208,41 @@ public sealed class LyricsService
         return true;
     }
 
+    /// <summary>
+    /// Черновик для редактора (Android <c>initialDraft</c>): синхронный текст во времени трека, иначе обычный, иначе пусто.
+    /// </summary>
+    public LyricsDraft InitialDraft()
+    {
+        if (Stored?.Synced is { Length: > 0 } text && LyricsFormats.ParseSynced(text) is { } synced)
+            // Наш сдвиг «раньше» положителен, а редактор работает во времени трека
+            return LyricsDraft.From(synced).ShiftedBy(-Stored.OffsetMs);
+        if (Stored?.Plain is { Length: > 0 } plain) return LyricsDraft.FromText(plain, Stored.Language);
+        return new LyricsDraft([], Language: Stored?.Language);
+    }
+
+    /// <summary>
+    /// Текст из редактора — свой (Android <c>saveLyricsDraft</c>): синхронный — TTML, если отмечена хоть одна строка,
+    /// обычный рядом; чего в черновике нет, остаётся как было. Через 2 с свой текст уходит на сервер.
+    /// </summary>
+    public void SaveDraft(string videoId, StoredLyrics? current, LyricsDraft draft)
+    {
+        var synced = draft.ToSyncedLyrics() is { } lyrics ? TtmlFormat.Write(lyrics) : null;
+        var plain = draft.ToText() is { } text && !string.IsNullOrWhiteSpace(text) ? text : null;
+        var saved = new StoredLyrics(
+            synced ?? current?.Synced,
+            plain ?? current?.Plain,
+            synced is not null ? LyricsSources.User : current?.SyncedSource,
+            plain is not null ? LyricsSources.User : current?.PlainSource,
+            // Редактор пишет время трека: сдвига больше нет
+            synced is not null ? 0 : current?.OffsetMs ?? 0,
+            draft.Language ?? current?.Language);
+        _ = Task.Run(() => _library.SaveLyrics(videoId, saved));
+        if (synced is not null) _settings.PreferSyncedLyrics = true;
+        if (Track?.VideoId != videoId) return;
+        Stored = saved;
+        Set(Content(saved));
+    }
+
     private void Update(StoredLyrics lyrics)
     {
         if (Track is not { } track) return;

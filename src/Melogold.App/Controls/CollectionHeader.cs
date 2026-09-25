@@ -13,7 +13,7 @@ namespace Melogold.App.Controls;
 /// </summary>
 public sealed partial class CollectionHeader : Grid
 {
-    private readonly Image _image = new() { Stretch = Stretch.UniformToFill };
+    private readonly Image _image = new() { Stretch = Stretch.UniformToFill, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
     private readonly Border _artwork;
     private readonly TextBlock _title = new() { Style = (Style)Application.Current.Resources["TitleTextBlockStyle"], TextWrapping = TextWrapping.WrapWholeWords, MaxLines = 2, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock _subtitle = new() { Style = (Style)Application.Current.Resources["BodyTextBlockStyle"], Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"], TextWrapping = TextWrapping.WrapWholeWords };

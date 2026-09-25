@@ -13,7 +13,7 @@
             CornerRadius="{x:Bind local:MediaCard.Corner(Card.IsRound), Mode=OneWay}"
             Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
             <Grid>
-                <Image Source="{x:Bind app:Images.Card(Card.ImageUrl), Mode=OneWay}" Stretch="UniformToFill" />
+                <Image Source="{x:Bind app:Images.Card(Card.ImageUrl), Mode=OneWay}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <!-- Плитка настроения: цветная полоска слева и название -->
                 <Border
                     Width="6"

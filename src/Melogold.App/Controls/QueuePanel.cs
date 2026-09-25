@@ -280,7 +280,13 @@ public sealed partial class QueueRow : Grid
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var artwork = new Grid { Width = 40, Height = 40, CornerRadius = new CornerRadius(4) };
-        artwork.Children.Add(new Image { Source = Images.Row(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId)), Stretch = Stretch.UniformToFill });
+        artwork.Children.Add(new Image
+        {
+            Source = Images.Row(Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 120)),
+            Stretch = Stretch.UniformToFill,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
         if (entry.IsCurrent)
         {
             // Столбики «играет» поверх обложки текущего трека

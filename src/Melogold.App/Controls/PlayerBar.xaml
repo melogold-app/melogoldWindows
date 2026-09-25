@@ -38,7 +38,7 @@
                 Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                 BorderThickness="0"
                 Click="OnArtworkClick">
-                <Image Source="{x:Bind app:Images.Player(ViewModel.ArtworkUrl), Mode=OneWay}" Stretch="UniformToFill" />
+                <Image Source="{x:Bind app:Images.Player(ViewModel.ArtworkUrl), Mode=OneWay}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Button>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                 <HyperlinkButton

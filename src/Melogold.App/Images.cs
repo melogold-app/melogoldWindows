@@ -1,4 +1,5 @@
 using Melogold.App.Services;
+using Melogold.Core.Music;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
@@ -20,7 +21,12 @@ public static class Images
     {
         if (string.IsNullOrEmpty(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri)) return null;
         var image = new BitmapImage();
-        if (decodeWidth > 0) image.DecodePixelWidth = decodeWidth;
+        if (decodeWidth > 0)
+        {
+            // Кадр видео 16:9 в квадрате режется по бокам: чётким должен быть короткий край — высота
+            if (Thumbnails.IsWide(url)) image.DecodePixelHeight = decodeWidth;
+            else image.DecodePixelWidth = decodeWidth;
+        }
         if (Cache is { } cache && uri.Scheme is "http" or "https") _ = LoadAsync(image, uri, cache);
         else image.UriSource = uri;
         return image;

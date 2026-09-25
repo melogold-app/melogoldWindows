@@ -23,7 +23,8 @@
                 x:Name="ArtworkBorder"
                 CornerRadius="{x:Bind local:MusicRow.Corner(Item.IsRound), Mode=OneWay}"
                 Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                <Image Source="{x:Bind app:Images.Row(Item.ArtworkUrl), Mode=OneWay}" Stretch="UniformToFill" />
+                <!-- По центру: кадр видео 16:9 режется с обеих сторон, а не только справа -->
+                <Image Source="{x:Bind app:Images.Row(Item.ArtworkUrl), Mode=OneWay}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <!-- Столбики «играет» на обложке текущего трека (§4): создаются только у него -->
             <Grid

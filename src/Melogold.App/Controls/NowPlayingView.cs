@@ -34,7 +34,7 @@ public sealed partial class NowPlayingView : Grid
     private readonly Grid _artPanel = new() { RowSpacing = 16, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 480 };
     private readonly Grid _lyricsPanel = new();
     private readonly Border _artwork = new() { CornerRadius = new CornerRadius(8), HorizontalAlignment = HorizontalAlignment.Center };
-    private readonly Image _artworkImage = new() { Stretch = Stretch.UniformToFill };
+    private readonly Image _artworkImage = new() { Stretch = Stretch.UniformToFill, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock _title = new() { FontSize = 28, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, MaxLines = 2, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock _artist = new() { FontSize = 18, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly SelectorBar _mode = new() { HorizontalAlignment = HorizontalAlignment.Center };
@@ -48,6 +48,8 @@ public sealed partial class NowPlayingView : Grid
     private ArtworkPalette? _palette;
     private string? _paletteKey;
     private bool _showLyricsInNarrow = true;
+    /// <summary>Обложка — кадр видео 16:9: показывается целиком, прямоугольником, а не квадратным куском.</summary>
+    private bool _wideArtwork;
     private CancellationTokenSource? _paletteLoad;
 
     public NowPlayingView()
@@ -235,7 +237,13 @@ public sealed partial class NowPlayingView : Grid
         if (_engine.Current is not { } track) return;
         _title.Text = track.Title;
         _artist.Text = track.ArtistsText ?? "";
-        _artworkImage.Source = Images.From(Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 720));
+        var artwork = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 720);
+        _artworkImage.Source = Images.From(artwork);
+        if (_wideArtwork != Thumbnails.IsWide(artwork))
+        {
+            _wideArtwork = !_wideArtwork;
+            Arrange();
+        }
         AutomationProperties.SetName(this, $"{Loc.Get("NowPlaying")}: {track.Title}");
         _ = LoadPaletteAsync(force: false);
     }
@@ -310,7 +318,8 @@ public sealed partial class NowPlayingView : Grid
             _artPanel.Visibility = _showLyricsInNarrow ? Visibility.Collapsed : Visibility.Visible;
             _lyricsPanel.Visibility = _showLyricsInNarrow ? Visibility.Visible : Visibility.Collapsed;
         }
-        _artwork.Width = _artwork.Height = side;
+        _artwork.Width = side;
+        _artwork.Height = _wideArtwork ? Math.Round(side * 9 / 16) : side;
     }
 
     private void ShowLyrics()

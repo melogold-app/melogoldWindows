@@ -20,7 +20,7 @@ namespace Melogold.App;
 public sealed partial class MiniPlayerWindow : Window
 {
     private readonly PlayerViewModel _player = App.Services.GetRequiredService<PlayerViewModel>();
-    private readonly Image _artwork = new() { Stretch = Stretch.UniformToFill };
+    private readonly Image _artwork = new() { Stretch = Stretch.UniformToFill, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock _title = new() { FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock _subtitle = new() { Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"], TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly FontIcon _playGlyph = new() { FontSize = 16 };

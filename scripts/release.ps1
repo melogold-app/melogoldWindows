@@ -92,7 +92,11 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
 }
 
 # Без gh: API GitHub, токен — из Git Credential Manager (тот же, которым делается push)
-$credential = "protocol=https`nhost=github.com`n`n" | git credential fill
+# Запрос — из файла: конвейер Windows PowerShell портит ввод, и git отвечает «missing protocol field»
+$request = New-TemporaryFile
+[System.IO.File]::WriteAllText($request, "protocol=https`nhost=github.com`n`n", (New-Object System.Text.UTF8Encoding $false))
+$credential = cmd /c "git credential fill < `"$request`""
+Remove-Item $request
 $token = ($credential | Where-Object { $_ -like "password=*" }) -replace "^password=", ""
 if (-not $token) { throw "No GitHub token: install gh or sign in to Git Credential Manager" }
 $headers = @{ Authorization = "Bearer $token"; Accept = "application/vnd.github+json"; "X-GitHub-Api-Version" = "2022-11-28" }

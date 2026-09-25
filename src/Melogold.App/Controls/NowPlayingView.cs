@@ -357,9 +357,9 @@ public sealed partial class NowPlayingView : Grid
         _menu.Items.Clear();
         var state = _lyrics.State;
         if (state is LyricsState.Synced)
-            _menu.Items.Add(Item(Loc.Get("LyricsShowPlain"), "", _lyrics.ToggleSynced));
+            _menu.Items.Add(Item(Loc.Get("LyricsShowPlain"), "", _lyrics.ToggleSynced));
         else if (state is LyricsState.Plain && _lyrics.HasSynced)
-            _menu.Items.Add(Item(Loc.Get("LyricsShowSynced"), "", _lyrics.ToggleSynced));
+            _menu.Items.Add(Item(Loc.Get("LyricsShowSynced"), "", _lyrics.ToggleSynced));
         _menu.Items.Add(Item(Loc.Get("LyricsFindMenu"), "", () => _ = FindAsync()));
         if (state is LyricsState.Synced synced)
         {

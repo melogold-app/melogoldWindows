@@ -173,7 +173,7 @@
                 Style="{StaticResource PlayerIconToggleStyle}"
                 IsEnabled="{x:Bind ViewModel.HasTrack, Mode=OneWay}"
                 Click="OnLyricsClick">
-                <FontIcon Glyph="&#xE720;" />
+                <FontIcon Glyph="&#xED1E;" />
             </ToggleButton>
             <ToggleButton
                 x:Name="QueueButton"

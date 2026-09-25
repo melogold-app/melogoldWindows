@@ -8,7 +8,8 @@
       [-Steps "История|Чаще всего|@history.png|Логин=value"]
   -Steps — шаги через «|» по UI Automation, без мыши и фокуса:
     «имя» нажимает элемент (точное имя, иначе начало имени), «имя=текст» вводит текст в поле,
-    «@файл.png» снимает окно посреди сценария, «@mini:файл.png» — мини-плеер. В конце окно снимается в -Out.
+    «@файл.png» снимает окно посреди сценария, «@mini:файл.png» — мини-плеер, «!max» и «!restore» разворачивают и
+    восстанавливают окно, «!wait:5» ждёт 5 с. В конце окно снимается в -Out.
 #>
 param(
     [string]$Out = "shot.png",
@@ -62,12 +63,22 @@ function Capture([IntPtr]$h, [string]$path) {
     "saved $target ${w}x$hgt"
 }
 
+function Test-Actionable($e) {
+    foreach ($p in @("IsInvokePatternAvailableProperty", "IsTogglePatternAvailableProperty", "IsSelectionItemPatternAvailableProperty", "IsExpandCollapsePatternAvailableProperty", "IsValuePatternAvailableProperty")) {
+        if ($e.GetCurrentPropertyValue([System.Windows.Automation.AutomationElement]::$p)) { return $true }
+    }
+    return $false
+}
+
 function Find-Element($root, [string]$name) {
     $until = (Get-Date).AddSeconds(15)
     while ((Get-Date) -lt $until) {
         $all = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
             Where-Object { -not $_.Current.IsOffscreen }
-        $found = $all | Where-Object { $_.Current.Name -eq $name } | Select-Object -First 1
+        # Среди одноимённых — сначала то, что нажимается (кнопка «Текст», а не подпись с тем же словом)
+        $exact = @($all | Where-Object { $_.Current.Name -eq $name })
+        $found = $exact | Where-Object { Test-Actionable $_ } | Select-Object -First 1
+        if (-not $found) { $found = $exact | Select-Object -First 1 }
         if (-not $found) { $found = $all | Where-Object { $_.Current.Name -like "$name*" } | Select-Object -First 1 }
         if ($found) { return $found }
         Start-Sleep -Milliseconds 300
@@ -94,6 +105,9 @@ if ($Steps) {
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($h)
     foreach ($step in $Steps.Split("|")) {
         if ($step.StartsWith("@")) { Capture $h $step.Substring(1); continue }
+        if ($step.StartsWith("!wait:")) { Start-Sleep -Seconds ([int]$step.Substring(6)); continue }
+        if ($step -eq "!max") { [Win]::ShowWindow($h, 3) | Out-Null; Start-Sleep -Seconds 2; continue }   # SW_MAXIMIZE
+        if ($step -eq "!restore") { [Win]::ShowWindow($h, 9) | Out-Null; Start-Sleep -Seconds 2; continue }   # SW_RESTORE
         $pattern = $null
         if ($step.Contains("=")) {
             $name, $value = $step.Split("=", 2)

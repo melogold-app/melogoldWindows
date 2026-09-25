@@ -34,8 +34,12 @@ VersionFormat	Версия {0}	Version {0}
 SettingsDiagnostics.Header	Диагностика	Diagnostics
 SettingsDiagnostics.Description	Журналы приложения: пригодятся, если что-то не работает	App logs, useful if something doesn't work
 OpenLogs.Content	Открыть папку	Open folder
-SettingsSource.Header	Исходный код	Source code
-SettingsSource.Description	GPL-3.0, GitHub	GPL-3.0, GitHub
+SettingsSource.Header	GitHub	GitHub
+SettingsSource.Description	Просмотреть исходный код	View the source code
+SettingsReportBug.Header	Сообщить о проблеме	Report an issue
+SettingsReportBug.Description	Если вам нужна помощь с ошибкой, вы можете оставить запрос на GitHub	If you need help with a bug you can file an issue on GitHub
+SettingsRequestFeature.Header	Запросить функцию или предложить идею	Request a feature or suggest an idea
+SettingsRequestFeature.Description	Вы будете перенаправлены на GitHub	You will be redirected to GitHub
 OpenSource.Content	Открыть	Open
 SettingsWithoutAccount.Header	Работает без аккаунта	Works without an account
 SettingsWithoutAccount.Description	Войдите, чтобы Избранное, плейлисты и сохранённое совпадали на всех устройствах	Sign in to keep Favorites, playlists and saved items the same on all your devices

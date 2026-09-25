@@ -20,10 +20,12 @@ internal static class Form
 
     public static (ScrollViewer Scroller, StackPanel Body) Page(string title, string? description)
     {
-        var body = new StackPanel { Margin = (Thickness)Application.Current.Resources["PageContentMargin"], Spacing = 12, MaxWidth = 1000 };
+        var body = new StackPanel { Margin = (Thickness)Application.Current.Resources["PageContentMargin"], Spacing = 12 };
         body.Children.Add(new TextBlock { Text = title, Style = (Style)Application.Current.Resources["PageTitleStyle"] });
         if (description is not null) body.Children.Add(Secondary(description, Width + 120));
-        return (new ScrollViewer { Content = body }, body);
+        var scroller = new ScrollViewer { Content = body };
+        Controls.PageColumn.Center(scroller, body, 1000);
+        return (scroller, body);
     }
 
     public static TextBlock Secondary(string text, double maxWidth = double.PositiveInfinity) => new()

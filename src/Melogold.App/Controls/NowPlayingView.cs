@@ -93,9 +93,10 @@ public sealed partial class NowPlayingView : Grid
         _artPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _artwork.Child = _artworkImage;
         _artPanel.Children.Add(_artwork);
+        // Название ведёт к альбому, исполнитель — к исполнителю, как в панели плеера
         var names = new StackPanel { Spacing = 4 };
-        names.Children.Add(_title);
-        names.Children.Add(_artist);
+        names.Children.Add(Link(_title, _ => { if (_engine.Current is { } track) App.Services.GetRequiredService<TrackActions>().OpenAlbumOrArtist(track); }));
+        names.Children.Add(Link(_artist, anchor => { if (_engine.Current is { } track) App.Services.GetRequiredService<TrackActions>().OpenArtist(track, anchor); }));
         _secondaryTexts.Add(_artist);
         SetRow(names, 1);
         _artPanel.Children.Add(names);
@@ -104,6 +105,13 @@ public sealed partial class NowPlayingView : Grid
         _lyricsPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         _lyricsPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _plainScroller.Content = _plain;
+        // Обычный текст растёт с окном так же, как синхронный
+        _lyricsPanel.SizeChanged += (_, e) =>
+        {
+            var size = SyncedLyricsView.FontSizeFor(e.NewSize.Width, e.NewSize.Height);
+            _plain.FontSize = size * 22 / 28;
+            _plain.LineHeight = size * 34 / 28;
+        };
         _lyricsPanel.Children.Add(_synced);
         _lyricsPanel.Children.Add(_plainScroller);
         _lyricsPanel.Children.Add(_message);
@@ -258,6 +266,14 @@ public sealed partial class NowPlayingView : Grid
         foreach (var text in _secondaryTexts) text.Foreground = new SolidColorBrush(_palette.SecondaryText);
         foreach (var text in _message.Children.OfType<TextBlock>()) text.Foreground = new SolidColorBrush(_palette.Text);
         _synced.SetColors(_palette.Text, _palette.Pill, _palette.Background);
+    }
+
+    /// <summary>Текст, который нажимается: без подчёркивания и цвета ссылки, цвет — от обложки.</summary>
+    private static HyperlinkButton Link(TextBlock text, Action<FrameworkElement> open)
+    {
+        var link = new HyperlinkButton { Content = text, Padding = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left };
+        link.Click += (_, _) => open(link);
+        return link;
     }
 
     private static Color SystemColor(string key) => Application.Current.Resources.TryGetValue(key, out var value) && value is Color color ? color : Colors.Black;

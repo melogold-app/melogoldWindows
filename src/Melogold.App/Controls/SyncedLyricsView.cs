@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Windows.UI;
@@ -36,6 +37,16 @@ public sealed partial class SyncedLyricsView : Grid
     private const byte UnsungAlpha = 102; // 0.4
     private static readonly TimeSpan ResumeFollow = TimeSpan.FromSeconds(3);
 
+    /// <summary>Размер строки при обычном окне; всё остальное в строке считается от него.</summary>
+    private const double BaseFontSize = 28;
+
+    /// <summary>
+    /// Размер текста по области: растёт с окном (во весь экран — до 56), в маленьком окне не меньше 24. При обычном окне
+    /// (колонка около 620 пикселей) — 28, как на телефоне.
+    /// </summary>
+    public static double FontSizeFor(double width, double height) =>
+        Math.Round(Math.Clamp(Math.Min(width * 0.045, height * 0.06), 24, 56));
+
     private readonly ScrollViewer _scroller = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden };
     private readonly Grid _content = new();
     private readonly Canvas _pillHost = new() { IsHitTestVisible = false };
@@ -54,6 +65,11 @@ public sealed partial class SyncedLyricsView : Grid
     private DateTime _programmaticUntil;
     private Color _text = Colors.White;
     private Color _pill = Color.FromArgb(40, 255, 255, 255);
+    private double _fontSize = BaseFontSize;
+
+    /// <summary>Где сейчас стоит (или куда едет) подложка: если строка сдвинулась после раскладки, подложка догоняет.</summary>
+    private Vector2 _pillOffset;
+    private Vector2 _pillSize;
 
     private Compositor? _compositor;
     private ShapeVisual? _pillVisual;
@@ -84,20 +100,37 @@ public sealed partial class SyncedLyricsView : Grid
         _resume.IsRepeating = false;
         _resume.Tick += (_, _) => Resume();
 
-        _scroller.ViewChanging += (_, _) =>
+        // Прокрутил человек — колесом, касанием, сенсорной панелью или клавишами; сдвиги от раскладки и своей прокрутки
+        // слежение не выключают
+        _scroller.AddHandler(PointerWheelChangedEvent, new PointerEventHandler((_, _) => UserScrolled()), true);
+        _scroller.AddHandler(KeyDownEvent, new KeyEventHandler((_, e) =>
         {
-            if (DateTime.UtcNow < _programmaticUntil) return;
-            // Прокрутил человек: слежение — через 3 с после последнего движения
-            _follow = false;
-            _jump.Visibility = Visibility.Visible;
+            if (e.Key is Windows.System.VirtualKey.Up or Windows.System.VirtualKey.Down or Windows.System.VirtualKey.PageUp
+                or Windows.System.VirtualKey.PageDown or Windows.System.VirtualKey.Home or Windows.System.VirtualKey.End) UserScrolled();
+        }), true);
+        _scroller.DirectManipulationStarted += (_, _) =>
+        {
+            // Анимированный ChangeView тоже начинает «манипуляцию»
+            if (DateTime.UtcNow >= _programmaticUntil) UserScrolled();
+        };
+        _scroller.DirectManipulationCompleted += (_, _) =>
+        {
+            if (_follow) return;
             _resume.Stop();
             _resume.Start();
         };
         _scroller.SizeChanged += (_, _) =>
         {
-            // Первая строка встаёт на треть экрана, последняя может дойти до неё
-            _lines.Margin = new Thickness(0, _scroller.ActualHeight * 0.3, 0, _scroller.ActualHeight * 0.6);
-            DispatcherQueue.TryEnqueue(() => MovePill(immediate: true));
+            ApplyFontSize(FontSizeFor(_scroller.ActualWidth, _scroller.ActualHeight));
+            // Активная строка — посередине области: первая строка встаёт туда до начала, последняя может дойти до неё
+            var half = _scroller.ActualHeight / 2;
+            _lines.Margin = new Thickness(0, Math.Max(0, half - _fontSize), 0, half);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                _scroller.UpdateLayout();
+                MovePill(immediate: true);
+                if (_follow) ScrollToActive(animated: false);
+            });
         };
         _content.SizeChanged += (_, _) =>
         {
@@ -152,6 +185,7 @@ public sealed partial class SyncedLyricsView : Grid
         foreach (var row in rows)
         {
             var view = row is LyricRow.Sung sung ? RowView.ForLine(sung, _text) : RowView.ForInterlude((LyricRow.Interlude)row, _text);
+            view.ApplyScale(Scale);
             view.Element.Tapped += (_, _) => Seek?.Invoke(Math.Max(0, row.StartMs - _offset));
             _rowViews.Add(view);
             _lines.Children.Add(view.Element);
@@ -163,11 +197,41 @@ public sealed partial class SyncedLyricsView : Grid
         DispatcherQueue.TryEnqueue(Tick);
     }
 
-    public void Start() => _clock.Start();
+    /// <summary>Текст на экране: сразу на текущей строке, без прокрутки и без «К текущей строке».</summary>
+    public void Start()
+    {
+        _resume.Stop();
+        _follow = true;
+        _jump.Visibility = Visibility.Collapsed;
+        _active = -2;
+        _clock.Start();
+        Tick();
+    }
 
     public void Stop() => _clock.Stop();
 
     private long LyricsPosition => Position() + LeadMs + _offset;
+
+    private double Scale => _fontSize / BaseFontSize;
+
+    /// <summary>Размер текста по размеру области: строки, отступы, точки проигрыша и подложка — в том же масштабе.</summary>
+    private void ApplyFontSize(double size)
+    {
+        if (Math.Abs(size - _fontSize) < 0.5) return;
+        _fontSize = size;
+        _lines.Spacing = 4 * Scale;
+        foreach (var row in _rowViews) row.ApplyScale(Scale);
+        if (_pillGeometry is not null) _pillGeometry.CornerRadius = new Vector2((float)(12 * Scale));
+    }
+
+    /// <summary>Слежение — через 3 с после последнего движения; до тех пор — «К текущей строке».</summary>
+    private void UserScrolled()
+    {
+        _follow = false;
+        _jump.Visibility = Visibility.Visible;
+        _resume.Stop();
+        _resume.Start();
+    }
 
     private void Resume()
     {
@@ -188,12 +252,16 @@ public sealed partial class SyncedLyricsView : Grid
             _active = index;
             for (var i = 0; i < _rowViews.Count; i++)
                 _rowViews[i].SetState(i == index, i < index ? PastOpacity : i == index ? 1 : FutureOpacity, _animations);
-            // Проигрыш занимает место только пока идёт: раскладка меняется, подложка и прокрутка — после неё
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                MovePill(immediate: previous < -1);
-                if (_follow) ScrollToActive(animated: previous >= -1);
-            });
+            // Проигрыш занимает место только пока идёт: подложка и прокрутка считаются по новой раскладке, иначе подложка
+            // встаёт туда, где строка была до того, как проигрыш свернулся
+            _scroller.UpdateLayout();
+            MovePill(immediate: previous < -1);
+            if (_follow) ScrollToActive(animated: previous >= -1);
+        }
+        else if (PillTarget() is { } target && (Vector2.Distance(target.Offset, _pillOffset) > 0.5f || Vector2.Distance(target.Size, _pillSize) > 0.5f))
+        {
+            // Строка сдвинулась без смены (перенос при другом размере окна): подложка догоняет
+            MovePill(immediate: false);
         }
         if (index >= 0) _rowViews[index].Update(position, IsPlaying(), _animations, _text);
     }
@@ -203,7 +271,7 @@ public sealed partial class SyncedLyricsView : Grid
         var target = _active >= 0 ? _rowViews[_active].Element : null;
         double y = 0;
         if (target is not null && target.ActualHeight > 0)
-            y = target.TransformToVisual(_content).TransformPoint(default).Y - _scroller.ActualHeight * 0.3;
+            y = target.TransformToVisual(_content).TransformPoint(default).Y + target.ActualHeight / 2 - _scroller.ActualHeight / 2;
         y = Math.Clamp(y, 0, _scroller.ScrollableHeight);
         if (Math.Abs(y - _scroller.VerticalOffset) < 1) return;
         _programmaticUntil = DateTime.UtcNow.AddMilliseconds(animated ? 900 : 200);
@@ -217,7 +285,7 @@ public sealed partial class SyncedLyricsView : Grid
         if (_pillVisual is not null) return;
         _compositor = ElementCompositionPreview.GetElementVisual(this).Compositor;
         _pillGeometry = _compositor.CreateRoundedRectangleGeometry();
-        _pillGeometry.CornerRadius = new Vector2(12, 12);
+        _pillGeometry.CornerRadius = new Vector2((float)(12 * Scale));
         _pillBrush = _compositor.CreateColorBrush(_pill);
         _pillShape = _compositor.CreateSpriteShape(_pillGeometry);
         _pillShape.FillBrush = _pillBrush;
@@ -229,18 +297,26 @@ public sealed partial class SyncedLyricsView : Grid
         MovePill(immediate: true);
     }
 
+    /// <summary>Где должна стоять подложка: вокруг активной строки с её внутренними отступами; null — строки нет.</summary>
+    private (Vector2 Offset, Vector2 Size)? PillTarget()
+    {
+        var view = _active >= 0 && _active < _rowViews.Count ? _rowViews[_active] : null;
+        if (view is null || view.IsInterlude || view.Body.ActualWidth <= 0 || _pillVisual is null) return null;
+        var origin = view.Body.TransformToVisual(_content).TransformPoint(default);
+        var (x, y) = (16 * Scale, 10 * Scale);
+        return (new Vector2((float)(origin.X - x), (float)(origin.Y - y)), new Vector2((float)(view.Body.ActualWidth + 2 * x), (float)(view.Body.ActualHeight + 2 * y)));
+    }
+
     private void MovePill(bool immediate)
     {
         if (_pillVisual is null || _pillShape is null || _pillGeometry is null || _compositor is null) return;
-        var view = _active >= 0 && _active < _rowViews.Count ? _rowViews[_active] : null;
-        if (view is null || view.IsInterlude || view.Body.ActualWidth <= 0)
+        if (PillTarget() is not var (offset, size))
         {
             Fade(0);
             return;
         }
-        var origin = view.Body.TransformToVisual(_content).TransformPoint(default);
-        var offset = new Vector2((float)(origin.X - 16), (float)(origin.Y - 10));
-        var size = new Vector2((float)view.Body.ActualWidth + 32, (float)view.Body.ActualHeight + 20);
+        _pillOffset = offset;
+        _pillSize = size;
         if (immediate || !_animations || _pillVisual.Opacity < 0.01f)
         {
             _pillShape.StopAnimation("Offset");
@@ -293,6 +369,7 @@ public sealed partial class SyncedLyricsView : Grid
         private int _sungWords = -1;
         private DateTime _activatedAt;
         private bool _active;
+        private double _scale = 1;
 
         private RowView(FrameworkElement element, FrameworkElement body)
         {
@@ -335,9 +412,9 @@ public sealed partial class SyncedLyricsView : Grid
             var body = new StackPanel { Spacing = 2, HorizontalAlignment = main.HorizontalAlignment };
             body.Children.Add(main);
             if (line.Background is { } backing)
-                body.Children.Add(new TextBlock { Text = backing.Text, FontSize = 18, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, TextAlignment = main.TextAlignment, HorizontalAlignment = main.HorizontalAlignment, Opacity = 0.8 });
+                body.Children.Add(new TextBlock { Text = backing.Text, FontSize = 18, Tag = 18.0, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, TextAlignment = main.TextAlignment, HorizontalAlignment = main.HorizontalAlignment, Opacity = 0.8 });
             if ((line.Translation ?? line.Transliteration) is { } extra)
-                body.Children.Add(new TextBlock { Text = extra, FontSize = 16, TextWrapping = TextWrapping.Wrap, TextAlignment = main.TextAlignment, HorizontalAlignment = main.HorizontalAlignment, Opacity = 0.75 });
+                body.Children.Add(new TextBlock { Text = extra, FontSize = 16, Tag = 16.0, TextWrapping = TextWrapping.Wrap, TextAlignment = main.TextAlignment, HorizontalAlignment = main.HorizontalAlignment, Opacity = 0.75 });
             var element = new Border { Padding = new Thickness(16, 10, 16, 10), Child = body, Background = new SolidColorBrush(Colors.Transparent), Opacity = FutureOpacity };
             AutomationProperties.SetName(element, line.Text);
             var view = new RowView(element, body, line, main);
@@ -381,6 +458,27 @@ public sealed partial class SyncedLyricsView : Grid
             return view;
         }
 
+        /// <summary>Размеры строки в масштабе области (1 — строка 28).</summary>
+        public void ApplyScale(double scale)
+        {
+            _scale = scale;
+            if (_main is not null)
+            {
+                _main.FontSize = 28 * scale;
+                _main.LineHeight = 36 * scale;
+                // Подпевка и перевод — под строкой, мельче
+                foreach (var extra in ((Panel)Body).Children.OfType<TextBlock>().Skip(1)) extra.FontSize = (extra.Tag is double size ? size : 16) * scale;
+                ((Border)Element).Padding = new Thickness(16 * scale, 10 * scale, 16 * scale, 10 * scale);
+            }
+            if (_dots is not null)
+            {
+                _dots.Spacing = 6 * scale;
+                _dots.Margin = new Thickness(32 * scale, 0, 32 * scale, 0);
+                foreach (var dot in _dotShapes) dot.Width = dot.Height = 10 * scale;
+                if (_active) ((Grid)Element).Height = 40 * scale;
+            }
+        }
+
         public void ApplyColor(Color color)
         {
             if (_main is not null)
@@ -400,7 +498,7 @@ public sealed partial class SyncedLyricsView : Grid
             if (_interlude is not null)
             {
                 // Проигрыш занимает место только пока играет
-                ((Grid)Element).Height = active ? 40 : 0;
+                ((Grid)Element).Height = active ? 40 * _scale : 0;
                 _activatedAt = DateTime.UtcNow;
                 if (!active) foreach (var s in _dotScales) s.ScaleX = s.ScaleY = 0;
             }

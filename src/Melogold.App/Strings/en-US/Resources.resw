@@ -35,8 +35,12 @@
   <data name="SettingsDiagnostics.Header" xml:space="preserve"><value>Diagnostics</value></data>
   <data name="SettingsDiagnostics.Description" xml:space="preserve"><value>App logs, useful if something doesn't work</value></data>
   <data name="OpenLogs.Content" xml:space="preserve"><value>Open folder</value></data>
-  <data name="SettingsSource.Header" xml:space="preserve"><value>Source code</value></data>
-  <data name="SettingsSource.Description" xml:space="preserve"><value>GPL-3.0, GitHub</value></data>
+  <data name="SettingsSource.Header" xml:space="preserve"><value>GitHub</value></data>
+  <data name="SettingsSource.Description" xml:space="preserve"><value>View the source code</value></data>
+  <data name="SettingsReportBug.Header" xml:space="preserve"><value>Report an issue</value></data>
+  <data name="SettingsReportBug.Description" xml:space="preserve"><value>If you need help with a bug you can file an issue on GitHub</value></data>
+  <data name="SettingsRequestFeature.Header" xml:space="preserve"><value>Request a feature or suggest an idea</value></data>
+  <data name="SettingsRequestFeature.Description" xml:space="preserve"><value>You will be redirected to GitHub</value></data>
   <data name="OpenSource.Content" xml:space="preserve"><value>Open</value></data>
   <data name="SettingsWithoutAccount.Header" xml:space="preserve"><value>Works without an account</value></data>
   <data name="SettingsWithoutAccount.Description" xml:space="preserve"><value>Sign in to keep Favorites, playlists and saved items the same on all your devices</value></data>

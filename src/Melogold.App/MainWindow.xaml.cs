@@ -45,6 +45,7 @@ public sealed partial class MainWindow : Window
         _settings = App.Services.GetRequiredService<SettingsStore>();
         Snackbar = App.Services.GetRequiredService<Snackbar>();
         InitializeComponent();
+        SearchBox.Loaded += (_, _) => AttachSearchLayout();
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -115,6 +116,8 @@ public sealed partial class MainWindow : Window
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Up, VirtualKeyModifiers.Control, () => player.ChangeVolume(5)));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Down, VirtualKeyModifiers.Control, () => player.ChangeVolume(-5)));
         Root.KeyDown += OnRootKeyDown;
+        Root.PreviewKeyDown += OnRootPreviewKeyDown;
+        Root.PreviewKeyUp += OnRootPreviewKeyUp;
         Root.PointerPressed += OnRootPointerPressed;
 
         App.Services.GetRequiredService<UpdateService>().PropertyChanged += (_, e) =>
@@ -296,17 +299,38 @@ public sealed partial class MainWindow : Window
     private void OnRootKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (FocusInTextInput()) return;
-        // «/» — поиск, пробел — play/pause, если фокус не на кнопке или строке (§5.5)
+        // «/» — поиск (§5.5)
         if (e.Key == (VirtualKey)191)
         {
             FocusSearch();
             e.Handled = true;
         }
-        else if (e.Key == VirtualKey.Space && FocusManager.GetFocusedElement(Content.XamlRoot) is not (ButtonBase or ToggleSwitch or ListViewItem))
-        {
-            App.Services.GetRequiredService<PlayerViewModel>().Engine.TogglePlayPause();
-            e.Handled = true;
-        }
+    }
+
+    /// <summary>Пробел перехвачен до кнопки: её отпускание пробела тоже не должно нажать.</summary>
+    private bool _spaceTaken;
+
+    /// <summary>
+    /// Пробел — play/pause (§5.5) раньше, чем его получит элемент в фокусе: после нажатия мышью фокус остаётся на
+    /// кнопке, и пробел нажимал её снова (например, сворачивал текст). Не трогается ввод текста и элемент, на который
+    /// перешли с клавиатуры (Tab): там пробел нажимает его, как везде в Windows.
+    /// </summary>
+    private void OnRootPreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != VirtualKey.Space || FocusInTextInput()) return;
+        if (FocusManager.GetFocusedElement(Content.XamlRoot) is Control { FocusState: FocusState.Keyboard }) return;
+        if (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down)) return;
+        // Удержание пробела не переключает много раз
+        if (!e.KeyStatus.WasKeyDown) App.Services.GetRequiredService<PlayerViewModel>().Engine.TogglePlayPause();
+        _spaceTaken = true;
+        e.Handled = true;
+    }
+
+    private void OnRootPreviewKeyUp(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != VirtualKey.Space || !_spaceTaken) return;
+        _spaceTaken = false;
+        e.Handled = true;
     }
 
     private void OnRootPointerPressed(object sender, PointerRoutedEventArgs e)
@@ -320,6 +344,40 @@ public sealed partial class MainWindow : Window
     }
 
     private void FocusSearch() => SearchBox.Focus(FocusState.Keyboard);
+
+    private FrameworkElement? _searchColumn;
+
+    /// <summary>Колонка содержимого строки заголовка: её ширина меняется с окном и с кнопками слева.</summary>
+    private void AttachSearchLayout()
+    {
+        if (_searchColumn is not null) return;
+        if (VisualTreeHelper.GetParent(SearchBox) is not FrameworkElement presenter || VisualTreeHelper.GetParent(presenter) is not FrameworkElement column) return;
+        _searchColumn = column;
+        column.SizeChanged += (_, _) => LayoutSearch();
+        LayoutSearch();
+    }
+
+    /// <summary>
+    /// Поиск по центру окна (§5.1), шириной около трети окна (240–520). TitleBar ставит его по центру своей колонки —
+    /// между заголовком и кнопками окна, а они разной ширины; сдвиг до центра окна — отступом с одной стороны.
+    /// </summary>
+    private void LayoutSearch()
+    {
+        if (_searchColumn is not { ActualWidth: > 0 } column || VisualTreeHelper.GetParent(SearchBox) is not FrameworkElement presenter) return;
+        var bar = AppTitleBar.ActualWidth;
+        var width = Math.Min(Math.Clamp(bar * 0.32, 240, 520), column.ActualWidth);
+        SearchBox.Width = width;
+        // В узком окне TitleBar прижимает поиск влево — так и оставить
+        if (presenter.HorizontalAlignment != HorizontalAlignment.Center)
+        {
+            SearchBox.Margin = default;
+            return;
+        }
+        var columnLeft = column.TransformToVisual(AppTitleBar).TransformPoint(default).X;
+        var left = Math.Clamp((bar - width) / 2 - columnLeft, 0, column.ActualWidth - width);
+        var shift = left - (column.ActualWidth - width) / 2;
+        SearchBox.Margin = shift >= 0 ? new Thickness(2 * shift, 0, 0, 0) : new Thickness(0, 0, -2 * shift, 0);
+    }
 
     /// <summary>Есть обновление — <c>InfoBadge</c> с цифрой 1 на пункте «Настройки» (§3).</summary>
     private void ShowUpdateBadge()

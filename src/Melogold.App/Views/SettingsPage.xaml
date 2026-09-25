@@ -6,7 +6,7 @@
     xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
     xmlns:controls="using:Melogold.App.Controls">
     <ScrollViewer x:Name="Scroller">
-        <StackPanel Margin="{StaticResource PageContentMargin}" MaxWidth="1000" Spacing="{StaticResource SettingsCardSpacing}">
+        <StackPanel x:Name="Column" Margin="{StaticResource PageContentMargin}" Spacing="{StaticResource SettingsCardSpacing}">
             <TextBlock x:Uid="SettingsTitle" Style="{StaticResource PageTitleStyle}" Text="Settings" />
 
             <!-- Вышла новая версия (§3): карточка, пока обновление не установлено -->
@@ -120,9 +120,26 @@
                 </toolkit:SettingsCard.HeaderIcon>
                 <Button x:Uid="OpenLogs" Content="Open folder" Click="OnOpenLogs" />
             </toolkit:SettingsCard>
-            <controls:ClickableCard x:Uid="SettingsSource" Header="Source code" Description="GPL-3.0" Activated="OnOpenSource">
+            <!-- Как «О приложении» Android: исходный код, сообщить о проблеме, предложить идею -->
+            <controls:ClickableCard x:Uid="SettingsSource" Header="GitHub" Description="View the source code" Activated="OnOpenSource">
                 <toolkit:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE943;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <toolkit:SettingsCard.ActionIcon>
+                    <FontIcon Glyph="&#xE8A7;" />
+                </toolkit:SettingsCard.ActionIcon>
+            </controls:ClickableCard>
+            <controls:ClickableCard x:Uid="SettingsReportBug" Header="Report an issue" Activated="OnReportBug">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xEBE8;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <toolkit:SettingsCard.ActionIcon>
+                    <FontIcon Glyph="&#xE8A7;" />
+                </toolkit:SettingsCard.ActionIcon>
+            </controls:ClickableCard>
+            <controls:ClickableCard x:Uid="SettingsRequestFeature" Header="Request a feature or suggest an idea" Activated="OnRequestFeature">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xEA80;" />
                 </toolkit:SettingsCard.HeaderIcon>
                 <toolkit:SettingsCard.ActionIcon>
                     <FontIcon Glyph="&#xE8A7;" />

@@ -42,6 +42,9 @@ public sealed class LyricsService
     private CancellationTokenSource? _fetch;
     private bool _active;
 
+    /// <summary>Последний разобранный синхронный текст: тот же текст — те же строки, и экран не начинает заново.</summary>
+    private (string Text, SyncedLyrics? Lyrics, IReadOnlyList<LyricRow>? Rows)? _parsed;
+
     public LyricsService(PlayerEngine engine, Library library, LyricsFetcher fetcher, SettingsStore settings)
     {
         _engine = engine;
@@ -102,7 +105,9 @@ public sealed class LyricsService
         Stored = stored;
         if (_active && (stored?.Plain is null || stored.Synced is null))
         {
-            Set(new LyricsState.Loading());
+            // Что уже есть — сразу на экран; недостающая сторона ищется, не пряча текст за «Загрузкой»
+            var known = Content(stored);
+            Set(known is LyricsState.Synced or LyricsState.Plain ? known : new LyricsState.Loading());
             LyricsFetchResult result;
             try
             {
@@ -116,10 +121,12 @@ public sealed class LyricsService
             if (ct.IsCancellationRequested) return;
             var fetched = new StoredLyrics(result.Synced, result.Plain, result.SyncedSource, result.PlainSource,
                 result.OffsetMs ?? stored?.OffsetMs ?? 0, result.Language ?? stored?.Language);
-            // Недостающая сторона, которую не удалось получить из-за сети, не кэшируется как «нет текста»
+            // Недостающая сторона, которую не удалось получить из-за сети, не кэшируется как «нет текста»: она остаётся
+            // «ещё не искали» (null), а найденная сохраняется — иначе при каждом открытии всё ищется заново
             if (result.AnyFailure && (fetched.Plain is null || fetched.Synced is null))
             {
                 Stored = fetched;
+                if (fetched.Plain is not null || fetched.Synced is not null) _ = Task.Run(() => _library.SaveLyrics(track.VideoId, fetched), CancellationToken.None);
                 var partial = Content(fetched);
                 Set(partial is LyricsState.Synced or LyricsState.Plain ? partial : new LyricsState.Failed());
                 return;
@@ -132,8 +139,17 @@ public sealed class LyricsService
 
     private LyricsState Content(StoredLyrics? stored)
     {
-        var synced = stored?.Synced is { Length: > 0 } text ? LyricsFormats.ParseSynced(text) : null;
-        var rows = synced is null ? null : LyricRows.Build(synced);
+        SyncedLyrics? synced = null;
+        IReadOnlyList<LyricRow>? rows = null;
+        if (stored?.Synced is { Length: > 0 } text)
+        {
+            if (_parsed is not { } parsed || parsed.Text != text)
+            {
+                var lyrics = LyricsFormats.ParseSynced(text);
+                _parsed = parsed = (text, lyrics, lyrics is null ? null : LyricRows.Build(lyrics));
+            }
+            (synced, rows) = (parsed.Lyrics, parsed.Rows);
+        }
         if (_settings.PreferSyncedLyrics && synced is not null && rows is { Count: > 0 })
             return new LyricsState.Synced(synced, rows, stored!.OffsetMs, stored.SyncedSource);
         if (stored?.Plain is { Length: > 0 } plain) return new LyricsState.Plain(plain, stored.PlainSource);

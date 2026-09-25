@@ -2,6 +2,7 @@ using Melogold.App.Views;
 using Melogold.Core.Data;
 using Melogold.Core.Domain;
 using Melogold.Core.Music;
+using Melogold.InnerTube;
 using Melogold.Playback;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -40,7 +41,7 @@ public abstract record TrackContext
 /// Действия с треком: тап по правилу очереди, меню (§5.3, пункты и тексты — как в меню трека Android), «В Избранное»,
 /// переходы к альбому и исполнителю. Всё, что показывает меню, известно до его открытия — меню не дёргается (§8.7).
 /// </summary>
-public sealed class TrackActions(PlayerEngine engine, Library library, Navigator navigator, Snackbar snackbar)
+public sealed class TrackActions(PlayerEngine engine, Library library, Navigator navigator, Snackbar snackbar, YouTubeMusic music)
 {
     // ---------- Воспроизведение ----------
 
@@ -87,22 +88,31 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
 
     // ---------- Переходы ----------
 
-    public void OpenAlbumOrArtist(Track track)
+    public async void OpenAlbumOrArtist(Track track)
     {
+        if (track.AlbumId is null && !track.Artists.Any(a => a.Id is not null)) track = await CompleteAsync(track);
         if (track.AlbumId is { } album) navigator.Open(typeof(AlbumPage), album);
         else if (track.Artists.FirstOrDefault(a => a.Id is not null) is { } artist) navigator.Open(typeof(ArtistPage), artist.Id);
     }
 
-    /// <summary>Исполнитель трека; если их несколько — меню выбора у <paramref name="anchor"/>.</summary>
-    public void OpenArtist(Track track, FrameworkElement anchor)
+    /// <summary>
+    /// Исполнитель трека; если их несколько — меню выбора у <paramref name="anchor"/>. У трека без ссылок на
+    /// исполнителей (из истории, из файла) они берутся из YouTube Music, а если и там нет — открывается поиск по имени.
+    /// </summary>
+    public async void OpenArtist(Track track, FrameworkElement anchor)
     {
         var artists = track.Artists.Where(a => a.Id is not null).ToList();
+        if (artists.Count == 0) artists = (await CompleteAsync(track)).Artists.Where(a => a.Id is not null).ToList();
         if (artists.Count == 1)
         {
             navigator.Open(typeof(ArtistPage), artists[0].Id);
             return;
         }
-        if (artists.Count == 0) return;
+        if (artists.Count == 0)
+        {
+            if (!string.IsNullOrWhiteSpace(track.ArtistsText)) navigator.Open(typeof(SearchPage), new SearchRequest(track.ArtistsText, track.IsVideo ? SearchScope.YouTube : SearchScope.Music));
+            return;
+        }
         var flyout = new MenuFlyout();
         foreach (var artist in artists)
         {
@@ -111,6 +121,23 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
             flyout.Items.Add(item);
         }
         flyout.ShowAt(anchor);
+    }
+
+    /// <summary>Трек с альбомом и исполнителями из «Далее» YouTube Music; без сети — как был.</summary>
+    private async Task<Track> CompleteAsync(Track track)
+    {
+        try
+        {
+            var page = await music.NextAsync(track.VideoId);
+            return page.Tracks.FirstOrDefault(t => t.VideoId == track.VideoId) is { } found && found.Artists.Any(a => a.Id is not null)
+                ? track with { Artists = found.Artists, AlbumId = track.AlbumId ?? found.AlbumId, AlbumTitle = track.AlbumTitle ?? found.AlbumTitle }
+                : track;
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or YouTubeException or System.Text.Json.JsonException)
+        {
+            Log.Warn($"Artists of {track.VideoId} unavailable", e);
+            return track;
+        }
     }
 
     public void OtherVersions(Track track)

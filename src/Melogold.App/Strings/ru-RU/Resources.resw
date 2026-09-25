@@ -35,8 +35,12 @@
   <data name="SettingsDiagnostics.Header" xml:space="preserve"><value>Диагностика</value></data>
   <data name="SettingsDiagnostics.Description" xml:space="preserve"><value>Журналы приложения: пригодятся, если что-то не работает</value></data>
   <data name="OpenLogs.Content" xml:space="preserve"><value>Открыть папку</value></data>
-  <data name="SettingsSource.Header" xml:space="preserve"><value>Исходный код</value></data>
-  <data name="SettingsSource.Description" xml:space="preserve"><value>GPL-3.0, GitHub</value></data>
+  <data name="SettingsSource.Header" xml:space="preserve"><value>GitHub</value></data>
+  <data name="SettingsSource.Description" xml:space="preserve"><value>Просмотреть исходный код</value></data>
+  <data name="SettingsReportBug.Header" xml:space="preserve"><value>Сообщить о проблеме</value></data>
+  <data name="SettingsReportBug.Description" xml:space="preserve"><value>Если вам нужна помощь с ошибкой, вы можете оставить запрос на GitHub</value></data>
+  <data name="SettingsRequestFeature.Header" xml:space="preserve"><value>Запросить функцию или предложить идею</value></data>
+  <data name="SettingsRequestFeature.Description" xml:space="preserve"><value>Вы будете перенаправлены на GitHub</value></data>
   <data name="OpenSource.Content" xml:space="preserve"><value>Открыть</value></data>
   <data name="SettingsWithoutAccount.Header" xml:space="preserve"><value>Работает без аккаунта</value></data>
   <data name="SettingsWithoutAccount.Description" xml:space="preserve"><value>Войдите, чтобы Избранное, плейлисты и сохранённое совпадали на всех устройствах</value></data>

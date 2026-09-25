@@ -21,6 +21,7 @@ public sealed partial class SettingsPage : Page, IScrollToTop
     public SettingsPage()
     {
         InitializeComponent();
+        Controls.PageColumn.Center(Scroller, Column, 1000);
         ThemeBox.SelectedIndex = (int)_settings.Theme;
         PauseHistorySwitch.IsOn = _settings.PauseHistory;
         PauseSearchSwitch.IsOn = _settings.PauseSearchHistory;
@@ -279,6 +280,10 @@ public sealed partial class SettingsPage : Page, IScrollToTop
     private void OnOpenLogs(object sender, RoutedEventArgs e) => OpenExternal(AppPaths.Logs);
 
     private void OnOpenSource(object sender, RoutedEventArgs e) => OpenExternal(AppInfo.RepositoryUrl);
+
+    private void OnReportBug(object sender, RoutedEventArgs e) => OpenExternal($"{AppInfo.RepositoryUrl}/issues/new?labels=bug");
+
+    private void OnRequestFeature(object sender, RoutedEventArgs e) => OpenExternal($"{AppInfo.RepositoryUrl}/issues/new?labels=enhancement");
 
     private static void OpenExternal(string target)
     {

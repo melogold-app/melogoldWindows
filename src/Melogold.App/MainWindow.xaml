@@ -30,9 +30,7 @@
             <AutoSuggestBox
                 x:Name="SearchBox"
                 x:Uid="SearchBox"
-                MinWidth="240"
-                MaxWidth="480"
-                HorizontalAlignment="Stretch"
+                Width="320"
                 VerticalAlignment="Center"
                 PlaceholderText="Search"
                 QueryIcon="Find"

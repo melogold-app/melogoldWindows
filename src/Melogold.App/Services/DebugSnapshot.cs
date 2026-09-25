@@ -57,6 +57,14 @@ public static class DebugSnapshot
             return;
         }
         if (target.Length == 0) return;
+        if (target.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+        {
+            // Вместо снимка — дерево раскладки: где элемент, какой ширины и почему
+            var lines = new List<string>();
+            DumpTree(root, root, 0, lines);
+            await File.WriteAllLinesAsync(target, lines);
+            return;
+        }
         try
         {
             var scale = root.XamlRoot.RasterizationScale;
@@ -94,6 +102,21 @@ public static class DebugSnapshot
     }
 
     /// <summary>Рисует элемент поверх холста: пиксели RenderTargetBitmap — BGRA с предумноженной альфой.</summary>
+    /// <summary>Строка на элемент: тип, имя, x и ширина в окне (DIP), заданные ширины, отступы и выравнивание.</summary>
+    private static void DumpTree(DependencyObject node, FrameworkElement root, int depth, List<string> lines)
+    {
+        if (depth > 60) return;
+        if (node is FrameworkElement e)
+        {
+            if (e.Visibility == Visibility.Collapsed) return;
+            var x = e.ActualWidth > 0 ? e.TransformToVisual(root).TransformPoint(default).X : double.NaN;
+            static string W(double v) => double.IsNaN(v) ? "-" : double.IsInfinity(v) ? "inf" : v.ToString("0");
+            lines.Add($"{new string(' ', depth)}{e.GetType().Name} '{e.Name}' x={W(x)} w={W(e.ActualWidth)} width={W(e.Width)} min={W(e.MinWidth)} max={W(e.MaxWidth)} " +
+                $"margin={e.Margin.Left:0},{e.Margin.Right:0} align={e.HorizontalAlignment}");
+        }
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++) DumpTree(VisualTreeHelper.GetChild(node, i), root, depth + 1, lines);
+    }
+
     private static async Task DrawAsync(byte[] canvas, int width, int height, UIElement element, int left, int top)
     {
         var bitmap = new RenderTargetBitmap();

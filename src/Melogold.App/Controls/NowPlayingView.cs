@@ -327,6 +327,7 @@ public sealed partial class NowPlayingView : Grid
             LyricsSources.KuGou => Loc.Get("LyricsSourceKuGou"),
             LyricsSources.File => Loc.Get("LyricsSourceFile"),
             LyricsSources.User => Loc.Get("LyricsSourceUser"),
+            LyricsSources.Melogold => Loc.Get("LyricsSourceMelogold"),
             _ => "",
         };
         BuildMenu();

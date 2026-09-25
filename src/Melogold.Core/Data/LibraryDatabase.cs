@@ -9,7 +9,7 @@ namespace Melogold.Core.Data;
 /// </summary>
 public sealed class LibraryDatabase
 {
-    public const int SchemaVersion = 2;
+    public const int SchemaVersion = 3;
 
     private readonly string _connectionString;
     private readonly Lock _writeLock = new();
@@ -110,6 +110,20 @@ public sealed class LibraryDatabase
             using var transaction = connection.BeginTransaction();
             Exec(connection, transaction, "ALTER TABLE lyrics ADD COLUMN plain_source TEXT; ALTER TABLE lyrics ADD COLUMN offset_ms INTEGER NOT NULL DEFAULT 0;");
             Exec(connection, transaction, "PRAGMA user_version = 2;");
+            transaction.Commit();
+            version = 2;
+        }
+        if (version < 3)
+        {
+            // v3: тексты через сервер (docs/LYRICS-SYNC.md) — источники в словаре сервера, язык текста, снимок своих версий
+            using var transaction = connection.BeginTransaction();
+            Exec(connection, transaction, """
+                ALTER TABLE lyrics ADD COLUMN language TEXT;
+                UPDATE lyrics SET source = CASE source WHEN 'YouTubeMusic' THEN 'youtube_music' WHEN 'LrcLib' THEN 'lrclib' WHEN 'KuGou' THEN 'kugou' WHEN 'File' THEN 'file' WHEN 'User' THEN 'user' ELSE source END;
+                UPDATE lyrics SET plain_source = CASE plain_source WHEN 'YouTubeMusic' THEN 'youtube_music' WHEN 'LrcLib' THEN 'lrclib' WHEN 'KuGou' THEN 'kugou' WHEN 'File' THEN 'file' WHEN 'User' THEN 'user' ELSE plain_source END;
+                CREATE TABLE synced_lyrics (video_id TEXT PRIMARY KEY, rev INTEGER NOT NULL, hash TEXT NOT NULL);
+                """);
+            Exec(connection, transaction, "PRAGMA user_version = 3;");
             transaction.Commit();
         }
     }

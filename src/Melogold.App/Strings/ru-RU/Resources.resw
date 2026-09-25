@@ -426,4 +426,6 @@
   <data name="LicensesTitle" xml:space="preserve"><value>Лицензии</value></data>
   <data name="LicensesServices" xml:space="preserve"><value>Звук и каталог — YouTube и YouTube Music; тексты — LRCLIB и KuGou. Melogold не связан с ними.</value></data>
   <data name="OfflineDataFromFormat" xml:space="preserve"><value>Нет сети — данные от {0}</value></data>
+  <data name="LyricsSourceMelogold" xml:space="preserve"><value>Текст: сообщество Melogold</value></data>
+  <data name="LyricsTooLarge" xml:space="preserve"><value>Текст слишком большой для сервера: он останется только на этом устройстве</value></data>
 </root>

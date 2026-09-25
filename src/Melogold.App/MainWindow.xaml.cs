@@ -121,6 +121,8 @@ public sealed partial class MainWindow : Window
         {
             if (e.PropertyName == nameof(UpdateService.HasUpdate)) DispatcherQueue.TryEnqueue(ShowUpdateBadge);
         };
+        // Свой текст не поместился на сервер (413): он останется только здесь
+        App.Services.GetRequiredService<Melogold.Server.LibrarySync>().LyricsRejected += _ => DispatcherQueue.TryEnqueue(() => Snackbar.Show(Loc.Get("LyricsTooLarge")));
         // Таймер сна сработал: воспроизведение на паузе — сказать об этом
         player.Engine.SleepTimerFired += () => DispatcherQueue.TryEnqueue(() => Snackbar.Show(Loc.Get("SleepTimerEnded")));
         // Кнопки ⏮ ⏯ ⏭ на миниатюре в панели задач — когда у окна уже есть кнопка на панели

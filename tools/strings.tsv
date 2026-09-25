@@ -435,3 +435,5 @@ SettingsLicenses.Description	Программы с открытым кодом �
 LicensesTitle	Лицензии	Licenses
 LicensesServices	Звук и каталог — YouTube и YouTube Music; тексты — LRCLIB и KuGou. Melogold не связан с ними.	Audio and catalog come from YouTube and YouTube Music; lyrics from LRCLIB and KuGou. Melogold isn't affiliated with them.
 OfflineDataFromFormat	Нет сети — данные от {0}	No connection — data from {0}
+LyricsSourceMelogold	Текст: сообщество Melogold	Lyrics: Melogold community
+LyricsTooLarge	Текст слишком большой для сервера: он останется только на этом устройстве	The lyrics are too large for the server: they stay on this device only

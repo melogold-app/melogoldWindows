@@ -426,4 +426,6 @@
   <data name="LicensesTitle" xml:space="preserve"><value>Licenses</value></data>
   <data name="LicensesServices" xml:space="preserve"><value>Audio and catalog come from YouTube and YouTube Music; lyrics from LRCLIB and KuGou. Melogold isn't affiliated with them.</value></data>
   <data name="OfflineDataFromFormat" xml:space="preserve"><value>No connection — data from {0}</value></data>
+  <data name="LyricsSourceMelogold" xml:space="preserve"><value>Lyrics: Melogold community</value></data>
+  <data name="LyricsTooLarge" xml:space="preserve"><value>The lyrics are too large for the server: they stay on this device only</value></data>
 </root>

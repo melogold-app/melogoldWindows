@@ -16,7 +16,8 @@ public enum LibraryChange
     Tracks = 16,
     Searches = 32,
     Blocks = 64,
-    All = Likes | Playlists | Bookmarks | History | Tracks | Searches | Blocks,
+    Lyrics = 128,
+    All = Likes | Playlists | Bookmarks | History | Tracks | Searches | Blocks | Lyrics,
 }
 
 /// <summary>Свой плейлист (в Библиотеке): <see cref="SyncId"/> — UUID сервера, если плейлист синхронизирован.</summary>
@@ -27,19 +28,23 @@ public sealed record HistoryEntry(Track Track, long PlayedAt);
 public sealed record TopEntry(Track Track, long PlayTimeMs);
 
 /// <summary>
-/// Текст трека в кэше (Android <c>Lyrics</c>): у каждой стороны null — ещё не искали, "" — не нашли. Источник —
-/// <see cref="LyricsSources"/>. <see cref="OffsetMs"/> — сдвиг синхронного текста у этого трека (положительный — раньше).
+/// Текст трека (Android <c>Lyrics</c>): у каждой стороны null — ещё не искали, "" — не нашли. Источник —
+/// <see cref="LyricsSources"/>. <see cref="OffsetMs"/> — сдвиг синхронного текста у этого трека (положительный — раньше),
+/// <see cref="Language"/> — BCP 47, если известен.
 /// </summary>
-public sealed record StoredLyrics(string? Synced, string? Plain, string? SyncedSource, string? PlainSource, long OffsetMs = 0);
+public sealed record StoredLyrics(string? Synced, string? Plain, string? SyncedSource, string? PlainSource, long OffsetMs = 0, string? Language = null);
 
-/// <summary>Откуда текст (Android <c>LyricsSource</c>).</summary>
+/// <summary>Откуда текст — словарь сервера (docs/LYRICS-SYNC.md §2) и <see cref="Melogold"/>, общий текст сообщества.</summary>
 public static class LyricsSources
 {
-    public const string YouTubeMusic = "YouTubeMusic";
-    public const string LrcLib = "LrcLib";
-    public const string KuGou = "KuGou";
-    public const string File = "File";
-    public const string User = "User";
+    public const string YouTubeMusic = "youtube_music";
+    public const string LrcLib = "lrclib";
+    public const string KuGou = "kugou";
+    public const string File = "file";
+    public const string User = "user";
+
+    /// <summary>Общий текст другого пользователя с сервера: показывается, но своим не становится.</summary>
+    public const string Melogold = "melogold";
 }
 
 /// <summary>Трек плейлиста с порядком и ключом сервера.</summary>
@@ -565,23 +570,35 @@ public sealed class Library(LibraryDatabase db)
     public StoredLyrics? GetLyrics(string videoId) => Database.Read(c =>
     {
         using var command = c.CreateCommand();
-        command.CommandText = "SELECT synced, plain, source, plain_source, offset_ms FROM lyrics WHERE video_id = $v";
+        command.CommandText = $"SELECT {LyricsColumns} FROM lyrics WHERE video_id = $v";
         command.Parameters.AddWithValue("$v", videoId);
         using var r = command.ExecuteReader();
-        if (!r.Read()) return null;
-        return new StoredLyrics(r.IsDBNull(0) ? null : r.GetString(0), r.IsDBNull(1) ? null : r.GetString(1),
-            r.IsDBNull(2) ? null : r.GetString(2), r.IsDBNull(3) ? null : r.GetString(3), r.GetInt64(4));
+        return r.Read() ? ReadLyrics(r) : null;
     });
 
-    public void SaveLyrics(string videoId, StoredLyrics lyrics) =>
-        Database.Write((c, t) => LibraryDatabase.Exec(c, t, """
-            INSERT OR REPLACE INTO lyrics (video_id, synced, plain, source, plain_source, offset_ms, fetched_at)
-            VALUES ($v, $s, $p, $src, $psrc, $offset, $now)
+    internal const string LyricsColumns = "synced, plain, source, plain_source, offset_ms, language";
+
+    internal static StoredLyrics ReadLyrics(SqliteDataReader r, int o = 0) => new(
+        r.IsDBNull(o) ? null : r.GetString(o), r.IsDBNull(o + 1) ? null : r.GetString(o + 1),
+        r.IsDBNull(o + 2) ? null : r.GetString(o + 2), r.IsDBNull(o + 3) ? null : r.GetString(o + 3), r.GetInt64(o + 4),
+        r.IsDBNull(o + 5) ? null : r.GetString(o + 5));
+
+    /// <summary>Записать текст; свой текст через 2 с уходит на сервер (<see cref="LibraryChange.Lyrics"/>).</summary>
+    public void SaveLyrics(string videoId, StoredLyrics lyrics)
+    {
+        Database.Write((c, t) => WriteLyrics(c, t, videoId, lyrics));
+        Notify(LibraryChange.Lyrics);
+    }
+
+    internal static void WriteLyrics(SqliteConnection c, SqliteTransaction t, string videoId, StoredLyrics lyrics) =>
+        LibraryDatabase.Exec(c, t, """
+            INSERT OR REPLACE INTO lyrics (video_id, synced, plain, source, plain_source, offset_ms, language, fetched_at)
+            VALUES ($v, $s, $p, $src, $psrc, $offset, $lang, $now)
             """,
             ("$v", videoId), ("$s", lyrics.Synced), ("$p", lyrics.Plain), ("$src", lyrics.SyncedSource), ("$psrc", lyrics.PlainSource),
-            ("$offset", lyrics.OffsetMs), ("$now", IsoTime.NowMs())));
+            ("$offset", lyrics.OffsetMs), ("$lang", lyrics.Language), ("$now", IsoTime.NowMs()));
 
-    private const string FetchedOnly = "COALESCE(source, '') NOT IN ('File', 'User') AND COALESCE(plain_source, '') NOT IN ('File', 'User')";
+    private const string FetchedOnly = "COALESCE(source, '') NOT IN ('file', 'user') AND COALESCE(plain_source, '') NOT IN ('file', 'user')";
 
     /// <summary>Размер найденных в сети текстов, байт (кэш: их можно найти снова).</summary>
     public long FetchedLyricsSize() => Database.Read(c =>

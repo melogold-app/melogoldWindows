@@ -1,5 +1,6 @@
 using Melogold.Core.Data;
 using Melogold.Core.Domain;
+using Melogold.Core.Lyrics;
 using Melogold.Core.Music;
 
 namespace Melogold.InnerTube.Lyrics;
@@ -8,7 +9,7 @@ namespace Melogold.InnerTube.Lyrics;
 /// Итог поиска текста: <paramref name="AnyFailure"/> — хоть один источник не ответил из-за сети (такой пустой итог
 /// не кэшируется как «текста нет»).
 /// </summary>
-public sealed record LyricsFetchResult(string? Plain, string? Synced, bool AnyFailure, string? PlainSource, string? SyncedSource);
+public sealed record LyricsFetchResult(string? Plain, string? Synced, bool AnyFailure, string? PlainSource, string? SyncedSource, long? OffsetMs = null, string? Language = null);
 
 /// <summary>
 /// Цепочка источников текста (docs/PROMPT.md §8.2, Android <c>LyricsFetcher.kt</c>). Название сначала проходит
@@ -23,6 +24,12 @@ public sealed record LyricsFetchResult(string? Plain, string? Synced, bool AnyFa
 public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou)
 {
     public LrcLib LrcLib => lrcLib;
+
+    /// <summary>
+    /// Текст с сервера Melogold (docs/LYRICS-SYNC.md §3.5): своя версия или общая версия другого пользователя; null —
+    /// нет аккаунта, модуля текстов на сервере или текста. Спрашивается, только если провайдеры не нашли синхронный.
+    /// </summary>
+    public Func<string, CancellationToken, Task<(LyricsPayload Payload, bool Mine)?>>? Community { get; set; }
 
     public async Task<LyricsFetchResult> FetchAsync(Track track, long durationMs, StoredLyrics? current, CancellationToken ct = default)
     {
@@ -100,6 +107,32 @@ public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou
                 syncedSource = found.Source;
             }
         }
-        return new LyricsFetchResult(plain, synced, anyFailure, plainSource, syncedSource);
+        long? offset = null;
+        string? language = null;
+        if (synced is null && Community is { } community)
+        {
+            try
+            {
+                if (await community(track.VideoId, ct).ConfigureAwait(false) is { } found && found.Payload.Synced is { } text)
+                {
+                    // Своя версия остаётся своей, общая помечается «сообщество Melogold» и своей не становится
+                    synced = text;
+                    syncedSource = found.Mine ? found.Payload.SyncedSource : LyricsSources.Melogold;
+                    if (plain is null && found.Payload.Plain is { } communityPlain)
+                    {
+                        plain = communityPlain;
+                        plainSource = found.Mine ? found.Payload.PlainSource : LyricsSources.Melogold;
+                    }
+                    offset = -(found.Payload.StartTimeMs ?? 0);
+                    language = found.Payload.Language;
+                }
+            }
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
+            {
+                if (ct.IsCancellationRequested) throw new OperationCanceledException(ct);
+                anyFailure = true;
+            }
+        }
+        return new LyricsFetchResult(plain, synced, anyFailure, plainSource, syncedSource, offset, language);
     }
 }

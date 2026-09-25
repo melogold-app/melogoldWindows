@@ -88,6 +88,7 @@ public sealed class SyncTx
         Exec("DELETE FROM synced_bookmarks");
         Exec("UPDATE playlists SET sync_id = NULL");
         Exec("UPDATE playlist_items SET sort_key = NULL");
+        Exec("DELETE FROM synced_lyrics");
         Exec("DELETE FROM sync_state");
     }
 
@@ -217,6 +218,38 @@ public sealed class SyncTx
         if (playlist.SyncId is null) return;
         UpsertSyncedPlaylist(new SyncedPlaylist(playlist.SyncId, playlist.Name, playlist.Thumb, keyed.Select(i => i.VideoId).ToList()));
     }
+
+    // ---------- Тексты (docs/LYRICS-SYNC.md) ----------
+
+    /// <summary>Свои тексты: хотя бы одна сторона из источника <c>user</c> или <c>file</c>.</summary>
+    public Dictionary<string, StoredLyrics> OwnLyrics() => Query($"""
+            SELECT video_id, {Library.LyricsColumns} FROM lyrics
+            WHERE (source IN ('user', 'file') AND COALESCE(synced, '') <> '') OR (plain_source IN ('user', 'file') AND COALESCE(plain, '') <> '')
+            """, r => (Id: r.GetString(0), Lyrics: Library.ReadLyrics(r, 1))).ToDictionary(p => p.Id, p => p.Lyrics, StringComparer.Ordinal);
+
+    public StoredLyrics? Lyrics(string videoId) =>
+        Query($"SELECT {Library.LyricsColumns} FROM lyrics WHERE video_id = $v", r => Library.ReadLyrics(r), ("$v", videoId)).FirstOrDefault();
+
+    public void SaveLyrics(string videoId, StoredLyrics lyrics)
+    {
+        Library.WriteLyrics(_c, _t, videoId, lyrics);
+        Changes |= LibraryChange.Lyrics;
+    }
+
+    public void DeleteLyrics(string videoId)
+    {
+        Exec("DELETE FROM lyrics WHERE video_id = $v", ("$v", videoId));
+        Changes |= LibraryChange.Lyrics;
+    }
+
+    /// <summary>Снимок своих версий на сервере.</summary>
+    public Dictionary<string, Lyrics.LyricsSnapshot> SyncedLyrics() => Query("SELECT video_id, rev, hash FROM synced_lyrics",
+        r => (Id: r.GetString(0), Snapshot: new Lyrics.LyricsSnapshot(r.GetInt64(1), r.GetString(2)))).ToDictionary(p => p.Id, p => p.Snapshot, StringComparer.Ordinal);
+
+    public void SetSyncedLyrics(string videoId, long rev, string hash) =>
+        Exec("INSERT OR REPLACE INTO synced_lyrics (video_id, rev, hash) VALUES ($v, $r, $h)", ("$v", videoId), ("$r", rev), ("$h", hash));
+
+    public void ForgetSyncedLyrics(string videoId) => Exec("DELETE FROM synced_lyrics WHERE video_id = $v", ("$v", videoId));
 
     /// <summary>Лайк с сервера: время лайка — серверное, снятый лайк — снятие.</summary>
     public void SetLike(string videoId, long? likedAt)

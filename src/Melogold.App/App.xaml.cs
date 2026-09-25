@@ -84,7 +84,11 @@ public partial class App : Application
         services.AddSingleton<PlayerViewModel>();
         services.AddSingleton<TrackActions>();
         services.AddSingleton<CollectionMenu>();
-        services.AddSingleton(sp => new LyricsFetcher(sp.GetRequiredService<YouTubeMusic>(), new LrcLib(LrcLib.CreateClient(AppInfo.ToolUserAgent)), new KuGou(KuGou.CreateClient())));
+        services.AddSingleton(sp => new LyricsFetcher(sp.GetRequiredService<YouTubeMusic>(), new LrcLib(LrcLib.CreateClient(AppInfo.ToolUserAgent)), new KuGou(KuGou.CreateClient()))
+        {
+            // Свой или общий текст с сервера Melogold, когда провайдеры не нашли синхронный (docs/LYRICS-SYNC.md §3.5)
+            Community = sp.GetRequiredService<LibrarySync>().LookupLyricsAsync,
+        });
         services.AddSingleton<LyricsService>();
         services.AddSingleton<AudioLevels>();
         services.AddSingleton<UpdateService>();

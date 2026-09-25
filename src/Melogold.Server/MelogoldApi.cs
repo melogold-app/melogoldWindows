@@ -195,6 +195,20 @@ public sealed class MelogoldApi : IDisposable
     public Task<SyncResponse> SyncAsync(string token, SyncRequest request, CancellationToken ct = default) =>
         SendAsync<SyncResponse>(HttpMethod.Post, "/sync", request, token, true, ct);
 
+    // ---------- Тексты песен (API §4.10): X-Sync-Protocol не нужен ----------
+
+    public Task<LyricsResponse> LyricsAsync(string token, string videoId, CancellationToken ct = default) =>
+        SendAsync<LyricsResponse>(HttpMethod.Get, "/lyrics/" + Uri.EscapeDataString(videoId), null, token, false, ct);
+
+    public Task<MyLyrics> PutLyricsAsync(string token, string videoId, LyricsPut lyrics, CancellationToken ct = default) =>
+        SendAsync<MyLyrics>(HttpMethod.Put, "/lyrics/" + Uri.EscapeDataString(videoId), lyrics, token, false, ct);
+
+    public Task DeleteLyricsAsync(string token, string videoId, CancellationToken ct = default) =>
+        SendNoContentAsync(HttpMethod.Delete, "/lyrics/" + Uri.EscapeDataString(videoId), null, token, false, ct);
+
+    public Task<MyLyricsPage> LyricsChangesAsync(string token, LyricsChangesRequest request, CancellationToken ct = default) =>
+        SendAsync<MyLyricsPage>(HttpMethod.Post, "/auth/me/lyrics/changes", request, token, false, ct);
+
     // ---------- Playback (API §4.9) ----------
 
     public Task<PlaybackStateResponse> PlaybackStateAsync(string token, CancellationToken ct = default) =>

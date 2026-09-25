@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Melogold.Core.Data;
 using Melogold.Core.Domain;
+using Melogold.Core.Lyrics;
 using Melogold.Core.Music;
 
 namespace Melogold.Server;
@@ -45,6 +46,8 @@ public sealed class LibrarySync : IDisposable
     private const string KeyCursor = "cursor";
     private const string KeyMerge = "needsMerge";
     private const string KeyLastSync = "lastSyncAt";
+    private const string KeyLyricsRev = "lyricsRev";
+    private static readonly TimeSpan FeaturesMaxAge = TimeSpan.FromMinutes(30);
 
     private readonly AccountService _account;
     private readonly SyncStore _store;
@@ -57,6 +60,9 @@ public sealed class LibrarySync : IDisposable
 
     /// <summary>Курсор, от которого считаются строящиеся ops (их <c>base</c>).</summary>
     private string? _base;
+
+    /// <summary>Когда последний раз спрашивали <c>/server/info</c> про модуль текстов.</summary>
+    private DateTime _featuresAt;
 
     public LibrarySync(AccountService account, SyncStore store, Action<string, Exception?> log)
     {
@@ -73,6 +79,9 @@ public sealed class LibrarySync : IDisposable
 
     /// <summary>Список устройств изменился на сервере (<c>devices.updated</c>): экраны со списком перечитывают его.</summary>
     public event Action? DevicesChanged;
+
+    /// <summary>Свой текст сервер не принял как слишком большой (413): он остаётся только на этом устройстве.</summary>
+    public event Action<string>? LyricsRejected;
 
     public void Start()
     {
@@ -125,7 +134,7 @@ public sealed class LibrarySync : IDisposable
     /// <summary>Правка Избранного, плейлистов или закладок уходит через 2 с.</summary>
     private void OnLibraryChanged(LibraryChange change)
     {
-        if ((change & (LibraryChange.Likes | LibraryChange.Playlists | LibraryChange.Bookmarks)) == 0) return;
+        if ((change & (LibraryChange.Likes | LibraryChange.Playlists | LibraryChange.Bookmarks | LibraryChange.Lyrics)) == 0) return;
         if (_account.State is not AccountState.SignedIn) return;
         CancellationTokenSource debounce;
         lock (_lock)
@@ -155,7 +164,10 @@ public sealed class LibrarySync : IDisposable
     }
 
     /// <summary>Синхронизировать сейчас; <paramref name="force"/> — спросить сервер, даже если здесь ничего не менялось.</summary>
-    public async Task<bool> SyncAsync(bool force = true, CancellationToken ct = default)
+    public Task<bool> SyncAsync(bool force = true, CancellationToken ct = default) => RunAsync(force, false, ct);
+
+    /// <param name="lyricsOnly">только тексты (<c>lyrics.changed</c>): библиотека — лишь если здесь есть неотправленные правки</param>
+    private async Task<bool> RunAsync(bool force, bool lyricsOnly, CancellationToken ct)
     {
         if (_account.Session is null) return true;
         try
@@ -171,7 +183,7 @@ public sealed class LibrarySync : IDisposable
         {
             SetStatus(new SyncStatus.Syncing());
             _pendingLocal = false;
-            await SyncOnceAsync(force, ct).ConfigureAwait(false);
+            await SyncOnceAsync(force, lyricsOnly, ct).ConfigureAwait(false);
             SetStatus(new SyncStatus.Idle(LastSyncAt()));
             return true;
         }
@@ -189,7 +201,7 @@ public sealed class LibrarySync : IDisposable
         }
     }
 
-    private async Task SyncOnceAsync(bool force, CancellationToken ct)
+    private async Task SyncOnceAsync(bool force, bool lyricsOnly, CancellationToken ct)
     {
         var session = _account.Session;
         if (session is null) return;
@@ -205,8 +217,13 @@ public sealed class LibrarySync : IDisposable
         if (_store.State(KeyMerge) == "1") await PlanMergeAsync(ct).ConfigureAwait(false);
 
         var ops = _store.Run(BuildOps);
-        if (ops.Count == 0 && !force) return;
+        if (ops.Count > 0 || (force && !lyricsOnly)) await SyncLibraryAsync(ops, ct).ConfigureAwait(false);
+        // Тексты — после библиотеки, в том же цикле (docs/LYRICS-SYNC.md §3.3)
+        await SyncLyricsAsync(force, ct).ConfigureAwait(false);
+    }
 
+    private async Task SyncLibraryAsync(List<Op> ops, CancellationToken ct)
+    {
         var cursor = _store.State(KeyCursor) ?? "";
         var restarted = false;
         while (true)
@@ -583,8 +600,159 @@ public sealed class LibrarySync : IDisposable
             case "session.invalidated":
                 _account.EndSession();
                 break;
+            case "lyrics.changed":
+                _ = RunAsync(true, true, ct);
+                break;
         }
     }
+
+    // ---------- Тексты песен (API §4.10, docs/LYRICS-SYNC.md) ----------
+
+    /// <summary>
+    /// Модуль текстов есть на сервере (<c>features.lyrics</c>): без него маршруты текстов не трогаются. Ответ
+    /// <c>/server/info</c> перечитывается раз в 30 минут — модуль может появиться, пока приложение открыто.
+    /// </summary>
+    public async Task<bool> LyricsAvailableAsync(CancellationToken ct)
+    {
+        if (_account.ServerInfo is null || DateTime.UtcNow - _featuresAt > FeaturesMaxAge)
+        {
+            try
+            {
+                await _account.CheckAsync(_account.ServerUrl, ct).ConfigureAwait(false);
+                _featuresAt = DateTime.UtcNow;
+            }
+            catch (ApiException e)
+            {
+                _log("Server info unavailable", e);
+            }
+        }
+        return _account.ServerInfo?.Features?.Lyrics is { Version: >= 1 };
+    }
+
+    /// <summary>
+    /// Цикл текстов (§3.3): сначала свои тексты, изменившиеся со снимка, — <c>PUT</c> и <c>DELETE</c>; затем свои версии с
+    /// сервера после <c>lyricsRev</c>. Без своих правок и без <paramref name="force"/> сеть не трогается.
+    /// </summary>
+    private async Task SyncLyricsAsync(bool force, CancellationToken ct)
+    {
+        var sends = _store.Run(tx => LyricsSyncRules.PlanSends(tx.OwnLyrics(), tx.SyncedLyrics()));
+        if (sends.Count == 0 && !force) return;
+        if (!await LyricsAvailableAsync(ct).ConfigureAwait(false)) return;
+
+        foreach (var send in sends)
+        {
+            switch (send)
+            {
+                case LyricsSend.Put put when LyricsSyncRules.TooLarge(put.Payload):
+                    _store.Run(tx => tx.SetSyncedLyrics(put.VideoId, LyricsSnapshot.Rejected, put.Hash));
+                    LyricsRejected?.Invoke(put.VideoId);
+                    break;
+                case LyricsSend.Put put:
+                    try
+                    {
+                        var body = ToPut(put.Payload);
+                        var mine = await _account.AuthorizedAsync((api, token) => api.PutLyricsAsync(token, put.VideoId, body, ct), ct).ConfigureAwait(false);
+                        _store.Run(tx => tx.SetSyncedLyrics(put.VideoId, mine.Rev, put.Hash));
+                    }
+                    catch (ApiException e) when (e.Status is 413 or 400)
+                    {
+                        // Не отправлять снова, пока текст не изменится; 413 — сказать человеку
+                        _log($"Lyrics {put.VideoId} rejected: {e.Code}", e);
+                        _store.Run(tx => tx.SetSyncedLyrics(put.VideoId, LyricsSnapshot.Rejected, put.Hash));
+                        if (e.Status == 413) LyricsRejected?.Invoke(put.VideoId);
+                    }
+                    break;
+                case LyricsSend.Delete delete:
+                    try
+                    {
+                        await _account.AuthorizedAsync((api, token) => api.DeleteLyricsAsync(token, delete.VideoId, ct), ct).ConfigureAwait(false);
+                    }
+                    catch (ApiException e) when (e.Status == 404)
+                    {
+                        // На сервере уже нет — снимок всё равно забыть
+                    }
+                    _store.Run(tx => tx.ForgetSyncedLyrics(delete.VideoId));
+                    break;
+                case LyricsSend.Forget forget:
+                    _store.Run(tx => tx.ForgetSyncedLyrics(forget.VideoId));
+                    break;
+            }
+        }
+
+        var after = long.TryParse(_store.State(KeyLyricsRev), NumberStyles.Integer, CultureInfo.InvariantCulture, out var saved) ? saved : 0;
+        while (true)
+        {
+            var request = new LyricsChangesRequest(after);
+            var page = await _account.AuthorizedAsync((api, token) => api.LyricsChangesAsync(token, request, ct), ct).ConfigureAwait(false);
+            var changes = _store.Run(tx =>
+            {
+                foreach (var item in page.Items) ApplyLyrics(tx, item);
+                tx.SetState(KeyLyricsRev, page.Rev.ToString(CultureInfo.InvariantCulture));
+                return tx.Changes;
+            });
+            _store.Library.Notify(changes);
+            if (!page.More || page.Rev <= after) break;
+            after = page.Rev;
+        }
+    }
+
+    /// <summary>
+    /// Своя версия с сервера: записать с источниками как есть и обновить снимок. Надгробие удаляет свой текст, только
+    /// если он не менялся с прошлого синка; изменённый уйдёт на сервер следующей отправкой.
+    /// </summary>
+    private static void ApplyLyrics(SyncTx tx, MyLyrics item)
+    {
+        if (item.Deleted || item.Text is null)
+        {
+            var snapshot = tx.SyncedLyrics().GetValueOrDefault(item.VideoId);
+            if (LyricsSyncRules.DeleteOnTombstone(tx.Lyrics(item.VideoId), snapshot)) tx.DeleteLyrics(item.VideoId);
+            tx.ForgetSyncedLyrics(item.VideoId);
+            return;
+        }
+        var stored = LyricsSyncRules.FromPayload(FromText(item.Text));
+        if (!LyricsSyncRules.SameContent(tx.Lyrics(item.VideoId), stored)) tx.SaveLyrics(item.VideoId, stored);
+        tx.SetSyncedLyrics(item.VideoId, item.Rev, LyricsSyncRules.Hash(LyricsSyncRules.ToPayload(stored)));
+    }
+
+    /// <summary>
+    /// Текст с сервера для цепочки поиска (§3.5), когда провайдеры не нашли синхронный: своя версия (ещё не пришла синком)
+    /// или общая версия другого пользователя. null — модуля нет, текста нет или нет связи.
+    /// </summary>
+    public async Task<(LyricsPayload Payload, bool Mine)?> LookupLyricsAsync(string videoId, CancellationToken ct)
+    {
+        if (_account.State is not AccountState.SignedIn || !await LyricsAvailableAsync(ct).ConfigureAwait(false)) return null;
+        LyricsResponse response;
+        try
+        {
+            response = await _account.AuthorizedAsync((api, token) => api.LyricsAsync(token, videoId, ct), ct).ConfigureAwait(false);
+        }
+        catch (ApiException e) when (e.IsNetwork)
+        {
+            // Цепочка поиска считает это сетевой неудачей: «нет текста» не кэшируется
+            throw new HttpRequestException(e.Message, e);
+        }
+        catch (ApiException e)
+        {
+            _log($"Lyrics {videoId} lookup failed: {e.Code}", e);
+            return null;
+        }
+        if (response.Mine is { Deleted: false, Text: { } mine }) return (FromText(mine), true);
+        if (response.Shared is { Text: { } shared }) return (FromText(shared), false);
+        return null;
+    }
+
+    private static LyricsPut ToPut(LyricsPayload p) => new()
+    {
+        Plain = p.Plain,
+        PlainSource = p.PlainSource,
+        Synced = p.Synced,
+        SyncedFormat = p.SyncedFormat,
+        SyncedSource = p.SyncedSource,
+        StartTimeMs = p.StartTimeMs,
+        Language = p.Language,
+    };
+
+    private static LyricsPayload FromText(LyricsText t) => new(t.Plain, t.PlainSource, t.Synced, t.SyncedFormat, t.SyncedSource, t.StartTimeMs, t.Language);
 
     private long? LastSyncAt() => long.TryParse(_store.State(KeyLastSync), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : null;
 

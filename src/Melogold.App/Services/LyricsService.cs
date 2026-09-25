@@ -114,7 +114,8 @@ public sealed class LyricsService
                 return;
             }
             if (ct.IsCancellationRequested) return;
-            var fetched = new StoredLyrics(result.Synced, result.Plain, result.SyncedSource, result.PlainSource, stored?.OffsetMs ?? 0);
+            var fetched = new StoredLyrics(result.Synced, result.Plain, result.SyncedSource, result.PlainSource,
+                result.OffsetMs ?? stored?.OffsetMs ?? 0, result.Language ?? stored?.Language);
             // Недостающая сторона, которую не удалось получить из-за сети, не кэшируется как «нет текста»
             if (result.AnyFailure && (fetched.Plain is null || fetched.Synced is null))
             {
@@ -179,9 +180,10 @@ public sealed class LyricsService
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
         var current = Stored ?? new StoredLyrics(null, null, null, null);
-        if (LyricsFormats.ParseSynced(text) is not null)
+        if (LyricsFormats.ParseSynced(text) is { } parsed)
         {
-            Update(current with { Synced = text, SyncedSource = LyricsSources.File, OffsetMs = 0 });
+            // Импорт файла — свой текст: через 2 с он уходит на сервер (docs/LYRICS-SYNC.md §3.2)
+            Update(current with { Synced = text, SyncedSource = LyricsSources.File, OffsetMs = 0, Language = parsed.Language ?? current.Language });
             _settings.PreferSyncedLyrics = true;
         }
         else if (LyricsFormats.Detect(text) == LyricsFormats.Format.Plain) Update(current with { Plain = text.Trim(), PlainSource = LyricsSources.File });

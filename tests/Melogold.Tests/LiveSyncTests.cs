@@ -182,4 +182,63 @@ public class LiveSyncTests(ITestOutputHelper output)
             output.WriteLine($"Аккаунт {login} удалён");
         }
     }
+
+    /// <summary>
+    /// Тексты через сервер (docs/LYRICS-SYNC.md §4): свой текст с A появляется на B за секунды и обратно, удаление на
+    /// одном устройстве убирает его на другом, второй аккаунт видит его общим. Трек — случайный id, чтобы общий текст был
+    /// именно наш. Оба аккаунта удаляются в конце.
+    /// </summary>
+    [Fact]
+    public async Task OwnLyricsReachOtherDevices()
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var other = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var video = "e2e" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        const string Lrc = "[00:01.00]Первая строка\n[00:04.50]Вторая строка\n";
+
+        using var a = new Device("E2E Windows A", server, output);
+        using var b = new Device("E2E Windows B", server, output);
+        using var c = new Device("E2E Windows C", server, output);
+        try
+        {
+            await a.Account.RegisterAsync(login, password);
+            a.Sync.Start();
+            await b.Account.SignInAsync(login, password);
+            b.Sync.Start();
+            await WaitFor("оба устройства синхронизировались", () =>
+                a.Sync.Status is SyncStatus.Idle { LastSyncAt: not null } && b.Sync.Status is SyncStatus.Idle { LastSyncAt: not null });
+
+            // Импорт .lrc на A — свой текст, уходит через 2 с и приходит на B по lyrics.changed
+            a.Library.SaveLyrics(video, new StoredLyrics(Lrc, "", LyricsSources.File, null, 0, "ru"));
+            await WaitFor("B получил текст A", () => b.Library.GetLyrics(video) is { Synced: Lrc, SyncedSource: LyricsSources.File, Language: "ru" });
+
+            // Сдвиг «позже» на B виден на A
+            b.Library.SaveLyrics(video, b.Library.GetLyrics(video)! with { OffsetMs = -1500 });
+            await WaitFor("A получил сдвиг B", () => a.Library.GetLyrics(video)?.OffsetMs == -1500);
+
+            // Другой аккаунт видит его общим, с подписью сообщества
+            await c.Account.RegisterAsync(other, password);
+            var shared = await c.Sync.LookupLyricsAsync(video, CancellationToken.None);
+            Assert.NotNull(shared);
+            Assert.False(shared.Value.Mine);
+            Assert.Equal(Lrc, shared.Value.Payload.Synced);
+            Assert.Equal(1500, shared.Value.Payload.StartTimeMs);
+            output.WriteLine("✓ C видит общий текст");
+
+            // B заменил свой текст найденным в LRCLIB: свой исчез — на сервере надгробие, и A его удаляет
+            b.Library.SaveLyrics(video, new StoredLyrics("[00:02.00]Из LRCLIB\n", "", LyricsSources.LrcLib, null));
+            await WaitFor("A удалил текст по надгробию", () => a.Library.GetLyrics(video) is null);
+            Assert.Null(await c.Sync.LookupLyricsAsync(video, CancellationToken.None));
+            Assert.Equal(LyricsSources.LrcLib, b.Library.GetLyrics(video)?.SyncedSource);
+        }
+        finally
+        {
+            if (a.Account.Session is not null) await a.Account.DeleteAccountAsync(password);
+            if (c.Account.Session is not null) await c.Account.DeleteAccountAsync(password);
+            output.WriteLine($"Аккаунты {login} и {other} удалены");
+        }
+    }
 }

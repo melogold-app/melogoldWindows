@@ -105,7 +105,8 @@ public sealed record ServerFeatures(
     FeatureVersion? RecoveryCode,
     FeatureVersion? Export,
     FeatureVersion? AccountDeletion,
-    FeatureVersion? RegistrationPow);
+    FeatureVersion? RegistrationPow,
+    FeatureVersion? Lyrics = null);
 
 public sealed record ServerLinks(string? Source, string? Privacy, string? Contact);
 
@@ -176,6 +177,34 @@ public sealed record SyncResponse(
     IReadOnlyList<PlayRow> Plays,
     IReadOnlyList<PlayStatRow> PlayStats,
     IReadOnlyList<PlayForgetRow> PlayForgets);
+
+// ---------- Тексты песен (API §4.10, docs/LYRICS-SYNC.md) ----------
+
+/// <summary>Текст трека: обе стороны со своими источниками (<c>user|file|youtube_music|lrclib|kugou</c>).</summary>
+public sealed record LyricsText(string? Plain, string? PlainSource, string? Synced, string? SyncedFormat, string? SyncedSource, long? StartTimeMs, string? Language);
+
+/// <summary>Своя версия для <c>PUT</c>: нужен <c>plain</c> или <c>synced</c>; <c>syncedFormat</c> — вместе с <c>synced</c>.</summary>
+public sealed record LyricsPut
+{
+    public string? Plain { get; init; }
+    public string? PlainSource { get; init; }
+    public string? Synced { get; init; }
+    public string? SyncedFormat { get; init; }
+    public string? SyncedSource { get; init; }
+    public long? StartTimeMs { get; init; }
+    public string? Language { get; init; }
+}
+
+public sealed record MyLyrics(string Id, string VideoId, long Rev, bool Deleted, LyricsText? Text, string UpdatedAt);
+
+/// <summary>Общая версия другого пользователя; автор не раскрывается.</summary>
+public sealed record SharedLyrics(string Id, string VideoId, LyricsText Text, string UpdatedAt);
+
+public sealed record LyricsResponse(MyLyrics? Mine, SharedLyrics? Shared, string ServerTime);
+
+public sealed record LyricsChangesRequest(long After, int? Limit = null);
+
+public sealed record MyLyricsPage(IReadOnlyList<MyLyrics> Items, long Rev, bool More);
 
 // ---------- Playback (API §4.9) ----------
 

@@ -20,6 +20,7 @@ public sealed partial class LibraryPage : CatalogPage
     private readonly VariableSizedWrapGrid _collections = new() { Orientation = Orientation.Horizontal, ItemWidth = 248, ItemHeight = 76 };
     private readonly GridView _playlists = new() { SelectionMode = ListViewSelectionMode.None, IsItemClickEnabled = true };
     private readonly StateView _empty = new() { Visibility = Visibility.Collapsed };
+    private readonly Button _importFirst = new() { Style = (Style)Application.Current.Resources["AccentButtonStyle"], Margin = new Thickness(0, 0, 0, 16), Visibility = Visibility.Collapsed };
     private readonly Library _library = App.Services.GetRequiredService<Library>();
     private bool _dirty = true;
 
@@ -27,6 +28,10 @@ public sealed partial class LibraryPage : CatalogPage
     {
         InitializeComponent();
         _content.Children.Add(new TextBlock { Text = Loc.Get("LibraryHeader"), Style = (Style)Application.Current.Resources["PageTitleStyle"] });
+        // В пустой библиотеке — сразу кнопка импорта: пришедшим из ViTune больше нечего делать первым
+        _importFirst.Content = Loc.Get("LibraryImport");
+        _importFirst.Click += async (_, _) => await ImportFlow.RunAsync(XamlRoot);
+        _content.Children.Add(_importFirst);
         _content.Children.Add(_collections);
 
         var header = new Grid { Margin = new Thickness(0, 24, 0, 8) };
@@ -40,6 +45,17 @@ public sealed partial class LibraryPage : CatalogPage
         _content.Children.Add(header);
         _content.Children.Add(_empty);
         _content.Children.Add(_playlists);
+
+        // Импорт из ViTune или ViMusic (tasks/0004 §4): карточка в конце страницы
+        var import = new ClickableCard
+        {
+            Header = Loc.Get("LibraryImport"),
+            Description = Loc.Get("LibraryImportDescription"),
+            HeaderIcon = new FontIcon { Glyph = "\uE8B5" },
+            Margin = new Thickness(0, 24, 0, 0),
+        };
+        import.Activated += async (_, _) => await ImportFlow.RunAsync(XamlRoot);
+        _content.Children.Add(import);
         _playlists.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
             """
             <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -77,7 +93,8 @@ public sealed partial class LibraryPage : CatalogPage
     private async void Refresh()
     {
         _dirty = false;
-        var (counts, playlists) = await Task.Run(() => (_library.Counts(), _library.Playlists()));
+        var (counts, playlists, plays) = await Task.Run(() => (_library.Counts(), _library.Playlists(), _library.PlayCount()));
+        _importFirst.Visibility = counts is { Likes: 0, Albums: 0, Artists: 0 } && playlists.Count == 0 && plays == 0 ? Visibility.Visible : Visibility.Collapsed;
         _collections.Children.Clear();
         AddCollection("", Loc.Get("Favorites"), Loc.Plural("Tracks", counts.Likes), () => Open(typeof(FavoritesPage)));
         AddCollection("", Loc.Get("History"), Loc.Get("HistoryHint"), () => Open(typeof(HistoryPage)));

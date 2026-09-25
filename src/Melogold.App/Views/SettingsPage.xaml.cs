@@ -268,10 +268,13 @@ public sealed partial class SettingsPage : Page, IScrollToTop
 
     // ---------- База данных ----------
 
-    /// <summary>«Резервное копирование»: база — в файл, который выберет человек.</summary>
+    /// <summary>
+    /// «Сохранить копию» (tasks/0004): формат копии Melogold — его открывают Melogold на Android, Windows и Apple;
+    /// настройки и кэш в копию не входят.
+    /// </summary>
     private async void OnBackup(object sender, RoutedEventArgs e)
     {
-        var picker = new Windows.Storage.Pickers.FileSavePicker { SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary, SuggestedFileName = DatabaseBackup.SuggestedName };
+        var picker = new Windows.Storage.Pickers.FileSavePicker { SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary, SuggestedFileName = LibraryBackup.SuggestedName };
         picker.FileTypeChoices.Add(Loc.Get("BackupFileType"), [".db"]);
         if (App.Current?.Window is not { } window) return;
         WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(window));
@@ -280,7 +283,7 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         var snackbar = App.Services.GetRequiredService<Snackbar>();
         try
         {
-            await Task.Run(() => DatabaseBackup.Export(App.Services.GetRequiredService<LibraryDatabase>(), file.Path));
+            await Task.Run(() => LibraryBackup.Export(App.Services.GetRequiredService<LibraryDatabase>(), file.Path, AppInfo.Version));
             snackbar.Show(Loc.Get("BackupSaved"));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Microsoft.Data.Sqlite.SqliteException)
@@ -290,48 +293,8 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         }
     }
 
-    /// <summary>«Восстановить»: база из файла заменит текущую; Melogold перезапускается, и она встаёт на место при запуске.</summary>
-    private async void OnRestore(object sender, RoutedEventArgs e)
-    {
-        var picker = new Windows.Storage.Pickers.FileOpenPicker { SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary };
-        picker.FileTypeFilter.Add(".db");
-        if (App.Current?.Window is not { } window) return;
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(window));
-        var file = await picker.PickSingleFileAsync();
-        if (file is null) return;
-        var snackbar = App.Services.GetRequiredService<Snackbar>();
-        if (!await Task.Run(() => DatabaseBackup.IsValid(file.Path)))
-        {
-            snackbar.Show(Loc.Get("RestoreInvalid"));
-            return;
-        }
-        var dialog = new ContentDialog
-        {
-            XamlRoot = XamlRoot,
-            Title = Loc.Get("RestoreTitle"),
-            Content = new TextBlock { Text = Loc.Get("RestoreText"), TextWrapping = TextWrapping.Wrap },
-            PrimaryButtonText = Loc.Get("RestoreAction"),
-            CloseButtonText = Loc.Get("Cancel"),
-            DefaultButton = ContentDialogButton.Close,
-        };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
-        try
-        {
-            DatabaseBackup.Schedule(file.Path);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            Log.Warn("Restore failed", ex);
-            snackbar.Show(Loc.Get("BackupFailed"));
-            return;
-        }
-        // Правки последних секунд — на сервер, пока база прежняя
-        _sync.Flush(TimeSpan.FromSeconds(3));
-        Log.Info("Restarting to restore the database");
-        var failure = Microsoft.Windows.AppLifecycle.AppInstance.Restart("");
-        Log.Warn($"Restart failed: {failure}", null);
-        snackbar.Show(Loc.Get("RestoreRestartManually"));
-    }
+    /// <summary>«Импорт копии»: копия ViTune, ViMusic или Melogold добавляется к библиотеке, ничего не удаляется.</summary>
+    private async void OnRestore(object sender, RoutedEventArgs e) => await Controls.ImportFlow.RunAsync(XamlRoot);
 
     private async void OnClearCache(object sender, RoutedEventArgs e)
     {

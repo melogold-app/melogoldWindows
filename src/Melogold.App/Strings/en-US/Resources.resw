@@ -445,18 +445,7 @@
   <data name="CacheUnlimited" xml:space="preserve"><value>Unlimited</value></data>
   <data name="SizeGigabytesFormat" xml:space="preserve"><value>{0} GB</value></data>
   <data name="SettingsDatabase.Text" xml:space="preserve"><value>Database</value></data>
-  <data name="SettingsBackup.Header" xml:space="preserve"><value>Backup</value></data>
-  <data name="SettingsBackup.Description" xml:space="preserve"><value>Export the database to a file. Personal settings (such as the theme) and caches are excluded.</value></data>
-  <data name="SettingsRestore.Header" xml:space="preserve"><value>Restore</value></data>
-  <data name="SettingsRestore.Description" xml:space="preserve"><value>Import the database from a file</value></data>
   <data name="BackupFileType" xml:space="preserve"><value>Melogold database</value></data>
-  <data name="BackupSaved" xml:space="preserve"><value>Backup saved</value></data>
-  <data name="BackupFailed" xml:space="preserve"><value>Couldn’t save the file</value></data>
-  <data name="RestoreInvalid" xml:space="preserve"><value>This isn’t a Melogold for Windows backup</value></data>
-  <data name="RestoreTitle" xml:space="preserve"><value>Restore the database?</value></data>
-  <data name="RestoreText" xml:space="preserve"><value>Existing data will be overwritten. Melogold will restart after restoring the database.</value></data>
-  <data name="RestoreAction" xml:space="preserve"><value>Restore</value></data>
-  <data name="RestoreRestartManually" xml:space="preserve"><value>The database will be restored the next time Melogold starts</value></data>
   <data name="UpdateLater" xml:space="preserve"><value>Later</value></data>
   <data name="UpdateToastText" xml:space="preserve"><value>Click to see what’s new and update</value></data>
   <data name="LyricsEdit" xml:space="preserve"><value>Edit lyrics</value></data>
@@ -505,4 +494,26 @@
   <data name="ClearHistoryEverywherePromptFormat" xml:space="preserve"><value>Delete all plays ({0}) on every device of the account? Favorites and playlists stay as they are.</value></data>
   <data name="HistoryCleared" xml:space="preserve"><value>History cleared</value></data>
   <data name="RemovedFromHistoryEverywhereFormat" xml:space="preserve"><value>Removed from history on all devices: “{0}”</value></data>
+  <data name="SettingsBackup.Header" xml:space="preserve"><value>Save a copy</value></data>
+  <data name="SettingsBackup.Description" xml:space="preserve"><value>One file with tracks, history, Favorites, playlists and lyrics that Melogold on Android, Windows and Apple opens. Settings and the cache are not included</value></data>
+  <data name="SettingsRestore.Header" xml:space="preserve"><value>Import a copy</value></data>
+  <data name="SettingsRestore.Description" xml:space="preserve"><value>A ViTune, ViMusic or Melogold backup is added to your library. Nothing here is deleted</value></data>
+  <data name="BackupSaved" xml:space="preserve"><value>Copy saved</value></data>
+  <data name="BackupFailed" xml:space="preserve"><value>Could not save the copy</value></data>
+  <data name="LibraryImport" xml:space="preserve"><value>Import from ViTune or ViMusic</value></data>
+  <data name="LibraryImportDescription" xml:space="preserve"><value>Tracks, history, favorites, playlists and lyrics join your library</value></data>
+  <data name="ImportRunning" xml:space="preserve"><value>Importing the library…</value></data>
+  <data name="ImportDoneTitle" xml:space="preserve"><value>Library imported</value></data>
+  <data name="ImportDoneOk" xml:space="preserve"><value>OK</value></data>
+  <data name="ImportSummaryFormat" xml:space="preserve"><value>New tracks: {0}. Plays: {1}. Favorites: {2}. Lyrics: {3}. Playlists: {4}. Saved albums and artists: {5}.</value></data>
+  <data name="ImportPlaysKnownFormat" xml:space="preserve"><value>Plays that were already here are not repeated: {0}.</value></data>
+  <data name="ImportLocalSkippedFormat" xml:space="preserve"><value>Local files are not moved: {0}.</value></data>
+  <data name="ImportDatesSkippedFormat" xml:space="preserve"><value>Plays and likes with impossible dates are left out: {0}.</value></data>
+  <data name="ImportSyncNote" xml:space="preserve"><value>The history goes to your other devices through the server bit by bit: up to 2000 plays an hour.</value></data>
+  <data name="ImportFailedTitle" xml:space="preserve"><value>Could not import</value></data>
+  <data name="ImportNotBackup" xml:space="preserve"><value>This is not a ViTune, ViMusic or Melogold backup.</value></data>
+  <data name="ImportTooOld" xml:space="preserve"><value>This backup is too old to read.</value></data>
+  <data name="ImportUnsupported" xml:space="preserve"><value>Backups of InnerTune, Metrolist and similar apps are not supported yet.</value></data>
+  <data name="ImportUnreadable" xml:space="preserve"><value>The file could not be read. It may be damaged.</value></data>
+  <data name="ImportOpenHistory" xml:space="preserve"><value>Open history</value></data>
 </root>

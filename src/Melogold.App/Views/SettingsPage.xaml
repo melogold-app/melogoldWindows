@@ -136,12 +136,12 @@
 
             <!-- База данных (Android «База данных»): копия в файл и восстановление из файла -->
             <TextBlock x:Uid="SettingsDatabase" Style="{StaticResource SettingsSectionHeaderStyle}" Text="Database" />
-            <controls:ClickableCard x:Uid="SettingsBackup" Header="Backup" IsActionIconVisible="False" Activated="OnBackup">
+            <controls:ClickableCard x:Uid="SettingsBackup" Header="Save a copy" IsActionIconVisible="False" Activated="OnBackup">
                 <toolkit:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE74E;" />
                 </toolkit:SettingsCard.HeaderIcon>
             </controls:ClickableCard>
-            <controls:ClickableCard x:Uid="SettingsRestore" Header="Restore" IsActionIconVisible="False" Activated="OnRestore">
+            <controls:ClickableCard x:Uid="SettingsRestore" Header="Import a copy" IsActionIconVisible="False" Activated="OnRestore">
                 <toolkit:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE777;" />
                 </toolkit:SettingsCard.HeaderIcon>

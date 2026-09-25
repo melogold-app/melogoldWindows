@@ -41,8 +41,6 @@ public partial class App : Application
             Log.Warn("Unobserved task", e.Exception);
             e.SetObserved();
         };
-        // «Восстановить» из настроек: база из копии встаёт на место до того, как её откроют
-        DatabaseBackup.ApplyPending();
         Services = ConfigureServices();
         Images.Cache = Services.GetRequiredService<ImageCache>();
         InitializeComponent();

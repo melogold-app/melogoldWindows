@@ -454,18 +454,7 @@ CacheUsedPlainFormat	{0} использовано	{0} used
 CacheUnlimited	Без ограничений	Unlimited
 SizeGigabytesFormat	{0} ГБ	{0} GB
 SettingsDatabase.Text	База данных	Database
-SettingsBackup.Header	Резервное копирование	Backup
-SettingsBackup.Description	Экспортировать базу данных в файл. Персональные настройки (например, тема) и кэш исключаются.	Export the database to a file. Personal settings (such as the theme) and caches are excluded.
-SettingsRestore.Header	Восстановить	Restore
-SettingsRestore.Description	Импортировать базу данных из файла	Import the database from a file
 BackupFileType	База данных Melogold	Melogold database
-BackupSaved	Резервная копия сохранена	Backup saved
-BackupFailed	Не удалось сохранить файл	Couldn’t save the file
-RestoreInvalid	Это не резервная копия Melogold для Windows	This isn’t a Melogold for Windows backup
-RestoreTitle	Восстановить базу данных?	Restore the database?
-RestoreText	Существующие данные будут перезаписаны. Melogold перезапустится после восстановления базы данных.	Existing data will be overwritten. Melogold will restart after restoring the database.
-RestoreAction	Восстановить	Restore
-RestoreRestartManually	База будет восстановлена при следующем запуске Melogold	The database will be restored the next time Melogold starts
 UpdateLater	Позже	Later
 UpdateToastText	Нажмите, чтобы посмотреть, что нового, и обновить	Click to see what’s new and update
 LyricsEdit	Редактировать текст	Edit lyrics
@@ -514,3 +503,25 @@ ClearHistoryPromptFormat	Удалить все прослушивания ({0})?
 ClearHistoryEverywherePromptFormat	Удалить все прослушивания ({0}) на всех устройствах аккаунта? Избранное и плейлисты не изменятся.	Delete all plays ({0}) on every device of the account? Favorites and playlists stay as they are.
 HistoryCleared	История очищена	History cleared
 RemovedFromHistoryEverywhereFormat	Убрано из истории на всех устройствах: «{0}»	Removed from history on all devices: “{0}”
+SettingsBackup.Header	Сохранить копию	Save a copy
+SettingsBackup.Description	Один файл с треками, историей, Избранным, плейлистами и текстами — его открывает Melogold на Android, Windows и Apple. Настройки и кэш в копию не входят	One file with tracks, history, Favorites, playlists and lyrics that Melogold on Android, Windows and Apple opens. Settings and the cache are not included
+SettingsRestore.Header	Импорт копии	Import a copy
+SettingsRestore.Description	Копия ViTune, ViMusic или Melogold добавится к библиотеке. Ничего не удаляется	A ViTune, ViMusic or Melogold backup is added to your library. Nothing here is deleted
+BackupSaved	Копия сохранена	Copy saved
+BackupFailed	Не удалось сохранить копию	Could not save the copy
+LibraryImport	Импорт из ViTune или ViMusic	Import from ViTune or ViMusic
+LibraryImportDescription	Треки, история, Избранное, плейлисты и тексты добавятся к библиотеке	Tracks, history, favorites, playlists and lyrics join your library
+ImportRunning	Импортируем библиотеку…	Importing the library…
+ImportDoneTitle	Библиотека импортирована	Library imported
+ImportDoneOk	Готово	OK
+ImportSummaryFormat	Новых треков — {0}, прослушиваний — {1}, в Избранном — {2}, текстов — {3}, плейлистов — {4}, сохранённых альбомов и исполнителей — {5}.	New tracks: {0}. Plays: {1}. Favorites: {2}. Lyrics: {3}. Playlists: {4}. Saved albums and artists: {5}.
+ImportPlaysKnownFormat	Прослушивания, которые уже были, не повторяются: {0}.	Plays that were already here are not repeated: {0}.
+ImportLocalSkippedFormat	Локальные файлы не перенесены: {0}.	Local files are not moved: {0}.
+ImportDatesSkippedFormat	Прослушивания и лайки с невозможными датами пропущены: {0}.	Plays and likes with impossible dates are left out: {0}.
+ImportSyncNote	На другие устройства история уйдёт через сервер постепенно — до 2000 прослушиваний в час.	The history goes to your other devices through the server bit by bit: up to 2000 plays an hour.
+ImportFailedTitle	Не удалось импортировать	Could not import
+ImportNotBackup	Это не копия ViTune, ViMusic или Melogold.	This is not a ViTune, ViMusic or Melogold backup.
+ImportTooOld	Эта копия слишком старая.	This backup is too old to read.
+ImportUnsupported	Копии InnerTune, Metrolist и похожих приложений пока не поддерживаются.	Backups of InnerTune, Metrolist and similar apps are not supported yet.
+ImportUnreadable	Файл не читается. Возможно, он повреждён.	The file could not be read. It may be damaged.
+ImportOpenHistory	Открыть историю	Open history

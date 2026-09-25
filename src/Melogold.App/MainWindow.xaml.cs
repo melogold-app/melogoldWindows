@@ -128,7 +128,8 @@ public sealed partial class MainWindow : Window
         Key(VirtualKey.Left, shift, () => SeekBy(-5), inText: false);
         Key(VirtualKey.Up, ctrl, () => player.ChangeVolume(5), inText: false);
         Key(VirtualKey.Down, ctrl, () => player.ChangeVolume(-5), inText: false);
-        Key(VirtualKey.M, ctrl | shift, () => player.ToggleMuteCommand.Execute(null));
+        // Без звука — Ctrl+M и просто M (OnRootKeyDown), как привыкли: в нужный момент заглушить одной клавишей
+        Key(VirtualKey.M, ctrl, () => player.ToggleMuteCommand.Execute(null));
         Key(VirtualKey.H, ctrl, () => player.ToggleShuffleCommand.Execute(null));
         Key(VirtualKey.T, ctrl, () => player.CycleRepeatCommand.Execute(null));
         Key(VirtualKey.D, ctrl, () => player.ToggleLikeCommand.Execute(null));
@@ -139,7 +140,7 @@ public sealed partial class MainWindow : Window
         Key((VirtualKey)188, ctrl, () => ShowSection("settings")); // Ctrl+,
         Key(VirtualKey.L, ctrl, () => NowPlaying.Toggle(lyrics: true));
         Key(VirtualKey.Q, ctrl, ToggleQueue);
-        Key(VirtualKey.M, ctrl, OpenMiniPlayer);
+        Key(VirtualKey.M, ctrl | shift, OpenMiniPlayer);
         // Перетащить в окно ссылку YouTube или melogold:// — открыть; файл копии библиотеки — «Импорт копии»
         Root.AllowDrop = true;
         Root.DragOver += OnRootDragOver;
@@ -436,7 +437,16 @@ public sealed partial class MainWindow : Window
             FocusSearch();
             e.Handled = true;
         }
+        // M — без звука, как на YouTube; с Ctrl, Alt или Win — не наше
+        else if (e.Key == VirtualKey.M && !ModifierDown(VirtualKey.Control) && !ModifierDown(VirtualKey.Menu) && !ModifierDown(VirtualKey.LeftWindows))
+        {
+            App.Services.GetRequiredService<PlayerViewModel>().ToggleMuteCommand.Execute(null);
+            e.Handled = true;
+        }
     }
+
+    private static bool ModifierDown(VirtualKey key) =>
+        Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
 
     /// <summary>Пробел перехвачен до кнопки: её отпускание пробела тоже не должно нажать.</summary>
     private bool _spaceTaken;

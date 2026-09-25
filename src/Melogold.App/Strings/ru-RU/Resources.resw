@@ -63,7 +63,7 @@
   <data name="PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Следующий трек (Ctrl+→)</value></data>
   <data name="PlayerSeek.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Перемотка</value></data>
   <data name="PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Без звука</value></data>
-  <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Без звука (Ctrl+Shift+M)</value></data>
+  <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Без звука (Ctrl+M)</value></data>
   <data name="PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Громкость</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Ещё</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Ещё</value></data>
@@ -359,7 +359,7 @@
   <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Очередь</value></data>
   <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Очередь (Ctrl+Q)</value></data>
   <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Мини-плеер</value></data>
-  <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Мини-плеер (Ctrl+M)</value></data>
+  <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Мини-плеер (Ctrl+Shift+M)</value></data>
   <data name="MiniPlayerExpand" xml:space="preserve"><value>Развернуть</value></data>
   <data name="QueueTitle" xml:space="preserve"><value>Очередь</value></data>
   <data name="QueueActions" xml:space="preserve"><value>Действия с очередью</value></data>

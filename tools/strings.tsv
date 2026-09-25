@@ -64,7 +64,7 @@ PlayerNext.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Сле�
 PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Следующий трек (Ctrl+→)	Next track (Ctrl+→)
 PlayerSeek.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Перемотка	Seek
 PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Без звука	Mute
-PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Без звука (Ctrl+Shift+M)	Mute (Ctrl+Shift+M)
+PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Без звука (Ctrl+M)	Mute (Ctrl+M)
 PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Громкость	Volume
 PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Ещё	More
 PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Ещё	More
@@ -367,7 +367,7 @@ NoLyricsFound	Тексты песен не найдены	No lyrics found
 PlayerQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Очередь	Queue
 PlayerQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Очередь (Ctrl+Q)	Queue (Ctrl+Q)
 PlayerMiniButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Мини-плеер	Mini player
-PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Мини-плеер (Ctrl+M)	Mini player (Ctrl+M)
+PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Мини-плеер (Ctrl+Shift+M)	Mini player (Ctrl+Shift+M)
 MiniPlayerExpand	Развернуть	Expand
 QueueTitle	Очередь	Queue
 QueueActions	Действия с очередью	Queue actions

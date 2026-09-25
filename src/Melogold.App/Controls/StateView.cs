@@ -15,6 +15,7 @@ public sealed partial class StateView : Grid
 {
     private readonly ProgressRing _ring = new() { Width = 40, Height = 40, IsActive = false, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
     private readonly StackPanel _message = new() { Spacing = 12, MaxWidth = 440, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
+    private readonly InfoBar _stale = new() { Severity = InfoBarSeverity.Informational, IsClosable = true, Margin = new Thickness(0, 0, 0, 12) };
     private CancellationTokenSource? _delay;
 
     public StateView()
@@ -22,11 +23,27 @@ public sealed partial class StateView : Grid
         MinHeight = 240;
         Children.Add(_ring);
         Children.Add(_message);
+        Children.Add(_stale);
+        _stale.Closed += (_, _) => Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>Контент из кэша без сети: «Нет сети — данные от 14:02» над ним (§5.5).</summary>
+    public void ShowStale(DateTime at)
+    {
+        _delay?.Cancel();
+        _ring.IsActive = false;
+        _message.Visibility = Visibility.Collapsed;
+        MinHeight = 0;
+        _stale.Message = Loc.Format("OfflineDataFromFormat", at.ToLocalTime().ToString("t", System.Globalization.CultureInfo.CurrentCulture));
+        _stale.IsOpen = true;
+        Visibility = Visibility.Visible;
     }
 
     /// <summary>Идёт загрузка: кольцо — через 300 мс, чтобы быстрый ответ не мигал.</summary>
     public async void ShowLoading()
     {
+        _stale.IsOpen = false;
+        MinHeight = 240;
         Visibility = Visibility.Visible;
         _message.Visibility = Visibility.Collapsed;
         _delay?.Cancel();
@@ -43,6 +60,7 @@ public sealed partial class StateView : Grid
 
     public void ShowContent()
     {
+        _stale.IsOpen = false;
         _delay?.Cancel();
         _ring.IsActive = false;
         Visibility = Visibility.Collapsed;
@@ -67,6 +85,8 @@ public sealed partial class StateView : Grid
 
     private void ShowMessage(string glyph, string title, string? text, params (string Label, Action Action)[] actions)
     {
+        _stale.IsOpen = false;
+        MinHeight = 240;
         _delay?.Cancel();
         _ring.IsActive = false;
         Visibility = Visibility.Visible;

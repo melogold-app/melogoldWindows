@@ -425,4 +425,5 @@
   <data name="SettingsLicenses.Description" xml:space="preserve"><value>Программы с открытым кодом в Melogold</value></data>
   <data name="LicensesTitle" xml:space="preserve"><value>Лицензии</value></data>
   <data name="LicensesServices" xml:space="preserve"><value>Звук и каталог — YouTube и YouTube Music; тексты — LRCLIB и KuGou. Melogold не связан с ними.</value></data>
+  <data name="OfflineDataFromFormat" xml:space="preserve"><value>Нет сети — данные от {0}</value></data>
 </root>

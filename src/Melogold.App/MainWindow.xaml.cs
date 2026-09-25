@@ -88,7 +88,11 @@ public sealed partial class MainWindow : Window
         Grid.SetRow(NowPlaying, 1);
         Root.Children.Add(NowPlaying);
         _navigator.Changed += () => NowPlaying.Close();
-        NowPlaying.OpenChanged += _ => UpdateChrome();
+        NowPlaying.OpenChanged += open =>
+        {
+            if (!open && _fullScreen) SetFullScreen(false);
+            UpdateChrome();
+        };
         // Очередь — панель справа: в широком окне сдвигает содержимое, в узком ложится поверх
         Grid.SetRow(Queue, 1);
         Queue.HorizontalAlignment = HorizontalAlignment.Right;
@@ -105,6 +109,7 @@ public sealed partial class MainWindow : Window
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.F, VirtualKeyModifiers.Control, FocusSearch));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Left, VirtualKeyModifiers.Menu, () => _navigator.GoBack()));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Escape, VirtualKeyModifiers.None, GoBack));
+        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.F11, VirtualKeyModifiers.None, ToggleFullScreen));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Right, VirtualKeyModifiers.Control, () => player.Engine.Next()));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Left, VirtualKeyModifiers.Control, () => player.Engine.Previous()));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Up, VirtualKeyModifiers.Control, () => player.ChangeVolume(5)));
@@ -250,11 +255,35 @@ public sealed partial class MainWindow : Window
 
     private void OnTitleBarBackRequested(TitleBar sender, object args) => GoBack();
 
-    /// <summary>«Назад» и Esc сначала закрывают «Сейчас играет».</summary>
+    /// <summary>«Назад» и Esc сначала выходят из полноэкранного режима, потом закрывают «Сейчас играет».</summary>
     private void GoBack()
     {
-        if (NowPlaying.IsOpen) NowPlaying.Close();
+        if (_fullScreen) SetFullScreen(false);
+        else if (NowPlaying.IsOpen) NowPlaying.Close();
         else _navigator.GoBack();
+    }
+
+    private bool _fullScreen;
+
+    /// <summary>F11 — «Сейчас играет» на весь экран (§5.5): без строки заголовка, панель плеера остаётся.</summary>
+    private void ToggleFullScreen()
+    {
+        if (_fullScreen)
+        {
+            SetFullScreen(false);
+            return;
+        }
+        NowPlaying.Open();
+        if (NowPlaying.IsOpen) SetFullScreen(true);
+    }
+
+    private void SetFullScreen(bool on)
+    {
+        _fullScreen = on;
+        AppWindow.SetPresenter(on ? AppWindowPresenterKind.FullScreen : AppWindowPresenterKind.Default);
+        AppTitleBar.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
+        Grid.SetRow(NowPlaying, on ? 0 : 1);
+        Grid.SetRowSpan(NowPlaying, on ? 2 : 1);
     }
 
     // ---------- Клавиатура и мышь ----------

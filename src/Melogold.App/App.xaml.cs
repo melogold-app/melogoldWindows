@@ -68,6 +68,8 @@ public partial class App : Application
         });
         services.AddSingleton<YouTubeMusic>();
         services.AddSingleton<StreamResolver>();
+        services.AddSingleton(sp => new StreamClients(sp.GetRequiredService<StreamResolver>(), Path.Combine(AppPaths.DataDirectory, "stream-clients.json"),
+            (message, error) => Log.Warn(message, error)));
         services.AddSingleton<CatalogCache>();
         services.AddSingleton(sp => new AccountService(new DpapiSessionStore(AppPaths.Account), new WindowsDeviceIdentity(),
             sp.GetRequiredService<SettingsStore>().ServerUrl));
@@ -92,6 +94,7 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         ProtocolRegistration.Ensure();
+        Services.GetRequiredService<StreamClients>().Start(AppInfo.ToolUserAgent);
         // Прогрев: visitorData и соединение с YouTube — до первого нажатия, а не после
         _ = Task.Run(async () =>
         {

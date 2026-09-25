@@ -74,7 +74,7 @@ public sealed class StreamResolver(InnerTubeClient client)
     private readonly SemaphoreSlim _slots = new(2);
 
     /// <summary>Порядок клиентов; <see cref="StreamClients"/> подменяет его свежим списком.</summary>
-    public IReadOnlyList<ClientProfile> Clients { get; set; } = [ClientProfile.VisionOs];
+    public IReadOnlyList<ClientProfile> Clients { get; set; } = StreamClients.BuiltIn;
 
     public async Task<StreamInfo> ResolveAsync(string videoId, CancellationToken cancellationToken = default)
     {

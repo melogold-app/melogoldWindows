@@ -37,7 +37,7 @@ public sealed partial class PlayerBar : UserControl
     public static bool? IsRepeat(RepeatMode mode) => mode != RepeatMode.Off;
 
     /// <summary>Обложка открывает «Сейчас играет» (§5.2).</summary>
-    private void OnArtworkClick(object sender, RoutedEventArgs e) => App.Current?.Window?.NowPlaying.Toggle();
+    private void OnArtworkClick(object sender, RoutedEventArgs e) => App.Current?.Window?.NowPlaying.Toggle(from: ArtworkButton);
 
     /// <summary>«Текст»: «Сейчас играет» сразу на тексте.</summary>
     private void OnLyricsClick(object sender, RoutedEventArgs e) => App.Current?.Window?.NowPlaying.Toggle(lyrics: true);

@@ -13,6 +13,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Windows.UI;
 
 namespace Melogold.App.Controls;
@@ -133,10 +134,18 @@ public sealed partial class NowPlayingView : Grid
 
     public event Action<bool>? OpenChanged;
 
-    /// <summary>Открыть; <paramref name="lyrics"/> — в узком окне сразу на тексте.</summary>
-    public void Open(bool lyrics = false)
+    private static bool AnimationsEnabled => new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
+
+    /// <summary>
+    /// Открыть; <paramref name="lyrics"/> — в узком окне сразу на тексте; <paramref name="from"/> — обложка в панели
+    /// плеера: она переезжает на место большой (<c>ConnectedAnimation</c>, §5.5).
+    /// </summary>
+    public void Open(bool lyrics = false, UIElement? from = null)
     {
         if (_engine.Current is null) return;
+        ConnectedAnimation? flight = null;
+        if (!IsOpen && from is not null && AnimationsEnabled)
+            flight = ConnectedAnimationService.GetForCurrentView().PrepareToAnimate("NowPlayingArtwork", from);
         if (lyrics) _showLyricsInNarrow = true;
         _mode.SelectedItem = _mode.Items[_showLyricsInNarrow ? 1 : 0];
         if (!IsOpen)
@@ -150,6 +159,14 @@ public sealed partial class NowPlayingView : Grid
         ShowLyrics();
         _synced.Start();
         _close.Focus(FocusState.Programmatic);
+        if (flight is not null)
+        {
+            // После раскладки: большая обложка должна знать своё место
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                if (_artPanel.Visibility != Visibility.Visible || !flight.TryStart(_artwork)) flight.Cancel();
+            });
+        }
     }
 
     public void Close()
@@ -161,16 +178,16 @@ public sealed partial class NowPlayingView : Grid
         OpenChanged?.Invoke(false);
     }
 
-    public void Toggle(bool lyrics = false)
+    public void Toggle(bool lyrics = false, UIElement? from = null)
     {
         if (IsOpen) Close();
-        else Open(lyrics);
+        else Open(lyrics, from);
     }
 
     private void Animate(bool opening)
     {
         var visual = ElementCompositionPreview.GetElementVisual(this);
-        if (!new Windows.UI.ViewManagement.UISettings().AnimationsEnabled)
+        if (!AnimationsEnabled)
         {
             if (!opening) Visibility = Visibility.Collapsed;
             return;
@@ -227,7 +244,10 @@ public sealed partial class NowPlayingView : Grid
         var cancel = _paletteLoad = new CancellationTokenSource();
         var dark = ActualTheme == ElementTheme.Dark;
         var url = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 226);
-        var palette = await ArtworkColors.PaletteAsync(track.VideoId, url, dark, cancel.Token);
+        // Высокая контрастность: цвета системы, без оттенка обложки
+        var palette = new Windows.UI.ViewManagement.AccessibilitySettings().HighContrast
+            ? new ArtworkPalette(SystemColor("SystemColorWindowColor"), SystemColor("SystemColorWindowTextColor"), SystemColor("SystemColorWindowTextColor"), SystemColor("SystemColorHighlightColor"))
+            : await ArtworkColors.PaletteAsync(track.VideoId, url, dark, cancel.Token);
         if (cancel.IsCancellationRequested) return;
         _palette = palette ?? (dark
             ? new ArtworkPalette(Color.FromArgb(255, 0x20, 0x20, 0x20), Colors.White, Color.FromArgb(255, 0xC5, 0xC5, 0xC5), Color.FromArgb(255, 0x3A, 0x3A, 0x3A))
@@ -239,6 +259,8 @@ public sealed partial class NowPlayingView : Grid
         foreach (var text in _message.Children.OfType<TextBlock>()) text.Foreground = new SolidColorBrush(_palette.Text);
         _synced.SetColors(_palette.Text, _palette.Pill, _palette.Background);
     }
+
+    private static Color SystemColor(string key) => Application.Current.Resources.TryGetValue(key, out var value) && value is Color color ? color : Colors.Black;
 
     /// <summary>Широкое окно — обложка и текст рядом; узкое — одно из двух по переключателю.</summary>
     private void Arrange()

@@ -497,4 +497,12 @@
   <data name="LyricsEditorNoTime" xml:space="preserve"><value>—</value></data>
   <data name="LyricsEditorKeysHint" xml:space="preserve"><value>Enter — mark · Shift+Enter — end line · Space — pause</value></data>
   <data name="MoreOptions" xml:space="preserve"><value>More options</value></data>
+  <data name="HistoryDeviceAll" xml:space="preserve"><value>All devices</value></data>
+  <data name="HistoryDeviceThis" xml:space="preserve"><value>This device</value></data>
+  <data name="HistoryDeviceOther" xml:space="preserve"><value>Another device</value></data>
+  <data name="HistoryDeviceChoose" xml:space="preserve"><value>Whose plays to show</value></data>
+  <data name="ClearHistoryPromptFormat" xml:space="preserve"><value>Delete all plays ({0})? Favorites and playlists stay as they are.</value></data>
+  <data name="ClearHistoryEverywherePromptFormat" xml:space="preserve"><value>Delete all plays ({0}) on every device of the account? Favorites and playlists stay as they are.</value></data>
+  <data name="HistoryCleared" xml:space="preserve"><value>History cleared</value></data>
+  <data name="RemovedFromHistoryEverywhereFormat" xml:space="preserve"><value>Removed from history on all devices: “{0}”</value></data>
 </root>

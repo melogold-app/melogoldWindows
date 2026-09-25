@@ -125,7 +125,13 @@ public sealed partial class HistoryPage : CatalogPage
     private readonly SelectorBar _period = new();
     private readonly StateView _state = new();
     private readonly Library _library = App.Services.GetRequiredService<Library>();
+    private readonly Melogold.Server.AccountService _account = App.Services.GetRequiredService<Melogold.Server.AccountService>();
     private readonly HashSet<string> _pendingRemoval = [];
+
+    /// <summary>Чьи прослушивания показать (tasks/0002 §3.5): виден с аккаунтом, когда есть прослушивания других устройств.</summary>
+    private readonly ComboBox _device = new() { MinWidth = 200, VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed };
+    private HistoryDevice _filter = HistoryDevice.All;
+    private Dictionary<string, string>? _deviceNames;
 
     public HistoryPage()
     {
@@ -137,8 +143,19 @@ public sealed partial class HistoryPage : CatalogPage
         header.Children.Add(new TextBlock { Text = Loc.Get("History"), Style = (Style)Application.Current.Resources["PageTitleStyle"] });
         var clear = new Button { Content = Loc.Get("ClearHistory"), VerticalAlignment = VerticalAlignment.Top };
         clear.Click += async (_, _) => await ClearAsync();
-        Grid.SetColumn(clear, 1);
-        header.Children.Add(clear);
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_device, Loc.Get("HistoryDeviceChoose"));
+        ToolTipService.SetToolTip(_device, Loc.Get("HistoryDeviceChoose"));
+        _device.SelectionChanged += (_, _) =>
+        {
+            if (_device.SelectedItem is not ComboBoxItem { Tag: HistoryDevice filter } || filter == _filter) return;
+            _filter = filter;
+            Load();
+        };
+        actions.Children.Add(_device);
+        actions.Children.Add(clear);
+        Grid.SetColumn(actions, 1);
+        header.Children.Add(actions);
         top.Children.Add(header);
         _mode.Items.Add(new SelectorBarItem { Text = Loc.Get("HistoryRecent"), Tag = "recent" });
         _mode.Items.Add(new SelectorBarItem { Text = Loc.Get("HistoryMostPlayed"), Tag = "top" });
@@ -160,18 +177,61 @@ public sealed partial class HistoryPage : CatalogPage
         Loaded += (_, _) => Load();
     }
 
+    private string? CurrentDeviceId => _account.State is Melogold.Server.AccountState.SignedIn signedIn ? signedIn.DeviceId : null;
+
+    /// <summary>
+    /// Фильтр по устройствам: «Все устройства · Это устройство · имя…»; устройство, которого уже нет в аккаунте, —
+    /// «Другое устройство». Без аккаунта или без чужих прослушиваний фильтра нет.
+    /// </summary>
+    private async Task ShowDevicesAsync()
+    {
+        var current = CurrentDeviceId;
+        var others = current is null ? [] : (await Task.Run(_library.HistoryDeviceIds)).Where(id => id != current).ToList();
+        if (others.Count == 0)
+        {
+            _device.Visibility = Visibility.Collapsed;
+            _filter = HistoryDevice.All;
+            return;
+        }
+        if (_deviceNames is null)
+        {
+            try
+            {
+                _deviceNames = (await _account.DevicesAsync()).Devices.ToDictionary(d => d.Id, d => d.Name);
+            }
+            catch (Exception e) when (e is Melogold.Server.ApiException or HttpRequestException or TaskCanceledException)
+            {
+                Log.Warn("Device names unavailable", e);
+            }
+        }
+        var options = new List<(string Text, HistoryDevice Filter)>
+        {
+            (Loc.Get("HistoryDeviceAll"), HistoryDevice.All),
+            (Loc.Get("HistoryDeviceThis"), HistoryDevice.This(current)),
+        };
+        options.AddRange(others.Select(id => (_deviceNames?.GetValueOrDefault(id) ?? Loc.Get("HistoryDeviceOther"), HistoryDevice.Other(id))).OrderBy(o => o.Item1, StringComparer.CurrentCulture));
+        var selected = _filter;
+        _device.Items.Clear();
+        foreach (var (text, filter) in options) _device.Items.Add(new ComboBoxItem { Content = text, Tag = filter });
+        _device.SelectedIndex = Math.Max(0, options.FindIndex(o => o.Filter == selected));
+        _filter = options[_device.SelectedIndex].Filter;
+        _device.Visibility = Visibility.Visible;
+    }
+
     public override void ScrollToTop() => SearchPage.FindScrollViewer(_list)?.ChangeView(null, 0, null);
 
     private bool Recent => (string?)_mode.SelectedItem?.Tag != "top";
 
     private async void Load()
     {
+        await ShowDevicesAsync();
         _period.Visibility = Recent ? Visibility.Collapsed : Visibility.Visible;
         var recent = Recent;
         var days = (int?)_period.SelectedItem?.Tag ?? 30;
+        var filter = _filter;
         var tracks = await Task.Run(() => recent
-            ? _library.RecentHistory().Select(h => h.Track).ToList()
-            : _library.MostPlayed(days == 0 ? null : IsoTime.NowMs() - days * 86_400_000L).Select(t => t.Track).ToList());
+            ? _library.RecentHistory(device: filter).Select(h => h.Track).ToList()
+            : _library.MostPlayed(days == 0 ? null : IsoTime.NowMs() - days * 86_400_000L, device: filter).Select(t => t.Track).ToList());
         tracks = tracks.Where(t => !_pendingRemoval.Contains(t.VideoId)).ToList();
         _list.SetItems(tracks, new RowOwner(new TrackContext.History(PlaysList: !recent)) { Remove = RemoveRow });
         if (tracks.Count == 0) _state.ShowEmpty("", Loc.Get("HistoryEmpty"), Loc.Get("HistoryEmptyHint"));
@@ -184,7 +244,9 @@ public sealed partial class HistoryPage : CatalogPage
         var index = _list.Entries.IndexOf(row);
         _list.Entries.Remove(row);
         _pendingRemoval.Add(track.VideoId);
-        App.Services.GetRequiredService<Snackbar>().ShowUndoable(Loc.Format("RemovedFromHistoryFormat", track.Title),
+        // С аккаунтом трек уходит из Истории на всех устройствах — так и сказать
+        var text = CurrentDeviceId is null ? Loc.Format("RemovedFromHistoryFormat", track.Title) : Loc.Format("RemovedFromHistoryEverywhereFormat", track.Title);
+        App.Services.GetRequiredService<Snackbar>().ShowUndoable(text,
             commit: () =>
             {
                 _pendingRemoval.Remove(track.VideoId);
@@ -199,17 +261,20 @@ public sealed partial class HistoryPage : CatalogPage
 
     private async Task ClearAsync()
     {
+        var count = await Task.Run(_library.PlayCount);
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
             Title = Loc.Get("ClearHistoryTitle"),
-            Content = Loc.Get("ClearHistoryText"),
+            // С аккаунтом история общая: очищается на всех устройствах
+            Content = Loc.Format(CurrentDeviceId is null ? "ClearHistoryPromptFormat" : "ClearHistoryEverywherePromptFormat", count),
             PrimaryButtonText = Loc.Get("Clear"),
             CloseButtonText = Loc.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close,
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
         await Task.Run(_library.ClearHistory);
+        App.Services.GetRequiredService<Snackbar>().Show(Loc.Get("HistoryCleared"));
     }
 }
 

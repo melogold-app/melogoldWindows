@@ -13,6 +13,12 @@ public sealed record PlaylistRecord(long Id, string? SyncId, string Name, string
 /// <summary>Лайк этого устройства: трек с метаданными и время лайка.</summary>
 public sealed record LikeRecord(Track Track, long LikedAt);
 
+/// <summary>Прослушивание этого устройства, ещё не отправленное на сервер.</summary>
+public sealed record PlayRecord(string EventId, string VideoId, long PlayedAt, long PlayTimeMs);
+
+/// <summary>«Убрать из истории» (<c>history.forget</c>) или «Очистить историю» (<c>history.clear</c>) для сервера.</summary>
+public sealed record HistoryOpRecord(string OpId, string Kind, string? VideoId, long EventsBefore);
+
 /// <summary>Закладка этого устройства: альбом (<c>album</c>) или исполнитель и канал (<c>artist</c>).</summary>
 public sealed record BookmarkRecord(string Type, string BrowseId, long BookmarkedAt, string? Title, string? Subtitle, string? ThumbnailUrl, string? Year);
 
@@ -89,7 +95,55 @@ public sealed class SyncTx
         Exec("UPDATE playlists SET sync_id = NULL");
         Exec("UPDATE playlist_items SET sort_key = NULL");
         Exec("DELETE FROM synced_lyrics");
+        // История (tasks/0002 §3.6): свои прослушивания примет новый аккаунт, чужие — от прошлого — уходят
+        Exec("UPDATE play_events SET synced = 0 WHERE device_id IS NULL");
+        Exec("DELETE FROM play_events WHERE device_id IS NOT NULL");
+        Exec("DELETE FROM history_ops");
         Exec("DELETE FROM sync_state");
+        Changes |= LibraryChange.History;
+    }
+
+    // ---------- История (tasks/0002) ----------
+
+    /// <summary>Свои прослушивания, которых сервер ещё не видел, по времени.</summary>
+    public List<PlayRecord> UnsentPlays() =>
+        Query("SELECT event_id, video_id, played_at, play_time_ms FROM play_events WHERE synced = 0 AND device_id IS NULL ORDER BY played_at",
+            r => new PlayRecord(r.GetString(0), r.GetString(1), r.GetInt64(2), r.GetInt64(3)));
+
+    public void MarkPlaySent(string eventId) => Exec("UPDATE play_events SET synced = 1 WHERE event_id = $e", ("$e", eventId));
+
+    public List<HistoryOpRecord> HistoryOps() =>
+        Query("SELECT op_id, kind, video_id, events_before FROM history_ops ORDER BY events_before",
+            r => new HistoryOpRecord(r.GetString(0), r.GetString(1), Str(r, 2), r.GetInt64(3)));
+
+    public void DeleteHistoryOp(string opId) => Exec("DELETE FROM history_ops WHERE op_id = $id", ("$id", opId));
+
+    /// <summary>Накопленное время треков (для <c>play.baseline atLeast</c> при первой синхронизации).</summary>
+    public List<(string VideoId, long TotalMs)> PlayTotals() =>
+        Query("SELECT video_id, total_play_ms FROM tracks WHERE total_play_ms > 0 ORDER BY video_id", r => (r.GetString(0), r.GetInt64(1)));
+
+    /// <summary>Общее время трека с сервера (<c>playStats</c>): уже по всем устройствам.</summary>
+    public void SetPlayTotal(string videoId, long totalMs)
+    {
+        Exec("UPDATE tracks SET total_play_ms = $ms WHERE video_id = $v", ("$ms", totalMs), ("$v", videoId));
+        Changes |= LibraryChange.History;
+    }
+
+    /// <summary>Прослушивание с сервера: новое вставляется, своё вернувшееся (тот же <c>eventId</c>) не задваивается.</summary>
+    public void InsertPlay(string eventId, string videoId, long playedAt, long playTimeMs, string? deviceId)
+    {
+        if (Exec("INSERT OR IGNORE INTO play_events (event_id, video_id, played_at, play_time_ms, synced, device_id) VALUES ($e, $v, $at, $ms, 1, $d)",
+            ("$e", eventId), ("$v", videoId), ("$at", playedAt), ("$ms", playTimeMs), ("$d", deviceId)) > 0)
+            Changes |= LibraryChange.History;
+    }
+
+    /// <summary><c>playForgets</c>: события трека (или все при <c>*</c>) по <paramref name="eventsBefore"/> включительно удалены.</summary>
+    public void ForgetPlays(string videoId, long eventsBefore)
+    {
+        var removed = videoId == "*"
+            ? Exec("DELETE FROM play_events WHERE played_at <= $at", ("$at", eventsBefore))
+            : Exec("DELETE FROM play_events WHERE video_id = $v AND played_at <= $at", ("$v", videoId), ("$at", eventsBefore));
+        if (removed > 0) Changes |= LibraryChange.History;
     }
 
     // ---------- Библиотека этого устройства ----------

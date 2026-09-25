@@ -25,6 +25,30 @@ public sealed record LocalPlaylist(long Id, string? SyncId, string Name, string?
 
 public sealed record HistoryEntry(Track Track, long PlayedAt);
 
+/// <summary>
+/// Чьи прослушивания показывает История (tasks/0002 §3.5): все; это устройство — события без <c>device_id</c> и с
+/// <c>device_id</c> этого устройства; другое устройство аккаунта.
+/// </summary>
+public sealed record HistoryDevice(string? DeviceId, bool ThisDevice)
+{
+    public static readonly HistoryDevice All = new(null, false);
+
+    public static HistoryDevice This(string? currentDeviceId) => new(currentDeviceId, true);
+
+    public static HistoryDevice Other(string deviceId) => new(deviceId, false);
+
+    public bool IsAll => DeviceId is null && !ThisDevice;
+
+    /// <summary>Условие на <c>play_events</c> и его параметры.</summary>
+    internal (string Sql, (string, object?)[] Parameters) Where() => this switch
+    {
+        { IsAll: true } => ("1 = 1", []),
+        { ThisDevice: true, DeviceId: null } => ("device_id IS NULL", []),
+        { ThisDevice: true } => ("(device_id IS NULL OR device_id = $device)", [("$device", DeviceId)]),
+        _ => ("device_id = $device", [("$device", DeviceId)]),
+    };
+}
+
 public sealed record TopEntry(Track Track, long PlayTimeMs);
 
 /// <summary>
@@ -447,58 +471,93 @@ public sealed class Library(LibraryDatabase db)
         Notify(LibraryChange.History);
     }
 
-    /// <summary>«Недавние»: последние 100 разных треков по последнему прослушиванию (DESIGN §3.11.7).</summary>
-    public List<HistoryEntry> RecentHistory(int limit = 100) => Database.Read(c =>
+    /// <summary>«Недавние»: последние 100 разных треков по последнему прослушиванию (DESIGN §3.11.7) выбранного устройства.</summary>
+    public List<HistoryEntry> RecentHistory(int limit = 100, HistoryDevice? device = null) => Database.Read(c =>
     {
         using var command = c.CreateCommand();
+        var (where, parameters) = (device ?? HistoryDevice.All).Where();
         command.CommandText = $"""
             SELECT {string.Join(", ", TrackColumns.Split(", ").Select(x => "t." + x))}, h.last
-            FROM (SELECT video_id, MAX(played_at) AS last FROM play_events GROUP BY video_id ORDER BY last DESC LIMIT $limit) h
+            FROM (SELECT video_id, MAX(played_at) AS last FROM play_events WHERE {where} GROUP BY video_id ORDER BY last DESC LIMIT $limit) h
             JOIN tracks t ON t.video_id = h.video_id ORDER BY h.last DESC
             """;
         command.Parameters.AddWithValue("$limit", limit);
+        foreach (var (name, value) in parameters) command.Parameters.AddWithValue(name, value ?? DBNull.Value);
         using var r = command.ExecuteReader();
         var list = new List<HistoryEntry>();
         while (r.Read()) list.Add(new HistoryEntry(ReadTrack(r), r.GetInt64(14)));
         return list;
     });
 
-    /// <summary>«Чаще всего» за период: Σ времени событий; за всё время — счётчик трека (DESIGN §3.11.7).</summary>
-    public List<TopEntry> MostPlayed(long? sinceMs, int limit = 100) => Database.Read(c =>
+    /// <summary>
+    /// «Чаще всего» за период: Σ времени событий выбранного устройства; за всё время у «Все устройства» — общее время
+    /// трека с сервера (<c>playStats</c>, DESIGN §3.11.7).
+    /// </summary>
+    public List<TopEntry> MostPlayed(long? sinceMs, int limit = 100, HistoryDevice? device = null) => Database.Read(c =>
     {
         using var command = c.CreateCommand();
         var columns = string.Join(", ", TrackColumns.Split(", ").Select(x => "t." + x));
-        command.CommandText = sinceMs is null
+        var (where, parameters) = (device ?? HistoryDevice.All).Where();
+        command.CommandText = sinceMs is null && (device ?? HistoryDevice.All).IsAll
             ? $"SELECT {columns}, t.total_play_ms FROM tracks t WHERE t.total_play_ms > 0 ORDER BY t.total_play_ms DESC LIMIT $limit"
             : $"""
-               SELECT {columns}, s.total FROM (SELECT video_id, SUM(play_time_ms) AS total FROM play_events WHERE played_at >= $since GROUP BY video_id ORDER BY total DESC LIMIT $limit) s
+               SELECT {columns}, s.total FROM (SELECT video_id, SUM(play_time_ms) AS total FROM play_events WHERE played_at >= $since AND {where} GROUP BY video_id ORDER BY total DESC LIMIT $limit) s
                JOIN tracks t ON t.video_id = s.video_id ORDER BY s.total DESC
                """;
         command.Parameters.AddWithValue("$limit", limit);
-        if (sinceMs is { } since) command.Parameters.AddWithValue("$since", since);
+        command.Parameters.AddWithValue("$since", sinceMs ?? 0);
+        foreach (var (name, value) in parameters) command.Parameters.AddWithValue(name, value ?? DBNull.Value);
         using var r = command.ExecuteReader();
         var list = new List<TopEntry>();
         while (r.Read()) list.Add(new TopEntry(ReadTrack(r), r.GetInt64(14)));
         return list;
     });
 
-    /// <summary>«Очистить историю»: события удаляются, счётчики остаются, как в ViTune (DESIGN §3.11.5).</summary>
+    /// <summary>
+    /// «Очистить историю» на всех устройствах: события удаляются, счётчики остаются, как в ViTune (DESIGN §3.11.5);
+    /// синхронизация отправит <c>history.clear</c>.
+    /// </summary>
     public void ClearHistory()
     {
-        Database.Write((c, t) => LibraryDatabase.Exec(c, t, "DELETE FROM play_events"));
-        Notify(LibraryChange.History);
-    }
-
-    /// <summary>«Убрать из истории»: трек пропадает из Истории и «Чаще всего», счётчик обнуляется.</summary>
-    public void RemoveFromHistory(string videoId)
-    {
+        var now = IsoTime.NowMs();
         Database.Write((c, t) =>
         {
-            LibraryDatabase.Exec(c, t, "DELETE FROM play_events WHERE video_id = $v", ("$v", videoId));
-            LibraryDatabase.Exec(c, t, "UPDATE tracks SET total_play_ms = 0 WHERE video_id = $v", ("$v", videoId));
+            LibraryDatabase.Exec(c, t, "DELETE FROM play_events WHERE played_at <= $now", ("$now", now));
+            LibraryDatabase.Exec(c, t, "INSERT INTO history_ops (op_id, kind, video_id, events_before) VALUES ($id, 'history.clear', NULL, $now)",
+                ("$id", Guid.NewGuid().ToString()), ("$now", now));
         });
         Notify(LibraryChange.History);
     }
+
+    /// <summary>
+    /// «Убрать из истории» на всех устройствах: события трека удаляются, общее время остаётся (<c>resetTotal: false</c>,
+    /// как на Android); синхронизация отправит <c>history.forget</c>.
+    /// </summary>
+    public void RemoveFromHistory(string videoId)
+    {
+        var now = IsoTime.NowMs();
+        Database.Write((c, t) =>
+        {
+            LibraryDatabase.Exec(c, t, "DELETE FROM play_events WHERE video_id = $v AND played_at <= $now", ("$v", videoId), ("$now", now));
+            LibraryDatabase.Exec(c, t, "INSERT INTO history_ops (op_id, kind, video_id, events_before) VALUES ($id, 'history.forget', $v, $now)",
+                ("$id", Guid.NewGuid().ToString()), ("$v", videoId), ("$now", now));
+        });
+        Notify(LibraryChange.History);
+    }
+
+    /// <summary>Сколько прослушиваний в Истории (для «Очистить историю…»).</summary>
+    public long PlayCount() => Database.Read(c => Convert.ToInt64(LibraryDatabase.Scalar(c, "SELECT COUNT(*) FROM play_events"), System.Globalization.CultureInfo.InvariantCulture));
+
+    /// <summary>Другие устройства, чьи прослушивания есть в Истории (для фильтра).</summary>
+    public List<string> HistoryDeviceIds() => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT DISTINCT device_id FROM play_events WHERE device_id IS NOT NULL";
+        using var r = command.ExecuteReader();
+        var list = new List<string>();
+        while (r.Read()) list.Add(r.GetString(0));
+        return list;
+    });
 
     /// <summary>Затравки «Для вас» (REWRITE §4.10.5): последний лайк, самый частый за 30 дней, последний прослушанный.</summary>
     public List<Track> ForYouSeeds()

@@ -47,6 +47,15 @@ public sealed class LibrarySync : IDisposable
     private const string KeyMerge = "needsMerge";
     private const string KeyLastSync = "lastSyncAt";
     private const string KeyLyricsRev = "lyricsRev";
+    private const string KeyHistoryMerge = "historyMerge";
+    private const string KeyHistoryRetryAt = "historyRetryAt";
+
+    /// <summary>Сколько последних прослушиваний отправить при первой синхронизации, если сервер не сказал (<c>limits.history</c>).</summary>
+    private const int DefaultMergeUploadMax = 20_000;
+
+    /// <summary>Самое долгое прослушивание, которое примет сервер (<c>play.add</c>).</summary>
+    private const long MaxPlayTimeMs = 86_400_000;
+    private const int BaselineChunk = 500;
     private static readonly TimeSpan FeaturesMaxAge = TimeSpan.FromMinutes(30);
 
     private readonly AccountService _account;
@@ -134,7 +143,7 @@ public sealed class LibrarySync : IDisposable
     /// <summary>Правка Избранного, плейлистов или закладок уходит через 2 с.</summary>
     private void OnLibraryChanged(LibraryChange change)
     {
-        if ((change & (LibraryChange.Likes | LibraryChange.Playlists | LibraryChange.Bookmarks | LibraryChange.Lyrics)) == 0) return;
+        if ((change & (LibraryChange.Likes | LibraryChange.Playlists | LibraryChange.Bookmarks | LibraryChange.Lyrics | LibraryChange.History)) == 0) return;
         if (_account.State is not AccountState.SignedIn) return;
         CancellationTokenSource debounce;
         lock (_lock)
@@ -213,11 +222,16 @@ public sealed class LibrarySync : IDisposable
             tx.ForgetBinding();
             tx.SetState(KeyBinding, binding);
             tx.SetState(KeyMerge, "1");
+            tx.SetState(KeyHistoryMerge, "1");
         });
         if (_store.State(KeyMerge) == "1") await PlanMergeAsync(ct).ConfigureAwait(false);
 
         var ops = _store.Run(BuildOps);
         if (ops.Count > 0 || (force && !lyricsOnly)) await SyncLibraryAsync(ops, ct).ConfigureAwait(false);
+        // После всех прослушиваний первой синхронизации — накопленное время (play.baseline): раньше его нельзя, иначе
+        // отложенные лимитом play.add прибавились бы к нему ещё раз
+        if (ops.Count > 0 && _store.State(KeyHistoryMerge) == "1" && _store.Run(BuildOps) is { Count: > 0 } more)
+            await SyncLibraryAsync(more, ct).ConfigureAwait(false);
         // Тексты — после библиотеки, в том же цикле (docs/LYRICS-SYNC.md §3.3)
         await SyncLyricsAsync(force, ct).ConfigureAwait(false);
     }
@@ -232,7 +246,7 @@ public sealed class LibrarySync : IDisposable
             SyncResponse response;
             try
             {
-                var request = new SyncRequest { Cursor = cursor, Ops = batch.Select(o => o.Json).ToList(), Streams = ["library"] };
+                var request = new SyncRequest { Cursor = cursor, Ops = batch.Select(o => o.Json).ToList(), Streams = ["library", "history"] };
                 response = await _account.AuthorizedAsync((api, token) => api.SyncAsync(token, request, ct), ct).ConfigureAwait(false);
             }
             catch (ApiException e) when (e.Status == 410 && !restarted)
@@ -243,13 +257,19 @@ public sealed class LibrarySync : IDisposable
                 continue;
             }
             ops = ops.Skip(batch.Count).ToList();
-            var changes = _store.Run(tx =>
+            var (changes, retryAfter) = _store.Run(tx =>
             {
-                ApplyResults(tx, batch, response.Results);
+                var retry = ApplyResults(tx, batch, response.Results);
                 ApplyRows(tx, response);
                 tx.SetState(KeyCursor, response.Cursor);
-                return tx.Changes;
+                return (tx.Changes, retry);
             });
+            if (retryAfter is { } delay)
+            {
+                // Больше 2000 прослушиваний в час (op_rate_limited): остальные — после паузы, которую назвал сервер
+                ops.RemoveAll(o => o.Kind == "play.add");
+                _ = Task.Delay(delay, CancellationToken.None).ContinueWith(_ => SyncAsync(false), TaskScheduler.Default);
+            }
             _store.Library.Notify(changes);
             cursor = response.Cursor;
             if (!response.HasMore && ops.Count == 0) break;
@@ -375,7 +395,84 @@ public sealed class LibrarySync : IDisposable
                 o["bookmarked"] = false;
             }));
         }
+        ops.AddRange(HistoryOps(tx, now));
         return ops;
+    }
+
+    /// <summary>
+    /// История (tasks/0002 §3.2): свои неотправленные прослушивания — <c>play.add</c> (opId = eventId), «Убрать из
+    /// истории» и «Очистить историю» — <c>history.forget</c> и <c>history.clear</c>. При первой синхронизации с аккаунтом —
+    /// не больше <c>mergeUploadMax</c> самых свежих прослушиваний, а когда все они на сервере — накопленное время треков
+    /// <c>play.baseline atLeast</c>.
+    /// </summary>
+    private List<Op> HistoryOps(SyncTx tx, long now)
+    {
+        var ops = new List<Op>();
+        var merge = tx.State(KeyHistoryMerge) == "1";
+        var retryAt = long.TryParse(tx.State(KeyHistoryRetryAt), NumberStyles.Integer, CultureInfo.InvariantCulture, out var saved) ? saved : 0;
+        var plays = tx.UnsentPlays();
+        if (retryAt <= now)
+        {
+            var limit = MergeUploadMax();
+            if (merge && plays.Count > limit)
+            {
+                // Старше последних mergeUploadMax — не отправляются: сервер их всё равно не примет
+                foreach (var old in plays.Take(plays.Count - limit)) tx.MarkPlaySent(old.EventId);
+                plays = plays.Skip(plays.Count - limit).ToList();
+            }
+            foreach (var play in plays)
+            {
+                var track = tx.Track(play.VideoId);
+                ops.Add(MakeOp("play.add", "play:" + play.EventId, play.PlayedAt, o =>
+                {
+                    o["videoId"] = play.VideoId;
+                    o["playedAt"] = IsoTime.Format(play.PlayedAt);
+                    o["playTimeMs"] = Math.Clamp(play.PlayTimeMs, 1, MaxPlayTimeMs);
+                    o["history"] = true;
+                    o["playtime"] = true;
+                    if (track is not null) PutTracks(o, [track]);
+                }, opId: play.EventId));
+            }
+        }
+        foreach (var op in tx.HistoryOps())
+        {
+            ops.Add(MakeOp(op.Kind, "hop:" + op.OpId, op.EventsBefore, o =>
+            {
+                if (op.Kind == "history.forget")
+                {
+                    o["videoId"] = op.VideoId;
+                    o["resetTotal"] = false;
+                }
+                o["eventsBefore"] = IsoTime.Format(op.EventsBefore);
+            }, opId: op.OpId));
+        }
+        if (merge && plays.Count == 0)
+        {
+            var totals = tx.PlayTotals();
+            if (totals.Count == 0) tx.SetState(KeyHistoryMerge, "0");
+            foreach (var chunk in totals.Chunk(BaselineChunk))
+            {
+                ops.Add(MakeOp("play.baseline", "stat:batch", now, o =>
+                {
+                    o["mode"] = "atLeast";
+                    o["entries"] = new JsonArray([.. chunk.Select(e => (JsonNode)new JsonObject { ["videoId"] = e.VideoId, ["totalMs"] = e.TotalMs })]);
+                }));
+            }
+        }
+        return ops;
+    }
+
+    /// <summary><c>limits.history.mergeUploadMax</c> из <c>/server/info</c>.</summary>
+    private int MergeUploadMax()
+    {
+        try
+        {
+            return _account.ServerInfo?.Limits?["history"]?["mergeUploadMax"]?.GetValue<int>() is > 0 and var max ? max : DefaultMergeUploadMax;
+        }
+        catch (Exception e) when (e is InvalidOperationException or FormatException)
+        {
+            return DefaultMergeUploadMax;
+        }
     }
 
     /// <summary>Ops треков одного плейлиста; добавляемые треки несут метаданные.</summary>
@@ -417,11 +514,11 @@ public sealed class LibrarySync : IDisposable
 
     private static string PlaylistName(string name) => Utf16.Truncate(name, NameMax) is { Length: > 0 } trimmed && trimmed.Trim().Length > 0 ? trimmed : "—";
 
-    private Op MakeOp(string kind, string key, long at, Action<JsonObject> fields)
+    private Op MakeOp(string kind, string key, long at, Action<JsonObject> fields, string? opId = null)
     {
         var json = new JsonObject
         {
-            ["opId"] = Guid.NewGuid().ToString(),
+            ["opId"] = opId ?? Guid.NewGuid().ToString(),
             ["kind"] = kind,
             ["at"] = IsoTime.Format(at),
         };
@@ -456,11 +553,32 @@ public sealed class LibrarySync : IDisposable
         if (array.Count > 0) o["tracks"] = array;
     }
 
-    /// <summary>Плейлист, который сервер перенёс в копию восстановления (<c>redirected</c>), переходит туда и здесь.</summary>
-    private static void ApplyResults(SyncTx tx, List<Op> batch, IReadOnlyList<OpResult> results)
+    /// <summary>
+    /// Результаты ops: плейлист, который сервер перенёс в копию восстановления (<c>redirected</c>), переходит туда и здесь;
+    /// прослушивания и действия с историей, которые сервер принял или отверг, больше не отправляются. Возвращает паузу,
+    /// если сервер отложил прослушивания (<c>deferred</c>, лимит в час).
+    /// </summary>
+    private static TimeSpan? ApplyResults(SyncTx tx, List<Op> batch, IReadOnlyList<OpResult> results)
     {
+        TimeSpan? retry = null;
+        bool? baselineDone = null;
         foreach (var (op, result) in batch.Zip(results))
         {
+            var deferred = result.Status == "deferred";
+            switch (op.Kind)
+            {
+                case "play.add":
+                    // applied (и replayed), superseded, rejected — больше не слать; deferred — после паузы
+                    if (!deferred) tx.MarkPlaySent(op.Key["play:".Length..]);
+                    else retry ??= TimeSpan.FromSeconds(Math.Max(1, result.RetryAfterSeconds ?? 3600));
+                    continue;
+                case "history.forget" or "history.clear":
+                    if (!deferred) tx.DeleteHistoryOp(op.Key["hop:".Length..]);
+                    continue;
+                case "play.baseline":
+                    baselineDone = (baselineDone ?? true) && !deferred;
+                    continue;
+            }
             if (result.Status != "redirected" || !op.Key.StartsWith("pl:", StringComparison.Ordinal) || result.PlaylistId is not { } newId) continue;
             var old = op.Key[3..];
             if (tx.PlaylistBySyncId(old) is { } local)
@@ -471,6 +589,9 @@ public sealed class LibrarySync : IDisposable
             }
             tx.DeleteSyncedPlaylist(old);
         }
+        if (baselineDone is { } done) tx.SetState(KeyHistoryMerge, done ? "0" : "1");
+        if (retry is { } pause) tx.SetState(KeyHistoryRetryAt, (IsoTime.NowMs() + (long)pause.TotalMilliseconds).ToString(CultureInfo.InvariantCulture));
+        return retry;
     }
 
     /// <summary>
@@ -532,6 +653,31 @@ public sealed class LibrarySync : IDisposable
             if (row.Type is not ("album" or "artist")) continue;
             tx.SetBookmark(row.Type, row.BrowseId, row.Bookmarked ? IsoTime.TryParse(row.BookmarkedAt) ?? IsoTime.NowMs() : null,
                 row.Title, row.Subtitle, row.ThumbnailUrl, row.Year);
+        }
+
+        ApplyHistoryRows(tx, response);
+    }
+
+    /// <summary>
+    /// История с сервера (tasks/0002 §3.3), в порядке API §4.8: общее время трека (уже по всем устройствам),
+    /// прослушивания любого устройства (своё вернувшееся не задваивается), забытые события.
+    /// </summary>
+    internal static void ApplyHistoryRows(SyncTx tx, SyncResponse response)
+    {
+        foreach (var row in response.PlayStats)
+        {
+            tx.EnsureTrack(row.VideoId, null);
+            tx.SetPlayTotal(row.VideoId, row.TotalPlayTimeMs);
+        }
+        foreach (var row in response.Plays)
+        {
+            if (IsoTime.TryParse(row.PlayedAt) is not { } playedAt) continue;
+            tx.EnsureTrack(row.VideoId, null);
+            tx.InsertPlay(row.EventId, row.VideoId, playedAt, row.PlayTimeMs, row.DeviceId);
+        }
+        foreach (var row in response.PlayForgets)
+        {
+            if (IsoTime.TryParse(row.EventsBefore) is { } before) tx.ForgetPlays(row.VideoId, before);
         }
     }
 

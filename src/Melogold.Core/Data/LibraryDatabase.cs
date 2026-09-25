@@ -9,7 +9,7 @@ namespace Melogold.Core.Data;
 /// </summary>
 public sealed class LibraryDatabase
 {
-    public const int SchemaVersion = 3;
+    public const int SchemaVersion = 4;
 
     private readonly string _connectionString;
     private readonly Lock _writeLock = new();
@@ -124,6 +124,19 @@ public sealed class LibraryDatabase
                 CREATE TABLE synced_lyrics (video_id TEXT PRIMARY KEY, rev INTEGER NOT NULL, hash TEXT NOT NULL);
                 """);
             Exec(connection, transaction, "PRAGMA user_version = 3;");
+            transaction.Commit();
+            version = 3;
+        }
+        if (version < 4)
+        {
+            // v4: общая история (tasks/0002) — чьё прослушивание (null — этого устройства) и очередь «Убрать из истории»
+            // и «Очистить историю» для сервера
+            using var transaction = connection.BeginTransaction();
+            Exec(connection, transaction, """
+                ALTER TABLE play_events ADD COLUMN device_id TEXT;
+                CREATE TABLE history_ops (op_id TEXT PRIMARY KEY, kind TEXT NOT NULL, video_id TEXT, events_before INTEGER NOT NULL);
+                """);
+            Exec(connection, transaction, "PRAGMA user_version = 4;");
             transaction.Commit();
         }
     }

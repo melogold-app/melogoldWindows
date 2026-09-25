@@ -184,6 +184,59 @@ public class LiveSyncTests(ITestOutputHelper output)
     }
 
     /// <summary>
+    /// Общая история (tasks/0002 §4): прослушивание на A — в Истории B с устройством A; накопленное до входа время —
+    /// через <c>play.baseline</c>; «Убрать из истории» и «Очистить историю» — на обоих; «Это устройство» — только свои.
+    /// </summary>
+    [Fact]
+    public async Task HistoryIsSharedBetweenDevices()
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+
+        using var a = new Device("E2E Windows A", server, output);
+        using var b = new Device("E2E Windows B", server, output);
+        try
+        {
+            // До входа: прослушивание на A — уйдёт play.add, его время — ещё и baseline
+            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            a.Library.RecordPlay(A1, 90_000, now - 60_000);
+            await a.Account.RegisterAsync(login, password);
+            a.Sync.Start();
+            await WaitFor("A отправил историю", () => a.Sync.Status is SyncStatus.Idle { LastSyncAt: not null } && a.Library.PlayCount() == 1);
+
+            await b.Account.SignInAsync(login, password);
+            b.Sync.Start();
+            var aDevice = ((AccountState.SignedIn)a.Account.State).DeviceId;
+            var bDevice = ((AccountState.SignedIn)b.Account.State).DeviceId;
+            await WaitFor("B видит прослушивание A с устройством A", () =>
+                b.Library.RecentHistory().Select(h => h.Track.VideoId).SequenceEqual([A1.VideoId]) && b.Library.HistoryDeviceIds().SequenceEqual([aDevice]));
+            Assert.Equal(90_000, b.Library.MostPlayed(null).Single().PlayTimeMs);
+
+            // Прослушивание на B — на A по SSE; «Это устройство» на B — только своё
+            b.Library.RecordPlay(A2, 45_000, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            await WaitFor("A видит прослушивание B", () => a.Library.RecentHistory().Count == 2 && a.Library.HistoryDeviceIds().SequenceEqual([bDevice]));
+            Assert.Equal([A2.VideoId], b.Library.RecentHistory(device: HistoryDevice.This(bDevice)).Select(h => h.Track.VideoId));
+            Assert.Equal([A1.VideoId], b.Library.RecentHistory(device: HistoryDevice.Other(aDevice)).Select(h => h.Track.VideoId));
+
+            // «Убрать из истории» на B — на A тоже
+            b.Library.RemoveFromHistory(A1.VideoId);
+            await WaitFor("A убрал трек из истории", () => a.Library.RecentHistory().Select(h => h.Track.VideoId).SequenceEqual([A2.VideoId]));
+
+            // «Очистить историю» на A — на B тоже
+            a.Library.ClearHistory();
+            await WaitFor("B очистил историю", () => b.Library.PlayCount() == 0);
+            Assert.Empty(a.Library.RecentHistory());
+        }
+        finally
+        {
+            if (a.Account.Session is not null) await a.Account.DeleteAccountAsync(password);
+            output.WriteLine($"Аккаунт {login} удалён");
+        }
+    }
+
+    /// <summary>
     /// Тексты через сервер (docs/LYRICS-SYNC.md §4): свой текст с A появляется на B за секунды и обратно, удаление на
     /// одном устройстве убирает его на другом, второй аккаунт видит его общим. Трек — случайный id, чтобы общий текст был
     /// именно наш. Оба аккаунта удаляются в конце.

@@ -506,3 +506,11 @@ LyricsEditorDiscard	Закрыть	Close
 LyricsEditorNoTime	—	—
 LyricsEditorKeysHint	Enter — отметить · Shift+Enter — конец строки · пробел — пауза	Enter — mark · Shift+Enter — end line · Space — pause
 MoreOptions	Другие действия	More options
+HistoryDeviceAll	Все устройства	All devices
+HistoryDeviceThis	Это устройство	This device
+HistoryDeviceOther	Другое устройство	Another device
+HistoryDeviceChoose	Чьи прослушивания показать	Whose plays to show
+ClearHistoryPromptFormat	Удалить все прослушивания ({0})? Избранное и плейлисты не изменятся.	Delete all plays ({0})? Favorites and playlists stay as they are.
+ClearHistoryEverywherePromptFormat	Удалить все прослушивания ({0}) на всех устройствах аккаунта? Избранное и плейлисты не изменятся.	Delete all plays ({0}) on every device of the account? Favorites and playlists stay as they are.
+HistoryCleared	История очищена	History cleared
+RemovedFromHistoryEverywhereFormat	Убрано из истории на всех устройствах: «{0}»	Removed from history on all devices: “{0}”

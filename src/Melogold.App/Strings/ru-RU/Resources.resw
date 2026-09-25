@@ -497,4 +497,12 @@
   <data name="LyricsEditorNoTime" xml:space="preserve"><value>—</value></data>
   <data name="LyricsEditorKeysHint" xml:space="preserve"><value>Enter — отметить · Shift+Enter — конец строки · пробел — пауза</value></data>
   <data name="MoreOptions" xml:space="preserve"><value>Другие действия</value></data>
+  <data name="HistoryDeviceAll" xml:space="preserve"><value>Все устройства</value></data>
+  <data name="HistoryDeviceThis" xml:space="preserve"><value>Это устройство</value></data>
+  <data name="HistoryDeviceOther" xml:space="preserve"><value>Другое устройство</value></data>
+  <data name="HistoryDeviceChoose" xml:space="preserve"><value>Чьи прослушивания показать</value></data>
+  <data name="ClearHistoryPromptFormat" xml:space="preserve"><value>Удалить все прослушивания ({0})? Избранное и плейлисты не изменятся.</value></data>
+  <data name="ClearHistoryEverywherePromptFormat" xml:space="preserve"><value>Удалить все прослушивания ({0}) на всех устройствах аккаунта? Избранное и плейлисты не изменятся.</value></data>
+  <data name="HistoryCleared" xml:space="preserve"><value>История очищена</value></data>
+  <data name="RemovedFromHistoryEverywhereFormat" xml:space="preserve"><value>Убрано из истории на всех устройствах: «{0}»</value></data>
 </root>

@@ -4,6 +4,7 @@ using Melogold.Core.Domain;
 using Melogold.Core.Music;
 using Melogold.InnerTube;
 using Melogold.Playback;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Melogold.App.Services;
 
@@ -34,7 +35,7 @@ public sealed class LinkRouter(Navigator navigator, YouTubeMusic music, PlayerEn
         switch (YouTubeLinkParser.Parse(text))
         {
             case LinkTarget.Search search:
-                library.AddSearch(search.Query);
+                if (!App.Services.GetRequiredService<SettingsStore>().PauseSearchHistory) library.AddSearch(search.Query);
                 navigator.Open(typeof(SearchPage), new SearchRequest(search.Query));
                 break;
             case LinkTarget.Video video:

@@ -398,3 +398,39 @@ SettingsStreamInfo.Header	Сведения о потоке	Stream info
 SettingsStreamInfo.Description	Формат и источник звука текущего трека	Format and source of the current track's audio
 Previous	Предыдущий трек	Previous track
 Next	Следующий трек	Next track
+# Выпуск: обновления, настройки целиком (Android strings)
+UpdateAvailableTitle	Вышла новая версия {0}	Version {0} is out
+UpdateAvailableText	{0} · установка займёт минуту, всё останется на месте	{0} · takes a minute, everything stays in place
+UpdateAction	Обновить	Update
+UpdateWhatsNew	Что нового	What's new
+UpdateWhatsNewTitle	Что нового в {0}	What's new in {0}
+UpdateDownloadingFormat	Скачивание обновления · {0} %	Downloading the update · {0}%
+UpdateInstalling	Установка…	Installing…
+UpdateFailed	Не удалось скачать обновление. Попробуйте ещё раз	Couldn't download the update. Try again
+UpdateChecking	Проверка…	Checking…
+UpdateUpToDateFormat	Версия {0} · последняя	Version {0} · up to date
+UpdateOfflineFormat	Версия {0} · нет связи с GitHub	Version {0} · can't reach GitHub
+UpdateDisabledFormat	Версия {0} · эта сборка не обновляется сама	Version {0} · this build doesn't update itself
+UpdateVersionNewFormat	Версия {0} · вышла {1}	Version {0} · {1} is out
+CheckUpdatesButton.Content	Проверить обновления	Check for updates
+SizeMegabytesFormat	{0} МБ	{0} MB
+SizeKilobytesFormat	{0} КБ	{0} KB
+SettingsLibrary.Text	Библиотека и история	Library and history
+SettingsPauseHistory.Header	Приостановить историю воспроизведений	Pause playback history
+SettingsPauseHistory.Description	Прослушивания не попадают в историю и «Для вас»	Plays don't go into History and For you
+SettingsPauseSearch.Header	Приостановить историю поиска	Pause search history
+SettingsPauseSearch.Description	Не сохраняет новые поисковые запросы и не показывает историю	Doesn't save new searches or show the history
+SettingsSearchHistory.Header	Очистить историю поиска	Clear search history
+ClearSearchesButton.Content	Очистить	Clear
+EmptySearchHistory	История пуста	History is empty
+SettingsHidden.Header	Сбросить черный список	Reset the blacklist
+ResetHiddenButton.Content	Сбросить	Reset
+BlacklistEmpty	Черный список пуст	The blacklist is empty
+SettingsStorage.Text	Хранилище и данные	Storage and data
+SettingsCache.Header	Кэш	Cache
+ClearCacheButton.Content	Очистить	Clear
+CacheUsedFormat	{0} использовано · тексты и подборки, найденные в сети	{0} used · lyrics and picks found online
+SettingsLicenses.Header	Лицензии	Licenses
+SettingsLicenses.Description	Программы с открытым кодом в Melogold	Open source software in Melogold
+LicensesTitle	Лицензии	Licenses
+LicensesServices	Звук и каталог — YouTube и YouTube Music; тексты — LRCLIB и KuGou. Melogold не связан с ними.	Audio and catalog come from YouTube and YouTube Music; lyrics from LRCLIB and KuGou. Melogold isn't affiliated with them.

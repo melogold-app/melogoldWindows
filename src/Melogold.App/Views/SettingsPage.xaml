@@ -9,6 +9,18 @@
         <StackPanel Margin="{StaticResource PageContentMargin}" MaxWidth="1000" Spacing="{StaticResource SettingsCardSpacing}">
             <TextBlock x:Uid="SettingsTitle" Style="{StaticResource PageTitleStyle}" Text="Settings" />
 
+            <!-- Вышла новая версия (§3): карточка, пока обновление не установлено -->
+            <toolkit:SettingsCard x:Name="UpdateCard" Visibility="Collapsed">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE896;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <ProgressBar x:Name="UpdateProgress" Width="160" VerticalAlignment="Center" Visibility="Collapsed" />
+                    <HyperlinkButton x:Name="WhatsNewButton" Click="OnWhatsNew" />
+                    <Button x:Name="UpdateButton" Style="{StaticResource AccentButtonStyle}" Click="OnUpdate" />
+                </StackPanel>
+            </toolkit:SettingsCard>
+
             <!-- Аккаунт и сервер (Android AccountCard и ServerSettingsRow): текст — в коде, по состоянию -->
             <controls:ClickableCard x:Name="AccountCard" Activated="OnAccountClick">
                 <toolkit:SettingsCard.HeaderIcon>
@@ -58,12 +70,49 @@
                 </toolkit:SettingsCard.HeaderIcon>
             </controls:ClickableCard>
 
+            <!-- Библиотека и история (Android DatabaseSettings) -->
+            <TextBlock x:Uid="SettingsLibrary" Style="{StaticResource SettingsSectionHeaderStyle}" Text="Library and history" />
+            <toolkit:SettingsCard x:Uid="SettingsPauseHistory" Header="Pause playback history">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE81C;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="PauseHistorySwitch" Toggled="OnPauseHistoryToggled" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="SettingsPauseSearch" Header="Pause search history">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE721;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="PauseSearchSwitch" Toggled="OnPauseSearchToggled" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Name="SearchHistoryCard" x:Uid="SettingsSearchHistory" Header="Search history">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE81C;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <Button x:Name="ClearSearchesButton" x:Uid="ClearSearchesButton" Content="Clear" Click="OnClearSearches" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Name="HiddenCard" x:Uid="SettingsHidden" Header="Blacklist">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8F8;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <Button x:Name="ResetHiddenButton" x:Uid="ResetHiddenButton" Content="Reset" Click="OnResetHidden" />
+            </toolkit:SettingsCard>
+
+            <!-- Хранилище и данные: кэш и его очистка -->
+            <TextBlock x:Uid="SettingsStorage" Style="{StaticResource SettingsSectionHeaderStyle}" Text="Storage and data" />
+            <toolkit:SettingsCard x:Name="CacheCard" x:Uid="SettingsCache" Header="Cache">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xEDA2;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <Button x:Name="ClearCacheButton" x:Uid="ClearCacheButton" Content="Clear" Click="OnClearCache" />
+            </toolkit:SettingsCard>
+
             <!-- О приложении -->
             <TextBlock x:Uid="SettingsAbout" Style="{StaticResource SettingsSectionHeaderStyle}" Text="About" />
             <toolkit:SettingsCard x:Name="VersionCard" x:Uid="SettingsVersion" Header="Melogold">
                 <toolkit:SettingsCard.HeaderIcon>
                     <ImageIcon Source="ms-appx:///Assets/melogold-256.png" />
                 </toolkit:SettingsCard.HeaderIcon>
+                <Button x:Name="CheckUpdatesButton" x:Uid="CheckUpdatesButton" Content="Check for updates" Click="OnCheckUpdates" />
             </toolkit:SettingsCard>
             <toolkit:SettingsCard x:Uid="SettingsDiagnostics" Header="Diagnostics" Description="App logs">
                 <toolkit:SettingsCard.HeaderIcon>
@@ -78,6 +127,11 @@
                 <toolkit:SettingsCard.ActionIcon>
                     <FontIcon Glyph="&#xE8A7;" />
                 </toolkit:SettingsCard.ActionIcon>
+            </controls:ClickableCard>
+            <controls:ClickableCard x:Uid="SettingsLicenses" Header="Licenses" Activated="OnLicenses">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8A5;" />
+                </toolkit:SettingsCard.HeaderIcon>
             </controls:ClickableCard>
         </StackPanel>
     </ScrollViewer>

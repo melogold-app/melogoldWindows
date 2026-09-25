@@ -1,6 +1,6 @@
 <Project>
   <!-- Общие настройки всех проектов решения. Версия приложения — одна, здесь: её читают сборка,
-       User-Agent (`melogold-windows/<версия>`, API §1.2) и упаковка Velopack в release.yml. -->
+       User-Agent (`melogold-windows/<версия>`, API §1.2), установщик и update.json (scripts/release.ps1). -->
   <PropertyGroup>
     <MelogoldVersion>0.1.0</MelogoldVersion>
     <Version>$(MelogoldVersion)</Version>

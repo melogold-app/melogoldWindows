@@ -581,6 +581,15 @@ public sealed class Library(LibraryDatabase db)
             ("$v", videoId), ("$s", lyrics.Synced), ("$p", lyrics.Plain), ("$src", lyrics.SyncedSource), ("$psrc", lyrics.PlainSource),
             ("$offset", lyrics.OffsetMs), ("$now", IsoTime.NowMs())));
 
+    private const string FetchedOnly = "COALESCE(source, '') NOT IN ('File', 'User') AND COALESCE(plain_source, '') NOT IN ('File', 'User')";
+
+    /// <summary>Размер найденных в сети текстов, байт (кэш: их можно найти снова).</summary>
+    public long FetchedLyricsSize() => Database.Read(c =>
+        Convert.ToInt64(LibraryDatabase.Scalar(c, $"SELECT COALESCE(SUM(LENGTH(COALESCE(synced, '')) + LENGTH(COALESCE(plain, ''))), 0) FROM lyrics WHERE {FetchedOnly}"), System.Globalization.CultureInfo.InvariantCulture));
+
+    /// <summary>Очистка кэша: найденные в сети тексты забываются, свои и импортированные остаются.</summary>
+    public void ClearFetchedLyrics() => Database.Write((c, t) => LibraryDatabase.Exec(c, t, $"DELETE FROM lyrics WHERE {FetchedOnly}"));
+
     // ---------- «Не показывать» ----------
 
     public HashSet<string> HiddenTracks() => Database.Read(c =>
@@ -599,6 +608,13 @@ public sealed class Library(LibraryDatabase db)
                 ? "INSERT OR REPLACE INTO content_blocks (type, key, level, title, subtitle, thumbnail_url, blocked_at) VALUES ('track', $k, 'hide', $title, $sub, $thumb, $now)"
                 : "DELETE FROM content_blocks WHERE type = 'track' AND key = $k",
             ("$k", track.VideoId), ("$title", track.Title), ("$sub", track.ArtistsText), ("$thumb", track.ThumbnailUrl), ("$now", IsoTime.NowMs())));
+        Notify(LibraryChange.Blocks);
+    }
+
+    /// <summary>«Сбросить черный список»: скрытые треки снова показываются.</summary>
+    public void ClearHiddenTracks()
+    {
+        Database.Write((c, t) => LibraryDatabase.Exec(c, t, "DELETE FROM content_blocks WHERE type = 'track'"));
         Notify(LibraryChange.Blocks);
     }
 

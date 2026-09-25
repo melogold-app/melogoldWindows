@@ -70,6 +70,7 @@ public sealed partial class MainWindow : Window
                 Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(settingsItem, Loc.Get("NavSettings"));
                 ToolTipService.SetToolTip(settingsItem, Loc.Get("NavSettings"));
                 settingsItem.Tag = "settings";
+                ShowUpdateBadge();
             }
             if (_navigator.Current == "settings") Nav.SelectedItem = Nav.SettingsItem;
         };
@@ -111,6 +112,10 @@ public sealed partial class MainWindow : Window
         Root.KeyDown += OnRootKeyDown;
         Root.PointerPressed += OnRootPointerPressed;
 
+        App.Services.GetRequiredService<UpdateService>().PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(UpdateService.HasUpdate)) DispatcherQueue.TryEnqueue(ShowUpdateBadge);
+        };
         // Таймер сна сработал: воспроизведение на паузе — сказать об этом
         player.Engine.SleepTimerFired += () => DispatcherQueue.TryEnqueue(() => Snackbar.Show(Loc.Get("SleepTimerEnded")));
         // Кнопки ⏮ ⏯ ⏭ на миниатюре в панели задач — когда у окна уже есть кнопка на панели
@@ -285,6 +290,13 @@ public sealed partial class MainWindow : Window
 
     private void FocusSearch() => SearchBox.Focus(FocusState.Keyboard);
 
+    /// <summary>Есть обновление — <c>InfoBadge</c> с цифрой 1 на пункте «Настройки» (§3).</summary>
+    private void ShowUpdateBadge()
+    {
+        if (Nav.SettingsItem is not NavigationViewItem item) return;
+        item.InfoBadge = App.Services.GetRequiredService<UpdateService>().HasUpdate ? new InfoBadge { Value = 1 } : null;
+    }
+
     /// <summary>«Сейчас играет»: страница поверх окна (§5.2).</summary>
     public NowPlayingView NowPlaying { get; } = new();
 
@@ -302,7 +314,8 @@ public sealed partial class MainWindow : Window
 
     private void ShowRecentSearches()
     {
-        var recent = App.Services.GetRequiredService<Library>().RecentSearches(8);
+        // История поиска на паузе — недавние не показываются
+        List<string> recent = _settings.PauseSearchHistory ? [] : App.Services.GetRequiredService<Library>().RecentSearches(8);
         SearchBox.ItemsSource = recent.Select(q => new SuggestionVm("", q)).ToList();
         SearchBox.IsSuggestionListOpen = recent.Count > 0;
     }

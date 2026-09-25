@@ -95,4 +95,10 @@ public sealed class CatalogCache
     {
         lock (_lock) _items.Remove(key);
     }
+
+    /// <summary>«Очистить кэш» в Настройках.</summary>
+    public void Clear()
+    {
+        lock (_lock) _items.Clear();
+    }
 }

@@ -4,18 +4,49 @@
 
 <h1 align="center">Melogold для Windows</h1>
 
-<p align="center">Клиент <a href="https://github.com/melogold-app/melogoldAndroid">Melogold</a> для Windows: музыка из YouTube Music с общими избранным, библиотекой и плейлистами на всех устройствах.</p>
+<p align="center">Клиент <a href="https://github.com/melogold-app/melogoldAndroid">Melogold</a> для Windows: музыка из YouTube Music и обычного YouTube с общими Избранным, плейлистами и сохранёнными альбомами на всех устройствах.</p>
 
-## Статус
+## Что умеет
 
-В разработке. Планируется:
+- Поиск по YouTube Music и YouTube, «Тренды» и «Новое», альбомы, исполнители, каналы, плейлисты.
+- Библиотека: Избранное, свои плейлисты, История, сохранённые альбомы и исполнители.
+- Синхронизация через [сервер Melogold](https://github.com/melogold-app/melogoldServer): вход, регистрация с кодом восстановления, устройства. Без аккаунта всё работает на этом компьютере.
+- «Сейчас играет» с синхронным текстом (YouTube Music, LRCLIB, KuGou), поиск другого текста и импорт `.lrc`/`.ttml`.
+- Очередь, таймер сна, мини-плеер, медиаклавиши, системная плашка и кнопки на миниатюре в панели задач.
+- Русский и английский интерфейс, светлая и тёмная тема, управление с клавиатуры, экранный диктор.
 
-- нативное приложение на C# (.NET, WinUI 3) для x64 и ARM64;
-- вход в аккаунт Melogold и список подключённых устройств;
-- установщик без прав администратора и автообновление из
-  [GitHub Releases](https://github.com/melogold-app/melogoldWindows/releases).
+Windows 10 2004 и новее, x64 и ARM64. Звук каждый клиент берёт с YouTube сам; сервер хранит только метаданные.
 
-Иконка приложения — `Assets/melogold.ico`.
+## Установка
+
+Установщик — в [Releases](https://github.com/melogold-app/melogoldWindows/releases): `Melogold-<версия>-x64-setup.exe`
+или `-arm64-`. Права администратора не нужны: программа ставится в `%LOCALAPPDATA%\Programs\Melogold`, данные лежат
+в `%LOCALAPPDATA%\Melogold` и при удалении остаются, если не выбрать иное. Дальше Melogold обновляется сам.
+
+Подписи кода пока нет: при первой установке SmartScreen предупредит — «Подробнее» → «Выполнить в любом случае».
+
+## Сборка
+
+Нужны .NET SDK 10 и Windows App SDK (подтягивается NuGet).
+
+```powershell
+dotnet build src/Melogold.App/Melogold.App.csproj -p:Platform=x64
+dotnet test tests/Melogold.Tests -p:Platform=x64
+```
+
+Живые тесты (YouTube, воспроизведение, тексты, синхронизация на сервере) — с `MELOGOLD_LIVE=1`.
+
+## Выпуск
+
+Версия — одна, `MelogoldVersion` в `Directory.Build.props`; «Что нового» — `release-notes/<версия>.ru.md` и `.en.md`.
+
+```powershell
+powershell -File scripts/release.ps1            # обе архитектуры, установщики Inno Setup и update.json в dist/
+powershell -File scripts/release.ps1 -Publish   # и релиз vX.Y.Z на GitHub
+```
+
+Приложение читает `releases/latest/download/update.json`, скачивает установщик своей архитектуры, проверяет размер
+и SHA-256 и ставит его тихо.
 
 ## Лицензия
 

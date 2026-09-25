@@ -75,6 +75,10 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     [ObservableProperty]
     public partial long LastUpdateCheck { get; set; }
 
+    /// <summary>Не сохранять новые поисковые запросы и не показывать историю поиска (Android <c>pause_search_history</c>).</summary>
+    [ObservableProperty]
+    public partial bool PauseSearchHistory { get; set; }
+
     /// <summary>Показывать синхронный текст, когда он есть (Android <c>PlayerPreferences</c>).</summary>
     [ObservableProperty]
     public partial bool PreferSyncedLyrics { get; set; } = true;
@@ -105,6 +109,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             ServerUrl = data.ServerUrl;
             LastUpdateCheck = data.LastUpdateCheck;
             PreferSyncedLyrics = data.PreferSyncedLyrics;
+            PauseSearchHistory = data.PauseSearchHistory;
             Sorts = data.Sorts ?? [];
         }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
@@ -126,7 +131,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             {
                 Theme = Theme, LastSection = LastSection, Volume = Volume, Muted = Muted, Speed = Speed, NormalizeVolume = NormalizeVolume,
                 Repeat = Repeat, Shuffle = Shuffle, Autoplay = Autoplay, PauseHistory = PauseHistory, ServerUrl = ServerUrl,
-                LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, Sorts = Sorts,
+                LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, PauseSearchHistory = PauseSearchHistory, Sorts = Sorts,
             };
             var temp = _path + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(data, Json));
@@ -158,6 +163,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         public string? ServerUrl { get; set; }
         public long LastUpdateCheck { get; set; }
         public bool PreferSyncedLyrics { get; set; } = true;
+        public bool PauseSearchHistory { get; set; }
         public Dictionary<string, string>? Sorts { get; set; }
     }
 }

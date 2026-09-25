@@ -390,4 +390,39 @@
   <data name="SettingsStreamInfo.Description" xml:space="preserve"><value>Формат и источник звука текущего трека</value></data>
   <data name="Previous" xml:space="preserve"><value>Предыдущий трек</value></data>
   <data name="Next" xml:space="preserve"><value>Следующий трек</value></data>
+  <data name="UpdateAvailableTitle" xml:space="preserve"><value>Вышла новая версия {0}</value></data>
+  <data name="UpdateAvailableText" xml:space="preserve"><value>{0} · установка займёт минуту, всё останется на месте</value></data>
+  <data name="UpdateAction" xml:space="preserve"><value>Обновить</value></data>
+  <data name="UpdateWhatsNew" xml:space="preserve"><value>Что нового</value></data>
+  <data name="UpdateWhatsNewTitle" xml:space="preserve"><value>Что нового в {0}</value></data>
+  <data name="UpdateDownloadingFormat" xml:space="preserve"><value>Скачивание обновления · {0} %</value></data>
+  <data name="UpdateInstalling" xml:space="preserve"><value>Установка…</value></data>
+  <data name="UpdateFailed" xml:space="preserve"><value>Не удалось скачать обновление. Попробуйте ещё раз</value></data>
+  <data name="UpdateChecking" xml:space="preserve"><value>Проверка…</value></data>
+  <data name="UpdateUpToDateFormat" xml:space="preserve"><value>Версия {0} · последняя</value></data>
+  <data name="UpdateOfflineFormat" xml:space="preserve"><value>Версия {0} · нет связи с GitHub</value></data>
+  <data name="UpdateDisabledFormat" xml:space="preserve"><value>Версия {0} · эта сборка не обновляется сама</value></data>
+  <data name="UpdateVersionNewFormat" xml:space="preserve"><value>Версия {0} · вышла {1}</value></data>
+  <data name="CheckUpdatesButton.Content" xml:space="preserve"><value>Проверить обновления</value></data>
+  <data name="SizeMegabytesFormat" xml:space="preserve"><value>{0} МБ</value></data>
+  <data name="SizeKilobytesFormat" xml:space="preserve"><value>{0} КБ</value></data>
+  <data name="SettingsLibrary.Text" xml:space="preserve"><value>Библиотека и история</value></data>
+  <data name="SettingsPauseHistory.Header" xml:space="preserve"><value>Приостановить историю воспроизведений</value></data>
+  <data name="SettingsPauseHistory.Description" xml:space="preserve"><value>Прослушивания не попадают в историю и «Для вас»</value></data>
+  <data name="SettingsPauseSearch.Header" xml:space="preserve"><value>Приостановить историю поиска</value></data>
+  <data name="SettingsPauseSearch.Description" xml:space="preserve"><value>Не сохраняет новые поисковые запросы и не показывает историю</value></data>
+  <data name="SettingsSearchHistory.Header" xml:space="preserve"><value>Очистить историю поиска</value></data>
+  <data name="ClearSearchesButton.Content" xml:space="preserve"><value>Очистить</value></data>
+  <data name="EmptySearchHistory" xml:space="preserve"><value>История пуста</value></data>
+  <data name="SettingsHidden.Header" xml:space="preserve"><value>Сбросить черный список</value></data>
+  <data name="ResetHiddenButton.Content" xml:space="preserve"><value>Сбросить</value></data>
+  <data name="BlacklistEmpty" xml:space="preserve"><value>Черный список пуст</value></data>
+  <data name="SettingsStorage.Text" xml:space="preserve"><value>Хранилище и данные</value></data>
+  <data name="SettingsCache.Header" xml:space="preserve"><value>Кэш</value></data>
+  <data name="ClearCacheButton.Content" xml:space="preserve"><value>Очистить</value></data>
+  <data name="CacheUsedFormat" xml:space="preserve"><value>{0} использовано · тексты и подборки, найденные в сети</value></data>
+  <data name="SettingsLicenses.Header" xml:space="preserve"><value>Лицензии</value></data>
+  <data name="SettingsLicenses.Description" xml:space="preserve"><value>Программы с открытым кодом в Melogold</value></data>
+  <data name="LicensesTitle" xml:space="preserve"><value>Лицензии</value></data>
+  <data name="LicensesServices" xml:space="preserve"><value>Звук и каталог — YouTube и YouTube Music; тексты — LRCLIB и KuGou. Melogold не связан с ними.</value></data>
 </root>

@@ -11,6 +11,8 @@ public static class Program
     private static int Main(string[] args)
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
+        // Тот же AppUserModelID, что у ярлыка установщика: имя и значок в системной плашке и группа в панели задач
+        SetCurrentProcessExplicitAppUserModelID("Melogold.Melogold");
 
         // Для проверки перевода: MELOGOLD_LANG=ru-RU или en-US (обычно язык берётся из системы)
         if (Environment.GetEnvironmentVariable("MELOGOLD_LANG") is { Length: > 0 } language)
@@ -36,6 +38,9 @@ public static class Program
         });
         return 0;
     }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+    private static extern void SetCurrentProcessExplicitAppUserModelID(string appId);
 
     /// <summary>Передаёт активацию первому экземпляру; ждёт, пока она дойдёт, не блокируя STA-поток сообщений.</summary>
     private static void RedirectActivation(AppInstance target)

@@ -17,6 +17,7 @@ public static class DebugSnapshot
 {
     private const string RequestName = "shot-request";
     private static FileSystemWatcher? _watcher;
+    private static bool _busy;
 
     public static void Start(FrameworkElement root)
     {
@@ -27,6 +28,21 @@ public static class DebugSnapshot
     }
 
     private static async Task SaveAsync(FrameworkElement root)
+    {
+        // Created и Changed приходят парой на один запрос
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            await SaveOnceAsync(root);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static async Task SaveOnceAsync(FrameworkElement root)
     {
         var request = Path.Combine(AppPaths.DataDirectory, RequestName);
         string target;

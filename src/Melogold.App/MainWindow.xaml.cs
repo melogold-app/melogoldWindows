@@ -1,3 +1,4 @@
+using Melogold.App.Controls;
 using Melogold.App.Services;
 using Melogold.App.ViewModels;
 using Melogold.App.Views;
@@ -82,12 +83,17 @@ public sealed partial class MainWindow : Window
         }
         _navigator.SectionShown += OnSectionShown;
         _navigator.Changed += UpdateChrome;
+        // «Сейчас играет» — поверх разделов; переход куда-либо его закрывает
+        Grid.SetRow(NowPlaying, 1);
+        Root.Children.Add(NowPlaying);
+        _navigator.Changed += () => NowPlaying.Close();
+        NowPlaying.OpenChanged += _ => UpdateChrome();
         _navigator.Show(_settings.LastSection);
 
         var player = App.Services.GetRequiredService<PlayerViewModel>();
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.F, VirtualKeyModifiers.Control, FocusSearch));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Left, VirtualKeyModifiers.Menu, () => _navigator.GoBack()));
-        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Escape, VirtualKeyModifiers.None, () => _navigator.GoBack()));
+        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Escape, VirtualKeyModifiers.None, GoBack));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Right, VirtualKeyModifiers.Control, () => player.Engine.Next()));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Left, VirtualKeyModifiers.Control, () => player.Engine.Previous()));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Up, VirtualKeyModifiers.Control, () => player.ChangeVolume(5)));
@@ -161,11 +167,13 @@ public sealed partial class MainWindow : Window
 
     private void UpdateChrome()
     {
-        AppTitleBar.IsBackButtonEnabled = _navigator.CanGoBack;
+        AppTitleBar.IsBackButtonEnabled = _navigator.CanGoBack || NowPlaying.IsOpen;
+        Player.SetNowPlayingOpen(NowPlaying.IsOpen);
     }
 
     private void OnNavItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
+        NowPlaying.Close();
         var key = args.IsSettingsInvoked ? "settings" : (args.InvokedItemContainer?.Tag as string ?? Navigator.Start);
         if (key == _navigator.Current) _navigator.Reselect();
         else _navigator.Show(key);
@@ -180,7 +188,14 @@ public sealed partial class MainWindow : Window
 
     private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) => Nav.IsPaneOpen = !Nav.IsPaneOpen;
 
-    private void OnTitleBarBackRequested(TitleBar sender, object args) => _navigator.GoBack();
+    private void OnTitleBarBackRequested(TitleBar sender, object args) => GoBack();
+
+    /// <summary>«Назад» и Esc сначала закрывают «Сейчас играет».</summary>
+    private void GoBack()
+    {
+        if (NowPlaying.IsOpen) NowPlaying.Close();
+        else _navigator.GoBack();
+    }
 
     // ---------- Клавиатура и мышь ----------
 
@@ -214,6 +229,9 @@ public sealed partial class MainWindow : Window
     }
 
     private void FocusSearch() => SearchBox.Focus(FocusState.Keyboard);
+
+    /// <summary>«Сейчас играет»: страница поверх окна (§5.2).</summary>
+    public NowPlayingView NowPlaying { get; } = new();
 
     /// <summary>«Найти музыку» из пустых экранов.</summary>
     public void FocusSearchBox() => FocusSearch();

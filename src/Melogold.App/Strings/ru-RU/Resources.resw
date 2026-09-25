@@ -319,4 +319,37 @@
   <data name="ServerCurrent" xml:space="preserve"><value>Используется</value></data>
   <data name="ServerClientOutdated" xml:space="preserve"><value>Этому серверу нужна более новая версия Melogold</value></data>
   <data name="ServerTooOld" xml:space="preserve"><value>Сервер слишком старый для этой версии Melogold</value></data>
+  <data name="PlayerLyricsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Текст</value></data>
+  <data name="PlayerLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Текст</value></data>
+  <data name="PlayerLyrics" xml:space="preserve"><value>Текст</value></data>
+  <data name="NowPlaying" xml:space="preserve"><value>Сейчас играет</value></data>
+  <data name="NowPlayingArtwork" xml:space="preserve"><value>Обложка</value></data>
+  <data name="CollapsePlayer" xml:space="preserve"><value>Свернуть плеер</value></data>
+  <data name="LyricsMenu" xml:space="preserve"><value>Меню текста</value></data>
+  <data name="LyricsLoading" xml:space="preserve"><value>Загрузка текста</value></data>
+  <data name="LyricsUnavailable" xml:space="preserve"><value>Текст песни недоступен</value></data>
+  <data name="LyricsLoadFailed" xml:space="preserve"><value>Не удалось загрузить текст</value></data>
+  <data name="LyricsJumpToLine" xml:space="preserve"><value>К текущей строке</value></data>
+  <data name="LyricsInstrumental" xml:space="preserve"><value>Проигрыш</value></data>
+  <data name="LyricsImportFile" xml:space="preserve"><value>Импорт из файла</value></data>
+  <data name="LyricsImported" xml:space="preserve"><value>Текст добавлен</value></data>
+  <data name="LyricsImportFailed" xml:space="preserve"><value>Не удалось прочитать текст из файла</value></data>
+  <data name="LyricsSourceYouTubeMusic" xml:space="preserve"><value>Текст: YouTube Music</value></data>
+  <data name="LyricsSourceLrcLib" xml:space="preserve"><value>Текст: LRCLIB</value></data>
+  <data name="LyricsSourceKuGou" xml:space="preserve"><value>Текст: KuGou</value></data>
+  <data name="LyricsSourceFile" xml:space="preserve"><value>Текст импортирован из файла</value></data>
+  <data name="LyricsSourceUser" xml:space="preserve"><value>Ваш текст</value></data>
+  <data name="LyricsShowPlain" xml:space="preserve"><value>Текст без синхронизации</value></data>
+  <data name="LyricsShowSynced" xml:space="preserve"><value>Синхронизированный текст</value></data>
+  <data name="LyricsFind" xml:space="preserve"><value>Найти текст</value></data>
+  <data name="LyricsFindMenu" xml:space="preserve"><value>Найти другой текст…</value></data>
+  <data name="LyricsResultSynced" xml:space="preserve"><value>Синхронизированный</value></data>
+  <data name="LyricsResultPlain" xml:space="preserve"><value>Без синхронизации</value></data>
+  <data name="LyricsEarlier01" xml:space="preserve"><value>Раньше на 0,1 с</value></data>
+  <data name="LyricsLater01" xml:space="preserve"><value>Позже на 0,1 с</value></data>
+  <data name="LyricsEarlier05" xml:space="preserve"><value>Раньше на 0,5 с</value></data>
+  <data name="LyricsLater05" xml:space="preserve"><value>Позже на 0,5 с</value></data>
+  <data name="LyricsResetShiftFormat" xml:space="preserve"><value>Сбросить сдвиг ({0} с)</value></data>
+  <data name="ChooseLyricTrack" xml:space="preserve"><value>Выберите трек с текстом</value></data>
+  <data name="NoLyricsFound" xml:space="preserve"><value>Тексты песен не найдены</value></data>
 </root>

@@ -325,3 +325,37 @@ ServerInsecure	Незащищённое соединение: только дл�
 ServerCurrent	Используется	In use
 ServerClientOutdated	Этому серверу нужна более новая версия Melogold	This server needs a newer version of Melogold
 ServerTooOld	Сервер слишком старый для этой версии Melogold	The server is too old for this version of Melogold
+# Тексты и «Сейчас играет» (Android strings)
+PlayerLyricsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Текст	Lyrics
+PlayerLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Текст	Lyrics
+PlayerLyrics	Текст	Lyrics
+NowPlaying	Сейчас играет	Now playing
+NowPlayingArtwork	Обложка	Artwork
+CollapsePlayer	Свернуть плеер	Collapse player
+LyricsMenu	Меню текста	Lyrics menu
+LyricsLoading	Загрузка текста	Loading lyrics
+LyricsUnavailable	Текст песни недоступен	Lyrics are not available
+LyricsLoadFailed	Не удалось загрузить текст	Couldn't load the lyrics
+LyricsJumpToLine	К текущей строке	Back to the current line
+LyricsInstrumental	Проигрыш	Instrumental
+LyricsImportFile	Импорт из файла	Import from file
+LyricsImported	Текст добавлен	Lyrics added
+LyricsImportFailed	Не удалось прочитать текст из файла	Couldn't read lyrics from the file
+LyricsSourceYouTubeMusic	Текст: YouTube Music	Lyrics: YouTube Music
+LyricsSourceLrcLib	Текст: LRCLIB	Lyrics: LRCLIB
+LyricsSourceKuGou	Текст: KuGou	Lyrics: KuGou
+LyricsSourceFile	Текст импортирован из файла	Lyrics imported from a file
+LyricsSourceUser	Ваш текст	Your lyrics
+LyricsShowPlain	Текст без синхронизации	Unsynced lyrics
+LyricsShowSynced	Синхронизированный текст	Synced lyrics
+LyricsFind	Найти текст	Find lyrics
+LyricsFindMenu	Найти другой текст…	Find other lyrics…
+LyricsResultSynced	Синхронизированный	Synced
+LyricsResultPlain	Без синхронизации	Unsynced
+LyricsEarlier01	Раньше на 0,1 с	0.1 s earlier
+LyricsLater01	Позже на 0,1 с	0.1 s later
+LyricsEarlier05	Раньше на 0,5 с	0.5 s earlier
+LyricsLater05	Позже на 0,5 с	0.5 s later
+LyricsResetShiftFormat	Сбросить сдвиг ({0} с)	Reset the shift ({0} s)
+ChooseLyricTrack	Выберите трек с текстом	Choose a track with lyrics
+NoLyricsFound	Тексты песен не найдены	No lyrics found

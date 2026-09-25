@@ -26,6 +26,22 @@ public sealed record HistoryEntry(Track Track, long PlayedAt);
 
 public sealed record TopEntry(Track Track, long PlayTimeMs);
 
+/// <summary>
+/// Текст трека в кэше (Android <c>Lyrics</c>): у каждой стороны null — ещё не искали, "" — не нашли. Источник —
+/// <see cref="LyricsSources"/>. <see cref="OffsetMs"/> — сдвиг синхронного текста у этого трека (положительный — раньше).
+/// </summary>
+public sealed record StoredLyrics(string? Synced, string? Plain, string? SyncedSource, string? PlainSource, long OffsetMs = 0);
+
+/// <summary>Откуда текст (Android <c>LyricsSource</c>).</summary>
+public static class LyricsSources
+{
+    public const string YouTubeMusic = "YouTubeMusic";
+    public const string LrcLib = "LrcLib";
+    public const string KuGou = "KuGou";
+    public const string File = "File";
+    public const string User = "User";
+}
+
 /// <summary>Трек плейлиста с порядком и ключом сервера.</summary>
 public sealed record PlaylistEntry(Track Track, int Position, string? SortKey);
 
@@ -545,20 +561,25 @@ public sealed class Library(LibraryDatabase db)
 
     // ---------- Тексты ----------
 
-    public (string? Synced, string? Plain, string? Source)? GetLyrics(string videoId) => Database.Read(c =>
+    /// <summary>Текст трека из кэша: null у стороны — ещё не искали, пустая строка — искали и не нашли.</summary>
+    public StoredLyrics? GetLyrics(string videoId) => Database.Read(c =>
     {
         using var command = c.CreateCommand();
-        command.CommandText = "SELECT synced, plain, source FROM lyrics WHERE video_id = $v";
+        command.CommandText = "SELECT synced, plain, source, plain_source, offset_ms FROM lyrics WHERE video_id = $v";
         command.Parameters.AddWithValue("$v", videoId);
         using var r = command.ExecuteReader();
-        if (!r.Read()) return ((string?, string?, string?)?)null;
-        return (r.IsDBNull(0) ? null : r.GetString(0), r.IsDBNull(1) ? null : r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2));
+        if (!r.Read()) return null;
+        return new StoredLyrics(r.IsDBNull(0) ? null : r.GetString(0), r.IsDBNull(1) ? null : r.GetString(1),
+            r.IsDBNull(2) ? null : r.GetString(2), r.IsDBNull(3) ? null : r.GetString(3), r.GetInt64(4));
     });
 
-    public void SaveLyrics(string videoId, string? synced, string? plain, string? source) =>
-        Database.Write((c, t) => LibraryDatabase.Exec(c, t,
-            "INSERT OR REPLACE INTO lyrics (video_id, synced, plain, source, fetched_at) VALUES ($v, $s, $p, $src, $now)",
-            ("$v", videoId), ("$s", synced), ("$p", plain), ("$src", source), ("$now", IsoTime.NowMs())));
+    public void SaveLyrics(string videoId, StoredLyrics lyrics) =>
+        Database.Write((c, t) => LibraryDatabase.Exec(c, t, """
+            INSERT OR REPLACE INTO lyrics (video_id, synced, plain, source, plain_source, offset_ms, fetched_at)
+            VALUES ($v, $s, $p, $src, $psrc, $offset, $now)
+            """,
+            ("$v", videoId), ("$s", lyrics.Synced), ("$p", lyrics.Plain), ("$src", lyrics.SyncedSource), ("$psrc", lyrics.PlainSource),
+            ("$offset", lyrics.OffsetMs), ("$now", IsoTime.NowMs())));
 
     // ---------- «Не показывать» ----------
 

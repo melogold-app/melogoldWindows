@@ -9,7 +9,7 @@ namespace Melogold.Core.Data;
 /// </summary>
 public sealed class LibraryDatabase
 {
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
 
     private readonly string _connectionString;
     private readonly Lock _writeLock = new();
@@ -101,6 +101,15 @@ public sealed class LibraryDatabase
             using var transaction = connection.BeginTransaction();
             Exec(connection, transaction, Schema1);
             Exec(connection, transaction, "PRAGMA user_version = 1;");
+            transaction.Commit();
+            version = 1;
+        }
+        if (version < 2)
+        {
+            // v2: у текста свои источники синхронного и обычного, сдвиг синхронного — у трека (source — синхронного)
+            using var transaction = connection.BeginTransaction();
+            Exec(connection, transaction, "ALTER TABLE lyrics ADD COLUMN plain_source TEXT; ALTER TABLE lyrics ADD COLUMN offset_ms INTEGER NOT NULL DEFAULT 0;");
+            Exec(connection, transaction, "PRAGMA user_version = 2;");
             transaction.Commit();
         }
     }

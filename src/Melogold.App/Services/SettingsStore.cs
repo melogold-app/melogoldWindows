@@ -75,9 +75,10 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     [ObservableProperty]
     public partial long LastUpdateCheck { get; set; }
 
-    /// <summary>Сдвиг синхронного текста, мс.</summary>
+    /// <summary>Показывать синхронный текст, когда он есть (Android <c>PlayerPreferences</c>).</summary>
     [ObservableProperty]
-    public partial int LyricsOffsetMs { get; set; }
+    public partial bool PreferSyncedLyrics { get; set; } = true;
+
 
     /// <summary>Сортировки списков по ключу экрана.</summary>
     [ObservableProperty]
@@ -103,7 +104,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             PauseHistory = data.PauseHistory;
             ServerUrl = data.ServerUrl;
             LastUpdateCheck = data.LastUpdateCheck;
-            LyricsOffsetMs = data.LyricsOffsetMs;
+            PreferSyncedLyrics = data.PreferSyncedLyrics;
             Sorts = data.Sorts ?? [];
         }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
@@ -125,7 +126,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             {
                 Theme = Theme, LastSection = LastSection, Volume = Volume, Muted = Muted, Speed = Speed, NormalizeVolume = NormalizeVolume,
                 Repeat = Repeat, Shuffle = Shuffle, Autoplay = Autoplay, PauseHistory = PauseHistory, ServerUrl = ServerUrl,
-                LastUpdateCheck = LastUpdateCheck, LyricsOffsetMs = LyricsOffsetMs, Sorts = Sorts,
+                LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, Sorts = Sorts,
             };
             var temp = _path + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(data, Json));
@@ -156,7 +157,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         public bool PauseHistory { get; set; }
         public string? ServerUrl { get; set; }
         public long LastUpdateCheck { get; set; }
-        public int LyricsOffsetMs { get; set; }
+        public bool PreferSyncedLyrics { get; set; } = true;
         public Dictionary<string, string>? Sorts { get; set; }
     }
 }

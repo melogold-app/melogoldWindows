@@ -25,7 +25,7 @@ public partial class ClickableCard : SettingsCard
     private sealed partial class Peer(ClickableCard owner) : SettingsCardAutomationPeer(owner), IInvokeProvider
     {
         protected override object GetPatternCore(PatternInterface patternInterface) =>
-            patternInterface == PatternInterface.Invoke && owner.IsClickEnabled ? this : base.GetPatternCore(patternInterface);
+            patternInterface == PatternInterface.Invoke && owner.IsClickEnabled ? this : base.GetPatternCore(patternInterface)!;
 
         public void Invoke()
         {

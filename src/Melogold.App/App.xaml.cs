@@ -3,6 +3,7 @@ using Melogold.App.ViewModels;
 using Melogold.App.Views;
 using Melogold.Core.Data;
 using Melogold.InnerTube;
+using Melogold.InnerTube.Lyrics;
 using Melogold.Playback;
 using Melogold.Server;
 using Microsoft.Extensions.DependencyInjection;
@@ -81,6 +82,8 @@ public partial class App : Application
         services.AddSingleton<PlayerViewModel>();
         services.AddSingleton<TrackActions>();
         services.AddSingleton<CollectionMenu>();
+        services.AddSingleton(sp => new LyricsFetcher(sp.GetRequiredService<YouTubeMusic>(), new LrcLib(LrcLib.CreateClient(AppInfo.ToolUserAgent)), new KuGou(KuGou.CreateClient())));
+        services.AddSingleton<LyricsService>();
         return services.BuildServiceProvider();
     }
 

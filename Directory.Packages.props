@@ -10,6 +10,7 @@
 
     <!-- Ядро -->
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <PackageVersion Include="MaterialColorUtilities" Version="0.3.0" />
 
     <!-- Тесты -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />

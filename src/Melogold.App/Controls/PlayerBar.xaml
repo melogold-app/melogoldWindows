@@ -165,8 +165,16 @@
             </Grid>
         </StackPanel>
 
-        <!-- Справа: громкость и «…» -->
+        <!-- Справа: «Текст», громкость и «…» -->
         <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal" Spacing="4">
+            <ToggleButton
+                x:Name="LyricsButton"
+                x:Uid="PlayerLyricsButton"
+                Style="{StaticResource PlayerIconToggleStyle}"
+                IsEnabled="{x:Bind ViewModel.HasTrack, Mode=OneWay}"
+                Click="OnLyricsClick">
+                <FontIcon Glyph="&#xE720;" />
+            </ToggleButton>
             <StackPanel x:Name="VolumePanel" Orientation="Horizontal" Spacing="4">
                 <Button x:Uid="PlayerMute" Style="{StaticResource PlayerIconButtonStyle}" Command="{x:Bind ViewModel.ToggleMuteCommand}">
                     <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" />

@@ -43,3 +43,132 @@ SignIn	Войти	Sign in
 SettingsServer.Header	Сервер	Server
 # Пустые разделы
 ComingSoon	Скоро здесь	Coming soon
+# Плеер
+Play	Воспроизвести	Play
+Pause	Пауза	Pause
+RepeatOff	Повтор выключен	Repeat off
+RepeatAll	Повтор очереди	Repeat queue
+RepeatOne	Повтор трека	Repeat track
+PlayerArtwork.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Сейчас играет	Now playing
+PlayerLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	В Избранное	Add to Favorites
+PlayerLike.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	В Избранное	Add to Favorites
+PlayerShuffle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Перемешать	Shuffle
+PlayerShuffle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Перемешать	Shuffle
+PlayerPrevious.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Предыдущий трек	Previous track
+PlayerPrevious.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Предыдущий трек	Previous track
+PlayerNext.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Следующий трек	Next track
+PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Следующий трек	Next track
+PlayerSeek.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Перемотка	Seek
+PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Без звука	Mute
+PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Без звука	Mute
+PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Громкость	Volume
+PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Ещё	More
+PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Ещё	More
+ResolvingText.Text	Получаем поток…	Getting the stream…
+RetryLink.Content	Повторить	Retry
+MenuStreamInfo.Text	Сведения о потоке	Stream info
+StreamInfoTitle	Сведения о потоке	Stream info
+StreamBitrate	Битрейт	Bitrate
+StreamSource	Клиент	Client
+Close	Закрыть	Close
+PlayErrorNetwork	Нет соединения. Проверьте сеть или VPN	No connection. Check your network or VPN
+PlayErrorBot	YouTube просит подтвердить, что вы не робот. Попробуйте позже или смените сеть	YouTube wants to check you're not a robot. Try again later or switch networks
+PlayErrorGeo	Недоступно в вашем регионе	Not available in your region
+PlayErrorUnavailable	Видео удалено или закрыто	The video was removed or made private
+PlayErrorAge	Нужна проверка возраста — пока не поддерживается	Age verification is required — not supported yet
+PlayErrorExtractor	Не удалось получить поток	Couldn't get the stream
+SkippedFormat	Пропущен „{0}“: {1}	Skipped “{0}”: {1}
+QueueReplaced	Очередь заменена	Queue replaced
+Undo	Отменить	Undo
+PlayingNextFormat	Играет следующим: {0}	Playing next: {0}
+AddedToQueueFormat	В конце очереди: {0}	Added to queue: {0}
+LinkCopied	Ссылка скопирована	Link copied
+TrackHidden	Трек скрыт	Track hidden
+# Меню трека
+MenuPlayNext	Играть следующим	Play next
+MenuAddToQueue	В конец очереди	Add to queue
+MenuAddToPlaylist	Добавить в плейлист…	Add to playlist…
+MenuTrackRadio	Включить радио по треку	Start track radio
+MenuFavoriteAdd	В Избранное	Add to Favorites
+MenuFavoriteRemove	Убрать из Избранного	Remove from Favorites
+MenuGoToAlbum	Открыть альбом	Go to album
+MenuGoToArtist	Открыть исполнителя	Go to artist
+MenuGoToChannel	Открыть канал	Go to channel
+MenuOtherVersions	Другие версии	Other versions
+MenuCopyLink	Копировать ссылку	Copy link
+MenuRemoveFromPlaylist	Убрать из плейлиста	Remove from playlist
+MenuRemoveFromHistory	Убрать из истории	Remove from history
+MenuRemoveFromQueue	Убрать из очереди	Remove from queue
+MenuDontShow	Не показывать этот трек	Don't show this track
+MenuShowAgain	Снова показывать этот трек	Show this track again
+RowPlay	Воспроизвести	Play
+RowMenu	Меню	Menu
+Explicit	Откровенный текст	Explicit
+# Поиск и выдача
+RecentQueries	Недавние запросы	Recent searches
+InLibrary	В библиотеке	In library
+ResultsAll	Всё	All
+ResultsMusic	Музыка	Music
+ResultsYouTube	YouTube	YouTube
+ResultsSongs	Песни	Songs
+ResultsAlbums	Альбомы	Albums
+ResultsArtists	Исполнители	Artists
+ResultsMusicVideos	Клипы	Music videos
+ResultsPlaylists	Плейлисты	Playlists
+ResultsVideos	Видео	Videos
+ResultsChannels	Каналы	Channels
+ResultsLive	Трансляции	Live
+ResultsTopResult	Лучший результат	Top result
+ResultsMore	Ещё	More
+ResultsNothing	Ничего не нашлось. Проверьте написание или посмотрите на YouTube	Nothing found. Check the spelling or look on YouTube
+ResultsNothingInCatalog	В каталоге YouTube Music ничего не нашлось — вот что есть на YouTube	Nothing in the YouTube Music catalog — here's what's on YouTube
+ResultsSearchYouTube	Искать на YouTube	Search YouTube
+TypeSong	Песня	Song
+TypeVideo	Видео	Video
+TypeAlbum	Альбом	Album
+TypeArtist	Исполнитель	Artist
+TypeChannel	Канал	Channel
+TypePlaylist	Плейлист	Playlist
+Live	В ЭФИРЕ	LIVE
+LinkUnsupported	Эту ссылку не открыть	This link can't be opened
+LinkImportLater	Импорт из других сервисов появится позже	Import from other services is coming later
+# Коллекции
+SeeAll	Все	See all
+PlayAll	Слушать	Play
+Shuffle	Перемешать	Shuffle
+SaveToLibrary	Сохранить	Save
+InLibraryCheck	✓ В библиотеке	✓ In library
+SaveAsPlaylist	Сохранить	Save
+SavedToLibraryFormat	Сохранено в Библиотеку: „{0}“	Saved to Library: “{0}”
+Subscribe	Подписаться	Subscribe
+Subscribed	Вы подписаны	Subscribed
+YouTubeChannel	Канал YouTube	YouTube channel
+MenuStartRadio	Включить радио	Start radio
+PlayingNextTracks_one	Играет следующим: {0} трек	Playing next: {0} track
+PlayingNextTracks_few	Играют следующими: {0} трека	Playing next: {0} tracks
+PlayingNextTracks_many	Играют следующими: {0} треков	Playing next: {0} tracks
+PlayingNextTracks_other	Играют следующими: {0} трека	Playing next: {0} tracks
+AddedToQueueTracks_one	В конце очереди: {0} трек	Added to queue: {0} track
+AddedToQueueTracks_few	В конце очереди: {0} трека	Added to queue: {0} tracks
+AddedToQueueTracks_many	В конце очереди: {0} треков	Added to queue: {0} tracks
+AddedToQueueTracks_other	В конце очереди: {0} трека	Added to queue: {0} tracks
+NewPlaylist	Новый плейлист	New playlist
+NewPlaylistName	Название	Name
+NoPlaylistsYet	Плейлистов пока нет	No playlists yet
+AddToPlaylistTitle	Добавить в плейлист	Add to playlist
+Done	Готово	Done
+Cancel	Отмена	Cancel
+AddedToPlaylistFormat	Добавлено в „{0}“	Added to “{0}”
+ChangedInPlaylists_one	Изменено в {0} плейлисте	Changed in {0} playlist
+ChangedInPlaylists_few	Изменено в {0} плейлистах	Changed in {0} playlists
+ChangedInPlaylists_many	Изменено в {0} плейлистах	Changed in {0} playlists
+ChangedInPlaylists_other	Изменено в {0} плейлиста	Changed in {0} playlists
+OpenLinkFormat	Открыть ссылку: {0}	Open link: {0}
+LinkKindVideo	видео YouTube	YouTube video
+LinkKindPlaylist	плейлист	playlist
+LinkKindAlbum	альбом	album
+LinkKindChannel	канал	channel
+RowPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Воспроизвести	Play
+RowLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	В Избранное	Add to Favorites
+RowMenuButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Меню	Menu
+RowMenuButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Меню	Menu

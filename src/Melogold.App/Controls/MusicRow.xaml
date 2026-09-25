@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Melogold.App.Controls.MusicRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Melogold.App.Controls"
+    xmlns:app="using:Melogold.App"
+    PointerEntered="OnPointerEntered"
+    PointerExited="OnPointerExited">
+
+    <Grid Height="56" ColumnSpacing="12" Background="Transparent">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="40" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Обложка 40 px; при наведении на ней кнопка play -->
+        <Grid Width="40" Height="40">
+            <Border
+                x:Name="ArtworkBorder"
+                CornerRadius="{x:Bind local:MusicRow.Corner(Item.IsRound), Mode=OneWay}"
+                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                <Image Source="{x:Bind app:Images.Row(Item.ArtworkUrl), Mode=OneWay}" Stretch="UniformToFill" />
+            </Border>
+            <Button
+                x:Name="PlayOverlay"
+                x:Uid="RowPlayButton"
+                Width="40"
+                Height="40"
+                Padding="0"
+                CornerRadius="{x:Bind local:MusicRow.Corner(Item.IsRound), Mode=OneWay}"
+                Background="{ThemeResource SmokeFillColorDefaultBrush}"
+                BorderThickness="0"
+                Opacity="0"
+                Visibility="{x:Bind Item.IsTrack, Mode=OneWay}"
+                IsTabStop="False"
+                Click="OnPlayClick">
+                <FontIcon FontSize="16" Foreground="White" Glyph="&#xE768;" />
+            </Button>
+        </Grid>
+
+        <!-- Название, под ним исполнитель и альбом -->
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Border
+                    Padding="3,0"
+                    VerticalAlignment="Center"
+                    CornerRadius="2"
+                    Background="{ThemeResource ControlStrongFillColorDefaultBrush}"
+                    Visibility="{x:Bind Item.Explicit, Mode=OneWay}"
+                    ToolTipService.ToolTip="{x:Bind local:MusicRow.ExplicitText()}">
+                    <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" Text="E" />
+                </Border>
+                <TextBlock
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    Foreground="{x:Bind local:MusicRow.TitleBrush(Item.IsCurrent, Item.Unavailable), Mode=OneWay}"
+                    Text="{x:Bind Item.Title}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap"
+                    MaxLines="1" />
+            </StackPanel>
+            <TextBlock
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="{x:Bind Item.Subtitle}"
+                TextTrimming="CharacterEllipsis"
+                TextWrapping="NoWrap"
+                MaxLines="1" />
+        </StackPanel>
+
+        <!-- ♡ виден при наведении и когда трек в Избранном -->
+        <Button
+            x:Name="LikeButton"
+            x:Uid="RowLike"
+            Grid.Column="2"
+            Style="{StaticResource RowIconButtonStyle}"
+            Visibility="{x:Bind Item.IsTrack, Mode=OneWay}"
+            Opacity="{x:Bind local:MusicRow.LikeOpacity(Item.IsLiked, Hovered), Mode=OneWay}"
+            Click="OnLikeClick">
+            <FontIcon
+                FontSize="14"
+                Foreground="{x:Bind local:MusicRow.LikeBrush(Item.IsLiked), Mode=OneWay}"
+                Glyph="{x:Bind local:MusicRow.HeartGlyph(Item.IsLiked), Mode=OneWay}" />
+        </Button>
+
+        <TextBlock
+            Grid.Column="3"
+            MinWidth="40"
+            VerticalAlignment="Center"
+            HorizontalTextAlignment="Right"
+            Style="{StaticResource CaptionTextBlockStyle}"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{x:Bind Item.Duration}" />
+
+        <Button
+            x:Name="MenuButton"
+            x:Uid="RowMenuButton"
+            Grid.Column="4"
+            Style="{StaticResource RowIconButtonStyle}"
+            Opacity="{x:Bind local:MusicRow.HoverOpacity(Hovered), Mode=OneWay}"
+            Visibility="{x:Bind Item.IsTrack, Mode=OneWay}"
+            Click="OnMenuClick">
+            <FontIcon FontSize="14" Glyph="&#xE712;" />
+        </Button>
+    </Grid>
+</UserControl>

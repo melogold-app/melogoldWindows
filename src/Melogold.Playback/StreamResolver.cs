@@ -60,7 +60,7 @@ public sealed class StreamException(StreamErrorKind kind, string message, Except
 
 /// <summary>
 /// Получает поток трека на чистом C# (решение пользователя, вместо yt-dlp): запрос InnerTube <c>player</c> клиентами,
-/// которые отдают прямые ссылки, по очереди из <see cref="Clients"/> — встроенный список можно заменить свежим из
+/// которые отдают прямые ссылки без PO-токена (сейчас VISIONOS), по очереди из <see cref="Clients"/> — встроенный список можно заменить свежим из
 /// репозитория, не дожидаясь релиза. Формат — itag 140 (AAC в m4a). Адреса кэшируются (LRU 64) до
 /// <c>expire − 5 мин</c>; кэш сбрасывается при 403 и смене сети. Одновременно — не больше двух извлечений,
 /// у каждого сторож 20 с.
@@ -74,7 +74,7 @@ public sealed class StreamResolver(InnerTubeClient client)
     private readonly SemaphoreSlim _slots = new(2);
 
     /// <summary>Порядок клиентов; <see cref="StreamClients"/> подменяет его свежим списком.</summary>
-    public IReadOnlyList<ClientProfile> Clients { get; set; } = [ClientProfile.Ios, ClientProfile.AndroidVr];
+    public IReadOnlyList<ClientProfile> Clients { get; set; } = [ClientProfile.VisionOs];
 
     public async Task<StreamInfo> ResolveAsync(string videoId, CancellationToken cancellationToken = default)
     {
@@ -173,6 +173,7 @@ public sealed class StreamResolver(InnerTubeClient client)
         PlayerResponse response;
         try
         {
+            await client.EnsureVisitorDataAsync(ct).ConfigureAwait(false);
             response = await client.PlayerAsync(profile, videoId, ct).ConfigureAwait(false);
         }
         catch (YouTubeException e)

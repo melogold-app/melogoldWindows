@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Melogold.Playback;
 
 namespace Melogold.App.Services;
 
@@ -15,7 +16,7 @@ public enum AppTheme
 /// Настройки устройства (JSON в папке данных). Только то, что есть на Android: каждая настройка множится на все
 /// клиенты (docs/PROMPT.md §5.4). Запись — сразу при изменении, атомарной заменой файла.
 /// </summary>
-public sealed partial class SettingsStore : ObservableObject
+public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {

@@ -1,22 +1,34 @@
 using Melogold.App.Services;
+using Melogold.App.ViewModels;
 using Melogold.App.Views;
+using Melogold.Core.Data;
+using Melogold.Core.Domain;
+using Melogold.Core.Music;
+using Melogold.InnerTube;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Composition.SystemBackdrops;
-using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace Melogold.App;
 
+/// <summary>Подсказка поля поиска: недавний запрос, подсказка YouTube Music, трек из библиотеки или ссылка.</summary>
+public sealed record SuggestionVm(string Glyph, string Text, string? Detail = null, Track? Track = null, bool IsLink = false)
+{
+    public Visibility HasDetail => string.IsNullOrEmpty(Detail) ? Visibility.Collapsed : Visibility.Visible;
+}
+
 public sealed partial class MainWindow : Window
 {
     private readonly Navigator _navigator;
     private readonly SettingsStore _settings;
     private readonly Dictionary<string, Frame> _frames = [];
+    private CancellationTokenSource? _suggestions;
 
     private static readonly Section[] Sections =
     [
@@ -28,9 +40,10 @@ public sealed partial class MainWindow : Window
 
     public MainWindow()
     {
-        InitializeComponent();
         _navigator = App.Services.GetRequiredService<Navigator>();
         _settings = App.Services.GetRequiredService<SettingsStore>();
+        Snackbar = App.Services.GetRequiredService<Snackbar>();
+        InitializeComponent();
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -65,17 +78,31 @@ public sealed partial class MainWindow : Window
         _navigator.Changed += UpdateChrome;
         _navigator.Show(_settings.LastSection);
 
+        var player = App.Services.GetRequiredService<PlayerViewModel>();
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.F, VirtualKeyModifiers.Control, FocusSearch));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Left, VirtualKeyModifiers.Menu, () => _navigator.GoBack()));
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Escape, VirtualKeyModifiers.None, () => _navigator.GoBack()));
+        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Right, VirtualKeyModifiers.Control, () => player.Engine.Next()));
+        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Left, VirtualKeyModifiers.Control, () => player.Engine.Previous()));
+        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Up, VirtualKeyModifiers.Control, () => player.ChangeVolume(5)));
+        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Down, VirtualKeyModifiers.Control, () => player.ChangeVolume(-5)));
         Root.KeyDown += OnRootKeyDown;
         Root.PointerPressed += OnRootPointerPressed;
 
         // Размер в эффективных пикселях: при масштабе 150 % окно не должно выйти маленьким
         var scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
         AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(1280 * scale), (int)(820 * scale)));
-        Closed += (_, _) => _settings.LastSection = _navigator.Current;
+        Closed += (_, _) =>
+        {
+            _settings.LastSection = _navigator.Current;
+            player.SaveQueue();
+            Snackbar.Dismiss(commit: true);
+        };
     }
+
+    public Snackbar Snackbar { get; }
+
+    public static Visibility IsSet(string? value) => string.IsNullOrEmpty(value) ? Visibility.Collapsed : Visibility.Visible;
 
     /// <summary>Mica — на Windows 11; на Windows 10 — акрил, а где нет и его — обычный фон страницы (§3).</summary>
     private void ApplyBackdrop()
@@ -115,8 +142,6 @@ public sealed partial class MainWindow : Window
         Activate();
     }
 
-    public Navigator Navigator => _navigator;
-
     // ---------- Разделы ----------
 
     private void OnSectionShown(string key)
@@ -153,12 +178,21 @@ public sealed partial class MainWindow : Window
 
     // ---------- Клавиатура и мышь ----------
 
+    private bool FocusInTextInput() =>
+        FocusManager.GetFocusedElement(Content.XamlRoot) is TextBox or AutoSuggestBox or PasswordBox or RichEditBox;
+
     private void OnRootKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        // «/» — поиск, если фокус не в поле ввода (§5.5)
-        if (e.Key == (VirtualKey)191 && FocusManager.GetFocusedElement(Content.XamlRoot) is not (TextBox or AutoSuggestBox or PasswordBox))
+        if (FocusInTextInput()) return;
+        // «/» — поиск, пробел — play/pause, если фокус не на кнопке или строке (§5.5)
+        if (e.Key == (VirtualKey)191)
         {
             FocusSearch();
+            e.Handled = true;
+        }
+        else if (e.Key == VirtualKey.Space && FocusManager.GetFocusedElement(Content.XamlRoot) is not (ButtonBase or ToggleSwitch or ListViewItem))
+        {
+            App.Services.GetRequiredService<PlayerViewModel>().Engine.TogglePlayPause();
             e.Handled = true;
         }
     }
@@ -173,25 +207,84 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void FocusSearch()
+    private void FocusSearch() => SearchBox.Focus(FocusState.Keyboard);
+
+    private void OnSnackbarAction(object sender, RoutedEventArgs e) => Snackbar.InvokeAction();
+
+    // ---------- Поиск (§5.4): до ввода — недавние запросы; при вводе — ссылка, «В библиотеке», подсказки ----------
+
+    private void OnSearchGotFocus(object sender, RoutedEventArgs e)
     {
-        SearchBox.Focus(FocusState.Keyboard);
+        if (string.IsNullOrWhiteSpace(SearchBox.Text)) ShowRecentSearches();
     }
 
-    // ---------- Поиск ----------
-
-    private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    private void ShowRecentSearches()
     {
+        var recent = App.Services.GetRequiredService<Library>().RecentSearches(8);
+        SearchBox.ItemsSource = recent.Select(q => new SuggestionVm("", q)).ToList();
+        SearchBox.IsSuggestionListOpen = recent.Count > 0;
     }
 
-    private void OnSearchSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    private async void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
+        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
+        _suggestions?.Cancel();
+        var text = sender.Text.Trim();
+        if (text.Length == 0)
+        {
+            ShowRecentSearches();
+            return;
+        }
+        var cts = _suggestions = new CancellationTokenSource();
+        var items = new List<SuggestionVm>();
+        var target = YouTubeLinkParser.Parse(text);
+        if (target is not LinkTarget.Search and not LinkTarget.Unsupported)
+        {
+            var kind = target switch
+            {
+                LinkTarget.Video => "LinkKindVideo",
+                LinkTarget.Playlist => "LinkKindPlaylist",
+                LinkTarget.Album => "LinkKindAlbum",
+                LinkTarget.External => null,
+                _ => "LinkKindChannel",
+            };
+            items.Add(new SuggestionVm("", kind is null ? Loc.Get("LinkImportLater") : Loc.Format("OpenLinkFormat", Loc.Get(kind)), IsLink: true));
+            sender.ItemsSource = items;
+            return;
+        }
+        try
+        {
+            await Task.Delay(250, cts.Token);
+            var library = App.Services.GetRequiredService<Library>();
+            var local = await Task.Run(() => library.SearchLibrary(text, 3), cts.Token);
+            items.AddRange(local.Select(t => new SuggestionVm("", t.Title, $"{Loc.Get("InLibrary")} · {t.ArtistsText}", t)));
+            sender.ItemsSource = items.ToList();
+            var remote = await App.Services.GetRequiredService<YouTubeMusic>().SuggestionsAsync(text, cts.Token);
+            if (cts.IsCancellationRequested) return;
+            items.AddRange(remote.Select(q => new SuggestionVm("", q)));
+            sender.ItemsSource = items;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (YouTubeException)
+        {
+            // Без сети подсказок нет — остаётся «В библиотеке»
+        }
     }
 
     private void OnSearchQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
-        var query = (args.ChosenSuggestion as string ?? args.QueryText).Trim();
+        _suggestions?.Cancel();
+        sender.IsSuggestionListOpen = false;
+        if (args.ChosenSuggestion is SuggestionVm { Track: { } track })
+        {
+            App.Services.GetRequiredService<TrackActions>().Play([track], 0, new TrackContext.Single());
+            return;
+        }
+        var query = (args.ChosenSuggestion is SuggestionVm { IsLink: false } suggestion ? suggestion.Text : args.QueryText).Trim();
         if (query.Length == 0) return;
+        sender.Text = query;
         App.Services.GetRequiredService<LinkRouter>().OpenText(query);
     }
 }

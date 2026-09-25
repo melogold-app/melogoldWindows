@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Melogold.App.Controls.MediaCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Melogold.App.Controls"
+    xmlns:app="using:Melogold.App">
+
+    <StackPanel Width="160" Spacing="8">
+        <Border
+            Width="160"
+            Height="160"
+            CornerRadius="{x:Bind local:MediaCard.Corner(Card.IsRound), Mode=OneWay}"
+            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+            <Grid>
+                <Image Source="{x:Bind app:Images.Card(Card.ImageUrl), Mode=OneWay}" Stretch="UniformToFill" />
+                <!-- Плитка настроения: цветная полоска слева и название -->
+                <Border
+                    Width="6"
+                    HorizontalAlignment="Left"
+                    Background="{x:Bind Card.StripeBrush, Mode=OneWay}"
+                    Visibility="{x:Bind Card.IsMood, Mode=OneWay}" />
+                <TextBlock
+                    Margin="16"
+                    VerticalAlignment="Bottom"
+                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                    Text="{x:Bind Card.Title, Mode=OneWay}"
+                    TextWrapping="WrapWholeWords"
+                    Visibility="{x:Bind Card.IsMood, Mode=OneWay}" />
+            </Grid>
+        </Border>
+        <StackPanel Spacing="2" Visibility="{x:Bind local:MediaCard.Not(Card.IsMood), Mode=OneWay}">
+            <TextBlock
+                Style="{StaticResource BodyTextBlockStyle}"
+                Text="{x:Bind Card.Title, Mode=OneWay}"
+                TextTrimming="CharacterEllipsis"
+                TextWrapping="Wrap"
+                MaxLines="2"
+                HorizontalTextAlignment="{x:Bind local:MediaCard.Align(Card.IsRound), Mode=OneWay}" />
+            <TextBlock
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="{x:Bind Card.Subtitle, Mode=OneWay}"
+                TextTrimming="CharacterEllipsis"
+                TextWrapping="NoWrap"
+                MaxLines="1"
+                HorizontalTextAlignment="{x:Bind local:MediaCard.Align(Card.IsRound), Mode=OneWay}" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>

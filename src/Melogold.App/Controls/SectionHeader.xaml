@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Содержимое строится в коде (SectionHeader.cs); файл регистрирует тип для шаблонов списка -->
+<Grid
+    x:Class="Melogold.App.Controls.SectionHeader"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" />

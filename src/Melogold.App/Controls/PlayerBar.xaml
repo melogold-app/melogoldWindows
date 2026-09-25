@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Melogold.App.Controls.PlayerBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Melogold.App.Controls"
+    xmlns:app="using:Melogold.App"
+    x:Name="Root">
+
+    <Grid
+        x:Name="Bar"
+        MinHeight="88"
+        Padding="12,8,16,8"
+        Background="{ThemeResource LayerOnMicaBaseAltFillColorDefaultBrush}"
+        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+        BorderThickness="0,1,0,0"
+        ColumnSpacing="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="LeftColumn" Width="*" MinWidth="200" />
+            <ColumnDefinition Width="2*" MaxWidth="640" />
+            <ColumnDefinition x:Name="RightColumn" Width="*" MinWidth="120" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Слева: обложка, название, исполнитель, ♡ -->
+        <Grid ColumnSpacing="12" Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button
+                x:Name="ArtworkButton"
+                x:Uid="PlayerArtwork"
+                Width="56"
+                Height="56"
+                Padding="0"
+                CornerRadius="{StaticResource ControlCornerRadius}"
+                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                BorderThickness="0"
+                Click="OnArtworkClick">
+                <Image Source="{x:Bind app:Images.Player(ViewModel.ArtworkUrl), Mode=OneWay}" Stretch="UniformToFill" />
+            </Button>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                <HyperlinkButton
+                    Padding="0"
+                    Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                    Click="OnTitleClick">
+                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                </HyperlinkButton>
+                <Grid>
+                    <HyperlinkButton
+                        x:Name="SubtitleLink"
+                        Padding="0"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Visibility="{x:Bind ViewModel.ShowSubtitle, Mode=OneWay}"
+                        Click="OnArtistClick">
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    </HyperlinkButton>
+                    <TextBlock
+                        x:Name="ResolvingText"
+                        x:Uid="ResolvingText"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Getting the stream…"
+                        Visibility="{x:Bind ViewModel.ShowResolvingText, Mode=OneWay}" />
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        Visibility="{x:Bind local:PlayerBar.IsSet(ViewModel.ErrorMessage), Mode=OneWay}">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                            Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis" />
+                        <HyperlinkButton x:Uid="RetryLink" Padding="0" Content="Retry" FontSize="12" Command="{x:Bind ViewModel.RetryCommand}" />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+            <ToggleButton
+                x:Name="LikeButton"
+                x:Uid="PlayerLike"
+                Grid.Column="2"
+                Style="{StaticResource PlayerIconToggleStyle}"
+                IsChecked="{x:Bind ViewModel.IsLiked, Mode=OneWay}"
+                Command="{x:Bind ViewModel.ToggleLikeCommand}">
+                <FontIcon Glyph="{x:Bind local:PlayerBar.HeartGlyph(ViewModel.IsLiked), Mode=OneWay}" />
+            </ToggleButton>
+        </Grid>
+
+        <!-- В центре: кнопки и ползунок -->
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Spacing="8">
+                <ToggleButton
+                    x:Uid="PlayerShuffle"
+                    Style="{StaticResource PlayerIconToggleStyle}"
+                    IsChecked="{x:Bind ViewModel.Shuffle, Mode=OneWay}"
+                    Command="{x:Bind ViewModel.ToggleShuffleCommand}">
+                    <FontIcon Glyph="&#xE8B1;" />
+                </ToggleButton>
+                <Button x:Uid="PlayerPrevious" Style="{StaticResource PlayerIconButtonStyle}" Command="{x:Bind ViewModel.PreviousCommand}">
+                    <FontIcon Glyph="&#xE892;" />
+                </Button>
+                <Grid>
+                    <Button
+                        x:Name="PlayButton"
+                        Width="40"
+                        Height="40"
+                        Padding="0"
+                        CornerRadius="20"
+                        Style="{StaticResource AccentButtonStyle}"
+                        AutomationProperties.Name="{x:Bind ViewModel.PlayPauseLabel, Mode=OneWay}"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.PlayPauseLabel, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.PlayPauseCommand}">
+                        <FontIcon FontSize="16" Glyph="{x:Bind ViewModel.PlayPauseGlyph, Mode=OneWay}" />
+                    </Button>
+                    <ProgressRing
+                        Width="44"
+                        Height="44"
+                        IsHitTestVisible="False"
+                        IsActive="{x:Bind ViewModel.IsResolving, Mode=OneWay}" />
+                </Grid>
+                <Button x:Uid="PlayerNext" Style="{StaticResource PlayerIconButtonStyle}" Command="{x:Bind ViewModel.NextCommand}">
+                    <FontIcon Glyph="&#xE893;" />
+                </Button>
+                <ToggleButton
+                    Style="{StaticResource PlayerIconToggleStyle}"
+                    IsChecked="{x:Bind local:PlayerBar.IsRepeat(ViewModel.Repeat), Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind ViewModel.RepeatLabel, Mode=OneWay}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.RepeatLabel, Mode=OneWay}"
+                    Command="{x:Bind ViewModel.CycleRepeatCommand}">
+                    <FontIcon Glyph="{x:Bind ViewModel.RepeatGlyph, Mode=OneWay}" />
+                </ToggleButton>
+            </StackPanel>
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="44" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="44" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Right"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="{x:Bind ViewModel.PositionText, Mode=OneWay}" />
+                <Slider
+                    x:Name="SeekSlider"
+                    x:Uid="PlayerSeek"
+                    Grid.Column="1"
+                    Minimum="0"
+                    StepFrequency="1"
+                    SmallChange="5"
+                    LargeChange="15"
+                    Maximum="{x:Bind ViewModel.Duration, Mode=OneWay}"
+                    Value="{x:Bind ViewModel.Position, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.HasTrack, Mode=OneWay}"
+                    ThumbToolTipValueConverter="{StaticResource TimeConverter}" />
+                <TextBlock
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="{x:Bind ViewModel.DurationText, Mode=OneWay}" />
+            </Grid>
+        </StackPanel>
+
+        <!-- Справа: громкость и «…» -->
+        <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal" Spacing="4">
+            <StackPanel x:Name="VolumePanel" Orientation="Horizontal" Spacing="4">
+                <Button x:Uid="PlayerMute" Style="{StaticResource PlayerIconButtonStyle}" Command="{x:Bind ViewModel.ToggleMuteCommand}">
+                    <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" />
+                </Button>
+                <Slider
+                    x:Uid="PlayerVolume"
+                    Width="100"
+                    VerticalAlignment="Center"
+                    Minimum="0"
+                    Maximum="100"
+                    StepFrequency="1"
+                    SmallChange="5"
+                    Value="{x:Bind ViewModel.Volume, Mode=TwoWay}" />
+            </StackPanel>
+            <Button x:Uid="PlayerMore" Style="{StaticResource PlayerIconButtonStyle}" IsEnabled="{x:Bind ViewModel.HasTrack, Mode=OneWay}">
+                <FontIcon Glyph="&#xE712;" />
+                <Button.Flyout>
+                    <MenuFlyout Placement="TopEdgeAlignedRight">
+                        <MenuFlyoutItem x:Uid="MenuStreamInfo" Text="Stream info" Click="OnStreamInfoClick">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE946;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </Button.Flyout>
+            </Button>
+        </StackPanel>
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="Wide">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="900" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+                <VisualState x:Name="Narrow">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="VolumePanel.Visibility" Value="Collapsed" />
+                        <Setter Target="LeftColumn.MinWidth" Value="120" />
+                        <Setter Target="RightColumn.MinWidth" Value="40" />
+                        <Setter Target="RightColumn.Width" Value="Auto" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+    </Grid>
+</UserControl>

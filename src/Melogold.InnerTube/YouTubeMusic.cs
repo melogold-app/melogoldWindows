@@ -181,7 +181,7 @@ public sealed class YouTubeMusic(InnerTubeClient client)
 
     // ---------- Страницы ----------
 
-    public async Task<AlbumPage> AlbumAsync(string browseId, CancellationToken ct = default)
+    public async Task<AlbumDetails> AlbumAsync(string browseId, CancellationToken ct = default)
     {
         var response = await Music("browse", new JsonObject { ["browseId"] = browseId }, ct).ConfigureAwait(false);
         var header = response.At("contents", "twoColumnBrowseResultsRenderer", "tabs", 0, "tabRenderer", "content", "sectionListRenderer", "contents", 0, "musicResponsiveHeaderRenderer");
@@ -223,7 +223,7 @@ public sealed class YouTubeMusic(InnerTubeClient client)
             ArtistsText = t.Artists.Any(a => a.Id is not null) ? t.ArtistsText : artistsText,
             VideoType = t.VideoType ?? "song",
         }).ToList();
-        return new AlbumPage
+        return new AlbumDetails
         {
             Album = album,
             Description = header.At("description", "musicDescriptionShelfRenderer", "description").Text(),
@@ -233,7 +233,7 @@ public sealed class YouTubeMusic(InnerTubeClient client)
         };
     }
 
-    public async Task<PlaylistPage> PlaylistAsync(string playlistId, CancellationToken ct = default)
+    public async Task<PlaylistDetails> PlaylistAsync(string playlistId, CancellationToken ct = default)
     {
         var browseId = playlistId.StartsWith("VL", StringComparison.Ordinal) ? playlistId : "VL" + playlistId;
         var response = await Music("browse", new JsonObject { ["browseId"] = browseId }, ct).ConfigureAwait(false);
@@ -251,7 +251,7 @@ public sealed class YouTubeMusic(InnerTubeClient client)
                         ?? header.At("thumbnail", "croppedSquareThumbnailRenderer", "thumbnail", "thumbnails").BestThumbnail();
         var author = header.At("straplineTextOne").Text() ?? header.Str("facepile", "avatarStackViewModel", "text", "content");
         var tracks = MusicParsers.ItemsOf(shelf.At("contents")).OfType<Track>().ToList();
-        return new PlaylistPage
+        return new PlaylistDetails
         {
             Playlist = new PlaylistItem { PlaylistId = id, Title = title, ThumbnailUrl = thumbnail, Subtitle = author },
             AuthorText = author,
@@ -291,7 +291,7 @@ public sealed class YouTubeMusic(InnerTubeClient client)
     }
 
     /// <summary>Исполнитель YTM; если музыкального профиля нет — канал обычного YouTube (REWRITE §4.8.5).</summary>
-    public async Task<ArtistPage> ArtistAsync(string browseId, CancellationToken ct = default)
+    public async Task<ArtistDetails> ArtistAsync(string browseId, CancellationToken ct = default)
     {
         var response = await Music("browse", new JsonObject { ["browseId"] = browseId }, ct).ConfigureAwait(false);
         var header = response.At("header", "musicImmersiveHeaderRenderer") ?? response.At("header", "musicVisualHeaderRenderer")
@@ -301,7 +301,7 @@ public sealed class YouTubeMusic(InnerTubeClient client)
         if (header is null || shelves.Count == 0)
         {
             var channel = await ChannelAsync(browseId, ct).ConfigureAwait(false);
-            return new ArtistPage
+            return new ArtistDetails
             {
                 BrowseId = browseId,
                 Name = channel.Name,
@@ -317,7 +317,7 @@ public sealed class YouTubeMusic(InnerTubeClient client)
         var songsBrowse = songsShelf.At("title", "runs", 0, "navigationEndpoint", "browseEndpoint", "browseId")
                           ?? songsShelf.At("bottomEndpoint", "browseEndpoint", "browseId");
         string? songsPlaylist = songsBrowse is JsonValue sv && sv.TryGetValue<string>(out var s) && s.StartsWith("VL", StringComparison.Ordinal) ? s[2..] : null;
-        return new ArtistPage
+        return new ArtistDetails
         {
             BrowseId = browseId,
             Name = header.At("title").Text() ?? "",
@@ -344,6 +344,15 @@ public sealed class YouTubeMusic(InnerTubeClient client)
         var response = await Web("browse", new JsonObject { ["continuation"] = continuation }, ct).ConfigureAwait(false);
         var items = response.At("onResponseReceivedActions", 0, "appendContinuationItemsAction", "continuationItems");
         return WebParsers.GridPage(items);
+    }
+
+    /// <summary>
+    /// Ссылка <c>/@handle</c>, <c>/c/…</c>, <c>/user/…</c> → browseId канала (<c>navigation/resolve_url</c> клиента WEB).
+    /// </summary>
+    public async Task<string?> ResolveUrlAsync(string url, CancellationToken ct = default)
+    {
+        var response = await Web("navigation/resolve_url", new JsonObject { ["url"] = url }, ct).ConfigureAwait(false);
+        return response.Str("endpoint", "browseEndpoint", "browseId");
     }
 
     // ---------- «Далее», текст, похожие ----------

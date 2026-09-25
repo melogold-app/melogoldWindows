@@ -24,6 +24,25 @@ public sealed class Navigator
     private readonly Dictionary<string, Frame> _frames = [];
     private readonly Dictionary<string, Section> _sections = [];
 
+    /// <summary>
+    /// Параметры экранов: во <see cref="Frame.Navigate(Type, object)"/> уходит только строковый ключ (WinUI советует простые
+    /// типы; записи C# через границу WinRT давали падение 0xC0000005 в CsWinRT), сам объект лежит здесь.
+    /// </summary>
+    private static readonly Dictionary<string, object> Parameters = [];
+    private static long _nextParameter;
+
+    /// <summary>Параметр экрана по ключу из <c>NavigationEventArgs.Parameter</c>.</summary>
+    public static object? Resolve(object? parameter) =>
+        parameter is string key && key.StartsWith("nav:", StringComparison.Ordinal) && Parameters.TryGetValue(key, out var value) ? value : parameter;
+
+    private static object? Wrap(object? parameter)
+    {
+        if (parameter is null or string) return parameter;
+        var key = "nav:" + Interlocked.Increment(ref _nextParameter);
+        Parameters[key] = parameter;
+        return key;
+    }
+
     public string Current { get; private set; } = Start;
 
     /// <summary>Сменился раздел или экран: окну — обновить выделение, кнопку «Назад» и заголовок.</summary>
@@ -37,6 +56,11 @@ public sealed class Navigator
         _sections[section.Key] = section;
         _frames[section.Key] = frame;
         frame.Navigated += (_, _) => Changed?.Invoke();
+        frame.NavigationFailed += (_, e) =>
+        {
+            Log.Error($"Navigation to {e.SourcePageType.Name} failed", e.Exception);
+            e.Handled = true;
+        };
     }
 
     public Frame CurrentFrame => _frames[Current];
@@ -68,7 +92,14 @@ public sealed class Navigator
     /// <summary>Открыть экран в стеке текущего раздела.</summary>
     public void Open(Type page, object? parameter = null)
     {
-        CurrentFrame.Navigate(page, parameter, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
+        try
+        {
+            CurrentFrame.Navigate(page, Wrap(parameter), new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
+        }
+        catch (Exception e)
+        {
+            Log.Error($"Navigation to {page.Name} threw", e);
+        }
     }
 
     public bool GoBack()

@@ -39,12 +39,25 @@ public sealed class LibraryDatabase
 
     public SqliteConnection Open()
     {
-        var connection = new SqliteConnection(_connectionString);
-        connection.Open();
-        using var pragma = connection.CreateCommand();
-        pragma.CommandText = "PRAGMA busy_timeout = 5000;";
-        pragma.ExecuteNonQuery();
-        return connection;
+        // Сразу после завершения прежнего процесса его файлы WAL ещё могут быть заняты: IOERR/BUSY — повторить
+        for (var attempt = 0; ; attempt++)
+        {
+            var connection = new SqliteConnection(_connectionString);
+            try
+            {
+                connection.Open();
+                using var pragma = connection.CreateCommand();
+                pragma.CommandText = "PRAGMA busy_timeout = 5000;";
+                pragma.ExecuteNonQuery();
+                return connection;
+            }
+            catch (SqliteException e) when (e.SqliteErrorCode is 5 or 10 && attempt < 10)
+            {
+                connection.Dispose();
+                SqliteConnection.ClearAllPools();
+                Thread.Sleep(100 * (attempt + 1));
+            }
+        }
     }
 
     /// <summary>Запись одной транзакцией.</summary>

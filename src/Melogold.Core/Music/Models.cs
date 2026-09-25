@@ -107,7 +107,7 @@ public sealed record SearchSummary(MusicItem? TopResult, IReadOnlyList<MusicItem
 /// <summary>Страница выдачи с продолжением.</summary>
 public sealed record ItemsPage(IReadOnlyList<MusicItem> Items, string? Continuation);
 
-public sealed record AlbumPage
+public sealed record AlbumDetails
 {
     public required AlbumItem Album { get; init; }
     public string? Description { get; init; }
@@ -116,7 +116,7 @@ public sealed record AlbumPage
     public IReadOnlyList<Shelf> Shelves { get; init; } = [];
 }
 
-public sealed record ArtistPage
+public sealed record ArtistDetails
 {
     public required string BrowseId { get; init; }
     public required string Name { get; init; }
@@ -133,7 +133,7 @@ public sealed record ArtistPage
     public string? RadioPlaylistId { get; init; }
 }
 
-public sealed record PlaylistPage
+public sealed record PlaylistDetails
 {
     public required PlaylistItem Playlist { get; init; }
     public string? Description { get; init; }

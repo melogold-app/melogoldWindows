@@ -1,4 +1,6 @@
 using Melogold.App.Services;
+using Melogold.App.ViewModels;
+using Melogold.App.Views;
 using Melogold.Core.Data;
 using Melogold.InnerTube;
 using Melogold.Playback;
@@ -26,6 +28,12 @@ public partial class App : Application
         {
             if (e.ExceptionObject is Exception error) Log.Crash(error, "AppDomain");
         };
+        if (Environment.GetEnvironmentVariable("MELOGOLD_TRACE") == "1")
+        {
+            // Отладка: каждое исключение первого шанса — в журнал
+            AppDomain.CurrentDomain.FirstChanceException += (_, e) =>
+                Log.Warn($"First chance {e.Exception.GetType().Name}: {e.Exception.Message}\n{Environment.StackTrace}");
+        }
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
             Log.Warn("Unobserved task", e.Exception);
@@ -58,14 +66,35 @@ public partial class App : Application
         });
         services.AddSingleton<YouTubeMusic>();
         services.AddSingleton<StreamResolver>();
+        services.AddSingleton<CatalogCache>();
+        // Всё, что ниже, создаётся в потоке интерфейса: плеер запоминает его контекст, плашка — его очередь
+        services.AddSingleton<Snackbar>();
+        services.AddSingleton(sp => new PlayerEngine(sp.GetRequiredService<StreamResolver>(), sp.GetRequiredService<YouTubeMusic>(),
+            sp.GetRequiredService<Library>(), sp.GetRequiredService<SettingsStore>()));
+        services.AddSingleton<PlayerViewModel>();
+        services.AddSingleton<TrackActions>();
+        services.AddSingleton<CollectionMenu>();
         return services.BuildServiceProvider();
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         ProtocolRegistration.Ensure();
+        // Прогрев: visitorData и соединение с YouTube — до первого нажатия, а не после
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Services.GetRequiredService<InnerTubeClient>().EnsureVisitorDataAsync();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("Warm-up failed", e);
+            }
+        });
         _window = new MainWindow();
         _window.Activate();
+        _window.Closed += (_, _) => Services.GetRequiredService<PlayerEngine>().Dispose();
         if (_args.Length > 0) Services.GetRequiredService<LinkRouter>().OpenArguments(_args);
     }
 

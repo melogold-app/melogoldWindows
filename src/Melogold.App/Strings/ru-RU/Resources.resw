@@ -43,4 +43,129 @@
   <data name="SignIn" xml:space="preserve"><value>Войти</value></data>
   <data name="SettingsServer.Header" xml:space="preserve"><value>Сервер</value></data>
   <data name="ComingSoon" xml:space="preserve"><value>Скоро здесь</value></data>
+  <data name="Play" xml:space="preserve"><value>Воспроизвести</value></data>
+  <data name="Pause" xml:space="preserve"><value>Пауза</value></data>
+  <data name="RepeatOff" xml:space="preserve"><value>Повтор выключен</value></data>
+  <data name="RepeatAll" xml:space="preserve"><value>Повтор очереди</value></data>
+  <data name="RepeatOne" xml:space="preserve"><value>Повтор трека</value></data>
+  <data name="PlayerArtwork.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Сейчас играет</value></data>
+  <data name="PlayerLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>В Избранное</value></data>
+  <data name="PlayerLike.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>В Избранное</value></data>
+  <data name="PlayerShuffle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Перемешать</value></data>
+  <data name="PlayerShuffle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Перемешать</value></data>
+  <data name="PlayerPrevious.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Предыдущий трек</value></data>
+  <data name="PlayerPrevious.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Предыдущий трек</value></data>
+  <data name="PlayerNext.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Следующий трек</value></data>
+  <data name="PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Следующий трек</value></data>
+  <data name="PlayerSeek.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Перемотка</value></data>
+  <data name="PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Без звука</value></data>
+  <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Без звука</value></data>
+  <data name="PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Громкость</value></data>
+  <data name="PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Ещё</value></data>
+  <data name="PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Ещё</value></data>
+  <data name="ResolvingText.Text" xml:space="preserve"><value>Получаем поток…</value></data>
+  <data name="RetryLink.Content" xml:space="preserve"><value>Повторить</value></data>
+  <data name="MenuStreamInfo.Text" xml:space="preserve"><value>Сведения о потоке</value></data>
+  <data name="StreamInfoTitle" xml:space="preserve"><value>Сведения о потоке</value></data>
+  <data name="StreamBitrate" xml:space="preserve"><value>Битрейт</value></data>
+  <data name="StreamSource" xml:space="preserve"><value>Клиент</value></data>
+  <data name="Close" xml:space="preserve"><value>Закрыть</value></data>
+  <data name="PlayErrorNetwork" xml:space="preserve"><value>Нет соединения. Проверьте сеть или VPN</value></data>
+  <data name="PlayErrorBot" xml:space="preserve"><value>YouTube просит подтвердить, что вы не робот. Попробуйте позже или смените сеть</value></data>
+  <data name="PlayErrorGeo" xml:space="preserve"><value>Недоступно в вашем регионе</value></data>
+  <data name="PlayErrorUnavailable" xml:space="preserve"><value>Видео удалено или закрыто</value></data>
+  <data name="PlayErrorAge" xml:space="preserve"><value>Нужна проверка возраста — пока не поддерживается</value></data>
+  <data name="PlayErrorExtractor" xml:space="preserve"><value>Не удалось получить поток</value></data>
+  <data name="SkippedFormat" xml:space="preserve"><value>Пропущен „{0}“: {1}</value></data>
+  <data name="QueueReplaced" xml:space="preserve"><value>Очередь заменена</value></data>
+  <data name="Undo" xml:space="preserve"><value>Отменить</value></data>
+  <data name="PlayingNextFormat" xml:space="preserve"><value>Играет следующим: {0}</value></data>
+  <data name="AddedToQueueFormat" xml:space="preserve"><value>В конце очереди: {0}</value></data>
+  <data name="LinkCopied" xml:space="preserve"><value>Ссылка скопирована</value></data>
+  <data name="TrackHidden" xml:space="preserve"><value>Трек скрыт</value></data>
+  <data name="MenuPlayNext" xml:space="preserve"><value>Играть следующим</value></data>
+  <data name="MenuAddToQueue" xml:space="preserve"><value>В конец очереди</value></data>
+  <data name="MenuAddToPlaylist" xml:space="preserve"><value>Добавить в плейлист…</value></data>
+  <data name="MenuTrackRadio" xml:space="preserve"><value>Включить радио по треку</value></data>
+  <data name="MenuFavoriteAdd" xml:space="preserve"><value>В Избранное</value></data>
+  <data name="MenuFavoriteRemove" xml:space="preserve"><value>Убрать из Избранного</value></data>
+  <data name="MenuGoToAlbum" xml:space="preserve"><value>Открыть альбом</value></data>
+  <data name="MenuGoToArtist" xml:space="preserve"><value>Открыть исполнителя</value></data>
+  <data name="MenuGoToChannel" xml:space="preserve"><value>Открыть канал</value></data>
+  <data name="MenuOtherVersions" xml:space="preserve"><value>Другие версии</value></data>
+  <data name="MenuCopyLink" xml:space="preserve"><value>Копировать ссылку</value></data>
+  <data name="MenuRemoveFromPlaylist" xml:space="preserve"><value>Убрать из плейлиста</value></data>
+  <data name="MenuRemoveFromHistory" xml:space="preserve"><value>Убрать из истории</value></data>
+  <data name="MenuRemoveFromQueue" xml:space="preserve"><value>Убрать из очереди</value></data>
+  <data name="MenuDontShow" xml:space="preserve"><value>Не показывать этот трек</value></data>
+  <data name="MenuShowAgain" xml:space="preserve"><value>Снова показывать этот трек</value></data>
+  <data name="RowPlay" xml:space="preserve"><value>Воспроизвести</value></data>
+  <data name="RowMenu" xml:space="preserve"><value>Меню</value></data>
+  <data name="Explicit" xml:space="preserve"><value>Откровенный текст</value></data>
+  <data name="RecentQueries" xml:space="preserve"><value>Недавние запросы</value></data>
+  <data name="InLibrary" xml:space="preserve"><value>В библиотеке</value></data>
+  <data name="ResultsAll" xml:space="preserve"><value>Всё</value></data>
+  <data name="ResultsMusic" xml:space="preserve"><value>Музыка</value></data>
+  <data name="ResultsYouTube" xml:space="preserve"><value>YouTube</value></data>
+  <data name="ResultsSongs" xml:space="preserve"><value>Песни</value></data>
+  <data name="ResultsAlbums" xml:space="preserve"><value>Альбомы</value></data>
+  <data name="ResultsArtists" xml:space="preserve"><value>Исполнители</value></data>
+  <data name="ResultsMusicVideos" xml:space="preserve"><value>Клипы</value></data>
+  <data name="ResultsPlaylists" xml:space="preserve"><value>Плейлисты</value></data>
+  <data name="ResultsVideos" xml:space="preserve"><value>Видео</value></data>
+  <data name="ResultsChannels" xml:space="preserve"><value>Каналы</value></data>
+  <data name="ResultsLive" xml:space="preserve"><value>Трансляции</value></data>
+  <data name="ResultsTopResult" xml:space="preserve"><value>Лучший результат</value></data>
+  <data name="ResultsMore" xml:space="preserve"><value>Ещё</value></data>
+  <data name="ResultsNothing" xml:space="preserve"><value>Ничего не нашлось. Проверьте написание или посмотрите на YouTube</value></data>
+  <data name="ResultsNothingInCatalog" xml:space="preserve"><value>В каталоге YouTube Music ничего не нашлось — вот что есть на YouTube</value></data>
+  <data name="ResultsSearchYouTube" xml:space="preserve"><value>Искать на YouTube</value></data>
+  <data name="TypeSong" xml:space="preserve"><value>Песня</value></data>
+  <data name="TypeVideo" xml:space="preserve"><value>Видео</value></data>
+  <data name="TypeAlbum" xml:space="preserve"><value>Альбом</value></data>
+  <data name="TypeArtist" xml:space="preserve"><value>Исполнитель</value></data>
+  <data name="TypeChannel" xml:space="preserve"><value>Канал</value></data>
+  <data name="TypePlaylist" xml:space="preserve"><value>Плейлист</value></data>
+  <data name="Live" xml:space="preserve"><value>В ЭФИРЕ</value></data>
+  <data name="LinkUnsupported" xml:space="preserve"><value>Эту ссылку не открыть</value></data>
+  <data name="LinkImportLater" xml:space="preserve"><value>Импорт из других сервисов появится позже</value></data>
+  <data name="SeeAll" xml:space="preserve"><value>Все</value></data>
+  <data name="PlayAll" xml:space="preserve"><value>Слушать</value></data>
+  <data name="Shuffle" xml:space="preserve"><value>Перемешать</value></data>
+  <data name="SaveToLibrary" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="InLibraryCheck" xml:space="preserve"><value>✓ В библиотеке</value></data>
+  <data name="SaveAsPlaylist" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="SavedToLibraryFormat" xml:space="preserve"><value>Сохранено в Библиотеку: „{0}“</value></data>
+  <data name="Subscribe" xml:space="preserve"><value>Подписаться</value></data>
+  <data name="Subscribed" xml:space="preserve"><value>Вы подписаны</value></data>
+  <data name="YouTubeChannel" xml:space="preserve"><value>Канал YouTube</value></data>
+  <data name="MenuStartRadio" xml:space="preserve"><value>Включить радио</value></data>
+  <data name="PlayingNextTracks_one" xml:space="preserve"><value>Играет следующим: {0} трек</value></data>
+  <data name="PlayingNextTracks_few" xml:space="preserve"><value>Играют следующими: {0} трека</value></data>
+  <data name="PlayingNextTracks_many" xml:space="preserve"><value>Играют следующими: {0} треков</value></data>
+  <data name="PlayingNextTracks_other" xml:space="preserve"><value>Играют следующими: {0} трека</value></data>
+  <data name="AddedToQueueTracks_one" xml:space="preserve"><value>В конце очереди: {0} трек</value></data>
+  <data name="AddedToQueueTracks_few" xml:space="preserve"><value>В конце очереди: {0} трека</value></data>
+  <data name="AddedToQueueTracks_many" xml:space="preserve"><value>В конце очереди: {0} треков</value></data>
+  <data name="AddedToQueueTracks_other" xml:space="preserve"><value>В конце очереди: {0} трека</value></data>
+  <data name="NewPlaylist" xml:space="preserve"><value>Новый плейлист</value></data>
+  <data name="NewPlaylistName" xml:space="preserve"><value>Название</value></data>
+  <data name="NoPlaylistsYet" xml:space="preserve"><value>Плейлистов пока нет</value></data>
+  <data name="AddToPlaylistTitle" xml:space="preserve"><value>Добавить в плейлист</value></data>
+  <data name="Done" xml:space="preserve"><value>Готово</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Отмена</value></data>
+  <data name="AddedToPlaylistFormat" xml:space="preserve"><value>Добавлено в „{0}“</value></data>
+  <data name="ChangedInPlaylists_one" xml:space="preserve"><value>Изменено в {0} плейлисте</value></data>
+  <data name="ChangedInPlaylists_few" xml:space="preserve"><value>Изменено в {0} плейлистах</value></data>
+  <data name="ChangedInPlaylists_many" xml:space="preserve"><value>Изменено в {0} плейлистах</value></data>
+  <data name="ChangedInPlaylists_other" xml:space="preserve"><value>Изменено в {0} плейлиста</value></data>
+  <data name="OpenLinkFormat" xml:space="preserve"><value>Открыть ссылку: {0}</value></data>
+  <data name="LinkKindVideo" xml:space="preserve"><value>видео YouTube</value></data>
+  <data name="LinkKindPlaylist" xml:space="preserve"><value>плейлист</value></data>
+  <data name="LinkKindAlbum" xml:space="preserve"><value>альбом</value></data>
+  <data name="LinkKindChannel" xml:space="preserve"><value>канал</value></data>
+  <data name="RowPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Воспроизвести</value></data>
+  <data name="RowLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>В Избранное</value></data>
+  <data name="RowMenuButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Меню</value></data>
+  <data name="RowMenuButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Меню</value></data>
 </root>

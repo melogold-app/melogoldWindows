@@ -43,4 +43,129 @@
   <data name="SignIn" xml:space="preserve"><value>Sign in</value></data>
   <data name="SettingsServer.Header" xml:space="preserve"><value>Server</value></data>
   <data name="ComingSoon" xml:space="preserve"><value>Coming soon</value></data>
+  <data name="Play" xml:space="preserve"><value>Play</value></data>
+  <data name="Pause" xml:space="preserve"><value>Pause</value></data>
+  <data name="RepeatOff" xml:space="preserve"><value>Repeat off</value></data>
+  <data name="RepeatAll" xml:space="preserve"><value>Repeat queue</value></data>
+  <data name="RepeatOne" xml:space="preserve"><value>Repeat track</value></data>
+  <data name="PlayerArtwork.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Now playing</value></data>
+  <data name="PlayerLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add to Favorites</value></data>
+  <data name="PlayerLike.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Add to Favorites</value></data>
+  <data name="PlayerShuffle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Shuffle</value></data>
+  <data name="PlayerShuffle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Shuffle</value></data>
+  <data name="PlayerPrevious.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Previous track</value></data>
+  <data name="PlayerPrevious.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Previous track</value></data>
+  <data name="PlayerNext.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Next track</value></data>
+  <data name="PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Next track</value></data>
+  <data name="PlayerSeek.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Seek</value></data>
+  <data name="PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mute</value></data>
+  <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Mute</value></data>
+  <data name="PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Volume</value></data>
+  <data name="PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>More</value></data>
+  <data name="PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>More</value></data>
+  <data name="ResolvingText.Text" xml:space="preserve"><value>Getting the stream…</value></data>
+  <data name="RetryLink.Content" xml:space="preserve"><value>Retry</value></data>
+  <data name="MenuStreamInfo.Text" xml:space="preserve"><value>Stream info</value></data>
+  <data name="StreamInfoTitle" xml:space="preserve"><value>Stream info</value></data>
+  <data name="StreamBitrate" xml:space="preserve"><value>Bitrate</value></data>
+  <data name="StreamSource" xml:space="preserve"><value>Client</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="PlayErrorNetwork" xml:space="preserve"><value>No connection. Check your network or VPN</value></data>
+  <data name="PlayErrorBot" xml:space="preserve"><value>YouTube wants to check you're not a robot. Try again later or switch networks</value></data>
+  <data name="PlayErrorGeo" xml:space="preserve"><value>Not available in your region</value></data>
+  <data name="PlayErrorUnavailable" xml:space="preserve"><value>The video was removed or made private</value></data>
+  <data name="PlayErrorAge" xml:space="preserve"><value>Age verification is required — not supported yet</value></data>
+  <data name="PlayErrorExtractor" xml:space="preserve"><value>Couldn't get the stream</value></data>
+  <data name="SkippedFormat" xml:space="preserve"><value>Skipped “{0}”: {1}</value></data>
+  <data name="QueueReplaced" xml:space="preserve"><value>Queue replaced</value></data>
+  <data name="Undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="PlayingNextFormat" xml:space="preserve"><value>Playing next: {0}</value></data>
+  <data name="AddedToQueueFormat" xml:space="preserve"><value>Added to queue: {0}</value></data>
+  <data name="LinkCopied" xml:space="preserve"><value>Link copied</value></data>
+  <data name="TrackHidden" xml:space="preserve"><value>Track hidden</value></data>
+  <data name="MenuPlayNext" xml:space="preserve"><value>Play next</value></data>
+  <data name="MenuAddToQueue" xml:space="preserve"><value>Add to queue</value></data>
+  <data name="MenuAddToPlaylist" xml:space="preserve"><value>Add to playlist…</value></data>
+  <data name="MenuTrackRadio" xml:space="preserve"><value>Start track radio</value></data>
+  <data name="MenuFavoriteAdd" xml:space="preserve"><value>Add to Favorites</value></data>
+  <data name="MenuFavoriteRemove" xml:space="preserve"><value>Remove from Favorites</value></data>
+  <data name="MenuGoToAlbum" xml:space="preserve"><value>Go to album</value></data>
+  <data name="MenuGoToArtist" xml:space="preserve"><value>Go to artist</value></data>
+  <data name="MenuGoToChannel" xml:space="preserve"><value>Go to channel</value></data>
+  <data name="MenuOtherVersions" xml:space="preserve"><value>Other versions</value></data>
+  <data name="MenuCopyLink" xml:space="preserve"><value>Copy link</value></data>
+  <data name="MenuRemoveFromPlaylist" xml:space="preserve"><value>Remove from playlist</value></data>
+  <data name="MenuRemoveFromHistory" xml:space="preserve"><value>Remove from history</value></data>
+  <data name="MenuRemoveFromQueue" xml:space="preserve"><value>Remove from queue</value></data>
+  <data name="MenuDontShow" xml:space="preserve"><value>Don't show this track</value></data>
+  <data name="MenuShowAgain" xml:space="preserve"><value>Show this track again</value></data>
+  <data name="RowPlay" xml:space="preserve"><value>Play</value></data>
+  <data name="RowMenu" xml:space="preserve"><value>Menu</value></data>
+  <data name="Explicit" xml:space="preserve"><value>Explicit</value></data>
+  <data name="RecentQueries" xml:space="preserve"><value>Recent searches</value></data>
+  <data name="InLibrary" xml:space="preserve"><value>In library</value></data>
+  <data name="ResultsAll" xml:space="preserve"><value>All</value></data>
+  <data name="ResultsMusic" xml:space="preserve"><value>Music</value></data>
+  <data name="ResultsYouTube" xml:space="preserve"><value>YouTube</value></data>
+  <data name="ResultsSongs" xml:space="preserve"><value>Songs</value></data>
+  <data name="ResultsAlbums" xml:space="preserve"><value>Albums</value></data>
+  <data name="ResultsArtists" xml:space="preserve"><value>Artists</value></data>
+  <data name="ResultsMusicVideos" xml:space="preserve"><value>Music videos</value></data>
+  <data name="ResultsPlaylists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="ResultsVideos" xml:space="preserve"><value>Videos</value></data>
+  <data name="ResultsChannels" xml:space="preserve"><value>Channels</value></data>
+  <data name="ResultsLive" xml:space="preserve"><value>Live</value></data>
+  <data name="ResultsTopResult" xml:space="preserve"><value>Top result</value></data>
+  <data name="ResultsMore" xml:space="preserve"><value>More</value></data>
+  <data name="ResultsNothing" xml:space="preserve"><value>Nothing found. Check the spelling or look on YouTube</value></data>
+  <data name="ResultsNothingInCatalog" xml:space="preserve"><value>Nothing in the YouTube Music catalog — here's what's on YouTube</value></data>
+  <data name="ResultsSearchYouTube" xml:space="preserve"><value>Search YouTube</value></data>
+  <data name="TypeSong" xml:space="preserve"><value>Song</value></data>
+  <data name="TypeVideo" xml:space="preserve"><value>Video</value></data>
+  <data name="TypeAlbum" xml:space="preserve"><value>Album</value></data>
+  <data name="TypeArtist" xml:space="preserve"><value>Artist</value></data>
+  <data name="TypeChannel" xml:space="preserve"><value>Channel</value></data>
+  <data name="TypePlaylist" xml:space="preserve"><value>Playlist</value></data>
+  <data name="Live" xml:space="preserve"><value>LIVE</value></data>
+  <data name="LinkUnsupported" xml:space="preserve"><value>This link can't be opened</value></data>
+  <data name="LinkImportLater" xml:space="preserve"><value>Import from other services is coming later</value></data>
+  <data name="SeeAll" xml:space="preserve"><value>See all</value></data>
+  <data name="PlayAll" xml:space="preserve"><value>Play</value></data>
+  <data name="Shuffle" xml:space="preserve"><value>Shuffle</value></data>
+  <data name="SaveToLibrary" xml:space="preserve"><value>Save</value></data>
+  <data name="InLibraryCheck" xml:space="preserve"><value>✓ In library</value></data>
+  <data name="SaveAsPlaylist" xml:space="preserve"><value>Save</value></data>
+  <data name="SavedToLibraryFormat" xml:space="preserve"><value>Saved to Library: “{0}”</value></data>
+  <data name="Subscribe" xml:space="preserve"><value>Subscribe</value></data>
+  <data name="Subscribed" xml:space="preserve"><value>Subscribed</value></data>
+  <data name="YouTubeChannel" xml:space="preserve"><value>YouTube channel</value></data>
+  <data name="MenuStartRadio" xml:space="preserve"><value>Start radio</value></data>
+  <data name="PlayingNextTracks_one" xml:space="preserve"><value>Playing next: {0} track</value></data>
+  <data name="PlayingNextTracks_few" xml:space="preserve"><value>Playing next: {0} tracks</value></data>
+  <data name="PlayingNextTracks_many" xml:space="preserve"><value>Playing next: {0} tracks</value></data>
+  <data name="PlayingNextTracks_other" xml:space="preserve"><value>Playing next: {0} tracks</value></data>
+  <data name="AddedToQueueTracks_one" xml:space="preserve"><value>Added to queue: {0} track</value></data>
+  <data name="AddedToQueueTracks_few" xml:space="preserve"><value>Added to queue: {0} tracks</value></data>
+  <data name="AddedToQueueTracks_many" xml:space="preserve"><value>Added to queue: {0} tracks</value></data>
+  <data name="AddedToQueueTracks_other" xml:space="preserve"><value>Added to queue: {0} tracks</value></data>
+  <data name="NewPlaylist" xml:space="preserve"><value>New playlist</value></data>
+  <data name="NewPlaylistName" xml:space="preserve"><value>Name</value></data>
+  <data name="NoPlaylistsYet" xml:space="preserve"><value>No playlists yet</value></data>
+  <data name="AddToPlaylistTitle" xml:space="preserve"><value>Add to playlist</value></data>
+  <data name="Done" xml:space="preserve"><value>Done</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="AddedToPlaylistFormat" xml:space="preserve"><value>Added to “{0}”</value></data>
+  <data name="ChangedInPlaylists_one" xml:space="preserve"><value>Changed in {0} playlist</value></data>
+  <data name="ChangedInPlaylists_few" xml:space="preserve"><value>Changed in {0} playlists</value></data>
+  <data name="ChangedInPlaylists_many" xml:space="preserve"><value>Changed in {0} playlists</value></data>
+  <data name="ChangedInPlaylists_other" xml:space="preserve"><value>Changed in {0} playlists</value></data>
+  <data name="OpenLinkFormat" xml:space="preserve"><value>Open link: {0}</value></data>
+  <data name="LinkKindVideo" xml:space="preserve"><value>YouTube video</value></data>
+  <data name="LinkKindPlaylist" xml:space="preserve"><value>playlist</value></data>
+  <data name="LinkKindAlbum" xml:space="preserve"><value>album</value></data>
+  <data name="LinkKindChannel" xml:space="preserve"><value>channel</value></data>
+  <data name="RowPlayButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Play</value></data>
+  <data name="RowLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add to Favorites</value></data>
+  <data name="RowMenuButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Menu</value></data>
+  <data name="RowMenuButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Menu</value></data>
 </root>

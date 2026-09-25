@@ -36,7 +36,16 @@ public sealed record ClientProfile(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
         Referer: "https://www.youtube.com/", Platform: "DESKTOP");
 
-    /// <summary>Поток: ссылки без подписи и без JS-проверок.</summary>
+    /// <summary>
+    /// Поток (сентябрь 2026): единственный клиент без JS-плеера, которому googlevideo отдаёт файл целиком без PO-токена.
+    /// Нужен <c>visitorData</c> — без него ответ «Sign in to confirm you’re not a bot». Параметры — как в yt-dlp 2026.08.19.
+    /// </summary>
+    public static readonly ClientProfile VisionOs = new(
+        "VISIONOS", 101, "1.02", "www.youtube.com",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
+        Referer: "https://www.youtube.com/", DeviceMake: "Apple", DeviceModel: "RealityDevice17,1", OsName: "visionOS", OsVersion: "26.5.23O471");
+
+    /// <summary>Поток: прямые ссылки, но без PO-токена googlevideo отдаёт только начало файла (с августа 2026).</summary>
     public static readonly ClientProfile Ios = new(
         "IOS", 5, "20.10.4", "www.youtube.com",
         "com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)",
@@ -131,6 +140,20 @@ public sealed class InnerTubeClient : IDisposable
         "bg", "ky", "kk", "mk", "mn", "ru", "sr", "uk", "el", "hy", "iw", "ur", "ar", "fa", "ne", "mr", "hi", "bn", "pa", "gu",
         "ta", "te", "kn", "ml", "si", "th", "lo", "my", "ka", "am", "km", "zh-CN", "zh-TW", "zh-HK", "ja", "ko",
     ];
+
+    /// <summary>Идентификатор посетителя YouTube: приходит в первом ответе, нужен клиенту потока.</summary>
+    public string? VisitorData
+    {
+        get => _visitorData;
+        set => _visitorData = string.IsNullOrEmpty(value) ? null : value;
+    }
+
+    /// <summary>Получить <see cref="VisitorData"/>, если его ещё нет: самый лёгкий запрос YouTube Music.</summary>
+    public async Task EnsureVisitorDataAsync(CancellationToken ct = default)
+    {
+        if (_visitorData is not null) return;
+        await PostAsync(ClientProfile.WebRemix, "music/get_search_suggestions", new JsonObject { ["input"] = "" }, ct).ConfigureAwait(false);
+    }
 
     public JsonObject Context(ClientProfile client)
     {

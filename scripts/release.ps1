@@ -47,7 +47,8 @@ foreach ($arch in @("x64", "arm64")) {
     & $Iscc /Q "/DAppVersion=$version" "/DSourceDir=$publishDir" "/DOutputDir=$dist" "/DArch=$arch" (Join-Path $root "installer\Melogold.iss")
     if ($LASTEXITCODE -ne 0) { throw "ISCC $arch failed" }
 
-    $file = "Melogold-$version-$arch-setup.exe"
+    # Имя без версии: ссылка releases/latest/download/<имя> всегда ведёт на последнюю версию
+    $file = "Melogold-$arch-setup.exe"
     $path = Join-Path $dist $file
     $assets[$arch] = [ordered]@{
         fileName  = $file

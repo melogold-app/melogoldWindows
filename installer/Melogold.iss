@@ -35,7 +35,8 @@ DisableProgramGroupPage=yes
 DisableReadyPage=yes
 PrivilegesRequired=lowest
 OutputDir={#OutputDir}
-OutputBaseFilename=Melogold-{#AppVersion}-{#Arch}-setup
+; Имя без версии: releases/latest/download/Melogold-x64-setup.exe всегда ведёт на последнюю
+OutputBaseFilename=Melogold-{#Arch}-setup
 SetupIconFile=..\src\Melogold.App\Assets\melogold.ico
 UninstallDisplayIcon={app}\{#AppExeName}
 UninstallDisplayName={#AppName}

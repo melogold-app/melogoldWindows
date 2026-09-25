@@ -21,8 +21,8 @@
             <ColumnDefinition x:Name="RightColumn" Width="*" MinWidth="120" />
         </Grid.ColumnDefinitions>
 
-        <!-- Слева: обложка, название, исполнитель, ♡ -->
-        <Grid ColumnSpacing="12" Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay}">
+        <!-- Слева: обложка, название, исполнитель, ♡. Правый клик — то же меню, что «…» -->
+        <Grid ColumnSpacing="12" Visibility="{x:Bind ViewModel.HasTrack, Mode=OneWay}" ContextRequested="OnTrackContextRequested">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -45,7 +45,7 @@
                     Padding="0"
                     Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                     Click="OnTitleClick">
-                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1" IsTextTrimmedChanged="OnTextTrimmedChanged" />
                 </HyperlinkButton>
                 <Grid>
                     <HyperlinkButton
@@ -54,7 +54,7 @@
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Visibility="{x:Bind ViewModel.ShowSubtitle, Mode=OneWay}"
                         Click="OnArtistClick">
-                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1" IsTextTrimmedChanged="OnTextTrimmedChanged" />
                     </HyperlinkButton>
                     <TextBlock
                         x:Name="ResolvingText"
@@ -110,7 +110,7 @@
                         CornerRadius="20"
                         Style="{StaticResource AccentButtonStyle}"
                         AutomationProperties.Name="{x:Bind ViewModel.PlayPauseLabel, Mode=OneWay}"
-                        ToolTipService.ToolTip="{x:Bind ViewModel.PlayPauseLabel, Mode=OneWay}"
+                        ToolTipService.ToolTip="{x:Bind local:PlayerBar.Hint(ViewModel.PlayPauseLabel, 'Space'), Mode=OneWay}"
                         Command="{x:Bind ViewModel.PlayPauseCommand}">
                         <FontIcon FontSize="16" Glyph="{x:Bind ViewModel.PlayPauseGlyph, Mode=OneWay}" />
                     </Button>
@@ -127,7 +127,7 @@
                     Style="{StaticResource PlayerIconToggleStyle}"
                     IsChecked="{x:Bind local:PlayerBar.IsRepeat(ViewModel.Repeat), Mode=OneWay}"
                     AutomationProperties.Name="{x:Bind ViewModel.RepeatLabel, Mode=OneWay}"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.RepeatLabel, Mode=OneWay}"
+                    ToolTipService.ToolTip="{x:Bind local:PlayerBar.Hint(ViewModel.RepeatLabel, 'Ctrl+T'), Mode=OneWay}"
                     Command="{x:Bind ViewModel.CycleRepeatCommand}">
                     <FontIcon Glyph="{x:Bind ViewModel.RepeatGlyph, Mode=OneWay}" />
                 </ToggleButton>
@@ -182,7 +182,8 @@
                 Click="OnQueueClick">
                 <FontIcon Glyph="&#xE90B;" />
             </ToggleButton>
-            <StackPanel x:Name="VolumePanel" Orientation="Horizontal" Spacing="4">
+            <!-- Колесо мыши над громкостью меняет её, как в «Медиаплеере» -->
+            <StackPanel x:Name="VolumePanel" Orientation="Horizontal" Spacing="4" Background="Transparent" PointerWheelChanged="OnVolumeWheel">
                 <Button x:Uid="PlayerMute" Style="{StaticResource PlayerIconButtonStyle}" Command="{x:Bind ViewModel.ToggleMuteCommand}">
                     <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" />
                 </Button>

@@ -19,7 +19,6 @@ public sealed partial class SettingsPage : Page, IScrollToTop
     private readonly Library _library = App.Services.GetRequiredService<Library>();
     private readonly ImageCache _images = App.Services.GetRequiredService<ImageCache>();
     private readonly SongCache _songs = App.Services.GetRequiredService<SongCache>();
-    private readonly Melogold.Playback.PlayerEngine _engine = App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>();
     private bool _ready;
 
     /// <summary>«Максимальный размер», МБ — варианты Android (<c>CoilDiskCacheSize</c>, <c>ExoPlayerDiskCacheSize</c>); 0 — без ограничений.</summary>
@@ -48,17 +47,13 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         RegisterButton.Content = Loc.Get("AccountRegister");
         _account.StateChanged += _ => DispatcherQueue.TryEnqueue(ShowAccount);
         _sync.StatusChanged += _ => DispatcherQueue.TryEnqueue(ShowAccount);
-        // Поток приходит позже, чем открылась страница: «Сведения о потоке» включаются, как только он есть
-        _engine.StateChanged += () => DispatcherQueue.TryEnqueue(ShowStreamInfo);
         // «2 минуты назад» стареет, кэш растёт: при каждом показе — заново
         Loaded += (_, _) =>
         {
             ShowAccount();
-            ShowStreamInfo();
             _ = ShowStorageAsync();
         };
         ShowAccount();
-        ShowStreamInfo();
         _ready = true;
     }
 
@@ -96,9 +91,6 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         }
         ServerCard.Description = AccountTexts.Host(_account.ServerUrl);
     }
-
-    /// <summary>«Сведения о потоке» — когда что-то играет.</summary>
-    private void ShowStreamInfo() => StreamInfoCard.IsEnabled = _engine.Stream is not null;
 
     private void OnAccountClick(object sender, RoutedEventArgs e)
     {
@@ -339,6 +331,8 @@ public sealed partial class SettingsPage : Page, IScrollToTop
 
     // ---------- Лицензии ----------
 
+    private void OnShortcuts(object sender, RoutedEventArgs e) => App.Current?.Window?.ShowShortcuts();
+
     private async void OnLicenses(object sender, RoutedEventArgs e)
     {
         var text = string.Join("\n\n",
@@ -373,9 +367,6 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         _settings.NormalizeVolume = NormalizeSwitch.IsOn;
         App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>().ApplyVolume();
     }
-
-    private async void OnStreamInfo(object sender, RoutedEventArgs e) =>
-        await Controls.StreamInfoDialog.ShowAsync(XamlRoot, App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>());
 
     private void OnThemeChanged(object sender, SelectionChangedEventArgs e)
     {

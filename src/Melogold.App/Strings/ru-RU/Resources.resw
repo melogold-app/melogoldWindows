@@ -54,16 +54,16 @@
   <data name="RepeatOne" xml:space="preserve"><value>Повтор трека</value></data>
   <data name="PlayerArtwork.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Сейчас играет</value></data>
   <data name="PlayerLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>В Избранное</value></data>
-  <data name="PlayerLike.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>В Избранное</value></data>
+  <data name="PlayerLike.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>В Избранное (Ctrl+D)</value></data>
   <data name="PlayerShuffle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Перемешать</value></data>
-  <data name="PlayerShuffle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Перемешать</value></data>
+  <data name="PlayerShuffle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Перемешать (Ctrl+H)</value></data>
   <data name="PlayerPrevious.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Предыдущий трек</value></data>
-  <data name="PlayerPrevious.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Предыдущий трек</value></data>
+  <data name="PlayerPrevious.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Предыдущий трек (Ctrl+←)</value></data>
   <data name="PlayerNext.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Следующий трек</value></data>
-  <data name="PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Следующий трек</value></data>
+  <data name="PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Следующий трек (Ctrl+→)</value></data>
   <data name="PlayerSeek.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Перемотка</value></data>
   <data name="PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Без звука</value></data>
-  <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Без звука</value></data>
+  <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Без звука (Ctrl+Shift+M)</value></data>
   <data name="PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Громкость</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Ещё</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Ещё</value></data>
@@ -324,11 +324,10 @@
   <data name="ServerClientOutdated" xml:space="preserve"><value>Этому серверу нужна более новая версия Melogold</value></data>
   <data name="ServerTooOld" xml:space="preserve"><value>Сервер слишком старый для этой версии Melogold</value></data>
   <data name="PlayerLyricsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Текст</value></data>
-  <data name="PlayerLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Текст</value></data>
+  <data name="PlayerLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Текст (Ctrl+L)</value></data>
   <data name="PlayerLyrics" xml:space="preserve"><value>Текст</value></data>
   <data name="NowPlaying" xml:space="preserve"><value>Сейчас играет</value></data>
   <data name="NowPlayingArtwork" xml:space="preserve"><value>Обложка</value></data>
-  <data name="CollapsePlayer" xml:space="preserve"><value>Свернуть плеер</value></data>
   <data name="LyricsLoading" xml:space="preserve"><value>Загрузка текста</value></data>
   <data name="LyricsUnavailable" xml:space="preserve"><value>Текст песни недоступен</value></data>
   <data name="LyricsLoadFailed" xml:space="preserve"><value>Не удалось загрузить текст</value></data>
@@ -358,9 +357,9 @@
   <data name="ChooseLyricTrack" xml:space="preserve"><value>Выберите трек с текстом</value></data>
   <data name="NoLyricsFound" xml:space="preserve"><value>Тексты песен не найдены</value></data>
   <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Очередь</value></data>
-  <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Очередь</value></data>
+  <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Очередь (Ctrl+Q)</value></data>
   <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Мини-плеер</value></data>
-  <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Мини-плеер</value></data>
+  <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Мини-плеер (Ctrl+M)</value></data>
   <data name="MiniPlayerExpand" xml:space="preserve"><value>Развернуть</value></data>
   <data name="QueueTitle" xml:space="preserve"><value>Очередь</value></data>
   <data name="QueueActions" xml:space="preserve"><value>Действия с очередью</value></data>
@@ -391,8 +390,6 @@
   <data name="SpeedNormal" xml:space="preserve"><value>Обычная</value></data>
   <data name="SettingsNormalize.Header" xml:space="preserve"><value>Нормализация громкости</value></data>
   <data name="SettingsNormalize.Description" xml:space="preserve"><value>Регулирует громкость до фиксированного уровня</value></data>
-  <data name="SettingsStreamInfo.Header" xml:space="preserve"><value>Сведения о потоке</value></data>
-  <data name="SettingsStreamInfo.Description" xml:space="preserve"><value>Формат и источник звука текущего трека</value></data>
   <data name="Previous" xml:space="preserve"><value>Предыдущий трек</value></data>
   <data name="Next" xml:space="preserve"><value>Следующий трек</value></data>
   <data name="UpdateAvailableTitle" xml:space="preserve"><value>Вышла новая версия {0}</value></data>
@@ -485,7 +482,7 @@
   <data name="LyricsEditorDiscardTitle" xml:space="preserve"><value>Закрыть без сохранения?</value></data>
   <data name="LyricsEditorDiscard" xml:space="preserve"><value>Закрыть</value></data>
   <data name="LyricsEditorNoTime" xml:space="preserve"><value>—</value></data>
-  <data name="LyricsEditorKeysHint" xml:space="preserve"><value>Enter — отметить · Shift+Enter — конец строки · пробел — пауза</value></data>
+  <data name="LyricsEditorKeysHint" xml:space="preserve"><value>Enter — отметить · Shift+Enter — конец строки · Backspace — заново · F1 — все клавиши</value></data>
   <data name="MoreOptions" xml:space="preserve"><value>Другие действия</value></data>
   <data name="HistoryDeviceAll" xml:space="preserve"><value>Все устройства</value></data>
   <data name="HistoryDeviceThis" xml:space="preserve"><value>Это устройство</value></data>
@@ -558,4 +555,53 @@
   <data name="DownloadsCachedCountFormat" xml:space="preserve"><value>В кэше: {0}</value></data>
   <data name="DownloadsCachedNote" xml:space="preserve"><value>Играют без сети, пока их не сменят новые треки</value></data>
   <data name="DownloadsCachedEmpty" xml:space="preserve"><value>Здесь будут треки, прослушанные целиком: они играют без сети</value></data>
+  <data name="ShortcutsTitle" xml:space="preserve"><value>Сочетания клавиш</value></data>
+  <data name="ShortcutsGroupPlayback" xml:space="preserve"><value>Воспроизведение</value></data>
+  <data name="ShortcutsGroupWindow" xml:space="preserve"><value>Окно и разделы</value></data>
+  <data name="ShortcutsGroupLists" xml:space="preserve"><value>Списки треков</value></data>
+  <data name="ShortcutsGroupEditor" xml:space="preserve"><value>Редактор текста: синхронизация</value></data>
+  <data name="KeySpace" xml:space="preserve"><value>Пробел</value></data>
+  <data name="KeyMenu" xml:space="preserve"><value>Меню</value></data>
+  <data name="ShortcutOr" xml:space="preserve"><value>или</value></data>
+  <data name="ShortcutPlayPause" xml:space="preserve"><value>Играть или пауза</value></data>
+  <data name="ShortcutNextPrevious" xml:space="preserve"><value>Следующий / предыдущий трек</value></data>
+  <data name="ShortcutSeek" xml:space="preserve"><value>Вперёд / назад на 5 с</value></data>
+  <data name="ShortcutVolume" xml:space="preserve"><value>Громче / тише</value></data>
+  <data name="ShortcutMute" xml:space="preserve"><value>Без звука или со звуком</value></data>
+  <data name="ShortcutShuffle" xml:space="preserve"><value>Перемешать</value></data>
+  <data name="ShortcutRepeat" xml:space="preserve"><value>Повтор: всё, один трек, выключен</value></data>
+  <data name="ShortcutLike" xml:space="preserve"><value>В Избранное или убрать из Избранного</value></data>
+  <data name="ShortcutSearch" xml:space="preserve"><value>Поиск</value></data>
+  <data name="ShortcutSections" xml:space="preserve"><value>Тренды / Новое / Библиотека</value></data>
+  <data name="ShortcutSettings" xml:space="preserve"><value>Настройки</value></data>
+  <data name="ShortcutBack" xml:space="preserve"><value>Назад, закрыть «Сейчас играет»</value></data>
+  <data name="ShortcutLyrics" xml:space="preserve"><value>Текст песни</value></data>
+  <data name="ShortcutQueue" xml:space="preserve"><value>Очередь</value></data>
+  <data name="ShortcutMini" xml:space="preserve"><value>Мини-плеер</value></data>
+  <data name="ShortcutFullScreen" xml:space="preserve"><value>Во весь экран</value></data>
+  <data name="ShortcutHelp" xml:space="preserve"><value>Сочетания клавиш</value></data>
+  <data name="ShortcutRowPlay" xml:space="preserve"><value>Играть трек</value></data>
+  <data name="ShortcutRowMenu" xml:space="preserve"><value>Меню трека</value></data>
+  <data name="ShortcutRowRemove" xml:space="preserve"><value>Убрать из плейлиста, истории или очереди</value></data>
+  <data name="ShortcutRowMove" xml:space="preserve"><value>Переместить выше / ниже в своём плейлисте</value></data>
+  <data name="ShortcutMark" xml:space="preserve"><value>Отметить строку или слово</value></data>
+  <data name="ShortcutMarkEnd" xml:space="preserve"><value>Конец строки</value></data>
+  <data name="ShortcutRemark" xml:space="preserve"><value>Отметить последнюю строку заново</value></data>
+  <data name="ShortcutCursor" xml:space="preserve"><value>Следующей отметить строку выше / ниже</value></data>
+  <data name="ShortcutEditorSeek" xml:space="preserve"><value>Назад / вперёд на 3 с</value></data>
+  <data name="ShortcutNudge" xml:space="preserve"><value>Последняя отметка раньше / позже на 0,1 с</value></data>
+  <data name="ShortcutUndo" xml:space="preserve"><value>Отменить</value></data>
+  <data name="ShortcutSave" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="MenuShortcuts" xml:space="preserve"><value>Сочетания клавиш</value></data>
+  <data name="SettingsShortcuts.Header" xml:space="preserve"><value>Сочетания клавиш</value></data>
+  <data name="SettingsShortcuts.Description" xml:space="preserve"><value>Все клавиши клиента · F1 или Ctrl+/</value></data>
+  <data name="MenuShare" xml:space="preserve"><value>Поделиться</value></data>
+  <data name="NavTrends.AccessKey" xml:space="preserve"><value>Т</value></data>
+  <data name="NavNew.AccessKey" xml:space="preserve"><value>Н</value></data>
+  <data name="NavLibrary.AccessKey" xml:space="preserve"><value>Б</value></data>
+  <data name="AccessKeySettings" xml:space="preserve"><value>А</value></data>
+  <data name="SearchBox.AccessKey" xml:space="preserve"><value>П</value></data>
+  <data name="PlayerMore.AccessKey" xml:space="preserve"><value>Е</value></data>
+  <data name="DropOpen" xml:space="preserve"><value>Открыть в Melogold</value></data>
+  <data name="DropImport" xml:space="preserve"><value>Импорт копии</value></data>
 </root>

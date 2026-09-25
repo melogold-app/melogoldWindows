@@ -37,6 +37,9 @@ public sealed partial class PlayerBar : UserControl
 
     public static bool? IsRepeat(RepeatMode mode) => mode != RepeatMode.Off;
 
+    /// <summary>Подсказка с сочетанием клавиш: «Пауза (Пробел)».</summary>
+    public static string Hint(string label, string keys) => $"{label} ({(keys == "Space" ? Loc.Get("KeySpace") : keys)})";
+
     /// <summary>Обложка открывает «Сейчас играет» (§5.2).</summary>
     private void OnArtworkClick(object sender, RoutedEventArgs e) => App.Current?.Window?.NowPlaying.Toggle(from: ArtworkButton);
 
@@ -74,7 +77,21 @@ public sealed partial class PlayerBar : UserControl
     /// </summary>
     private void OnMoreClick(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.Track is not { } track) return;
+        if (BuildMenu() is { } menu) menu.ShowAt(MoreButton);
+    }
+
+    /// <summary>Правый клик, клавиша меню или Shift+F10 по треку слева — то же меню, у указателя.</summary>
+    private void OnTrackContextRequested(UIElement sender, ContextRequestedEventArgs args)
+    {
+        if (BuildMenu() is not { } menu) return;
+        if (args.TryGetPosition(sender, out var point)) menu.ShowAt(sender, new FlyoutShowOptions { Position = point });
+        else menu.ShowAt((FrameworkElement)sender);
+        args.Handled = true;
+    }
+
+    private MenuFlyout? BuildMenu()
+    {
+        if (ViewModel.Track is not { } track) return null;
         var menu = new MenuFlyout { Placement = FlyoutPlacementMode.TopEdgeAlignedRight };
         App.Services.GetRequiredService<TrackActions>().AddItems(menu.Items, track, new TrackContext.Player(), beforeRemovals: items =>
         {
@@ -84,8 +101,24 @@ public sealed partial class PlayerBar : UserControl
             var info = new MenuFlyoutItem { Text = Loc.Get("MenuStreamInfo"), Icon = new FontIcon { Glyph = "" } };
             info.Click += async (_, _) => await StreamInfoDialog.ShowAsync(XamlRoot, ViewModel.Engine);
             items.Add(info);
+            var keys = new MenuFlyoutItem { Text = Loc.Get("MenuShortcuts"), Icon = new FontIcon { Glyph = "" } };
+            keys.KeyboardAcceleratorTextOverride = "F1";
+            keys.Click += (_, _) => App.Current?.Window?.ShowShortcuts();
+            items.Add(keys);
         }, anchor: MoreButton);
-        menu.ShowAt(MoreButton);
+        return menu;
+    }
+
+    /// <summary>Длинное название обрезано многоточием — целиком в подсказке.</summary>
+    private void OnTextTrimmedChanged(TextBlock sender, IsTextTrimmedChangedEventArgs args) =>
+        ToolTipService.SetToolTip(sender, sender.IsTextTrimmed ? sender.Text : null);
+
+    private void OnVolumeWheel(object sender, PointerRoutedEventArgs e)
+    {
+        var delta = e.GetCurrentPoint((UIElement)sender).Properties.MouseWheelDelta;
+        if (delta == 0) return;
+        ViewModel.ChangeVolume(delta > 0 ? 5 : -5);
+        e.Handled = true;
     }
 
     /// <summary>Таймер сна (§4): 15, 30, 45 или 60 минут и «До конца трека»; заведённый — с остатком и «Выключить таймер».</summary>

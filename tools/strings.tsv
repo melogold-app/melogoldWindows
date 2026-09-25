@@ -55,16 +55,16 @@ RepeatAll	Повтор очереди	Repeat queue
 RepeatOne	Повтор трека	Repeat track
 PlayerArtwork.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Сейчас играет	Now playing
 PlayerLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	В Избранное	Add to Favorites
-PlayerLike.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	В Избранное	Add to Favorites
+PlayerLike.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	В Избранное (Ctrl+D)	Add to Favorites (Ctrl+D)
 PlayerShuffle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Перемешать	Shuffle
-PlayerShuffle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Перемешать	Shuffle
+PlayerShuffle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Перемешать (Ctrl+H)	Shuffle (Ctrl+H)
 PlayerPrevious.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Предыдущий трек	Previous track
-PlayerPrevious.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Предыдущий трек	Previous track
+PlayerPrevious.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Предыдущий трек (Ctrl+←)	Previous track (Ctrl+←)
 PlayerNext.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Следующий трек	Next track
-PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Следующий трек	Next track
+PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Следующий трек (Ctrl+→)	Next track (Ctrl+→)
 PlayerSeek.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Перемотка	Seek
 PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Без звука	Mute
-PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Без звука	Mute
+PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Без звука (Ctrl+Shift+M)	Mute (Ctrl+Shift+M)
 PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Громкость	Volume
 PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Ещё	More
 PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Ещё	More
@@ -331,11 +331,10 @@ ServerClientOutdated	Этому серверу нужна более новая 
 ServerTooOld	Сервер слишком старый для этой версии Melogold	The server is too old for this version of Melogold
 # Тексты и «Сейчас играет» (Android strings)
 PlayerLyricsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Текст	Lyrics
-PlayerLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Текст	Lyrics
+PlayerLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Текст (Ctrl+L)	Lyrics (Ctrl+L)
 PlayerLyrics	Текст	Lyrics
 NowPlaying	Сейчас играет	Now playing
 NowPlayingArtwork	Обложка	Artwork
-CollapsePlayer	Свернуть плеер	Collapse player
 LyricsLoading	Загрузка текста	Loading lyrics
 LyricsUnavailable	Текст песни недоступен	Lyrics are not available
 LyricsLoadFailed	Не удалось загрузить текст	Couldn't load the lyrics
@@ -366,9 +365,9 @@ ChooseLyricTrack	Выберите трек с текстом	Choose a track with
 NoLyricsFound	Тексты песен не найдены	No lyrics found
 # Отделка плеера: очередь, таймер сна, мини-плеер, воспроизведение
 PlayerQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Очередь	Queue
-PlayerQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Очередь	Queue
+PlayerQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Очередь (Ctrl+Q)	Queue (Ctrl+Q)
 PlayerMiniButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Мини-плеер	Mini player
-PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Мини-плеер	Mini player
+PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Мини-плеер (Ctrl+M)	Mini player (Ctrl+M)
 MiniPlayerExpand	Развернуть	Expand
 QueueTitle	Очередь	Queue
 QueueActions	Действия с очередью	Queue actions
@@ -399,8 +398,6 @@ SettingsSpeed.Description	Для всех треков	For all tracks
 SpeedNormal	Обычная	Normal
 SettingsNormalize.Header	Нормализация громкости	Loudness normalization
 SettingsNormalize.Description	Регулирует громкость до фиксированного уровня	Keeps every track at the same loudness
-SettingsStreamInfo.Header	Сведения о потоке	Stream info
-SettingsStreamInfo.Description	Формат и источник звука текущего трека	Format and source of the current track's audio
 Previous	Предыдущий трек	Previous track
 Next	Следующий трек	Next track
 # Выпуск: обновления, настройки целиком (Android strings)
@@ -494,7 +491,7 @@ LyricsEditorSaved	Текст сохранён	Lyrics saved
 LyricsEditorDiscardTitle	Закрыть без сохранения?	Close without saving?
 LyricsEditorDiscard	Закрыть	Close
 LyricsEditorNoTime	—	—
-LyricsEditorKeysHint	Enter — отметить · Shift+Enter — конец строки · пробел — пауза	Enter — mark · Shift+Enter — end line · Space — pause
+LyricsEditorKeysHint	Enter — отметить · Shift+Enter — конец строки · Backspace — заново · F1 — все клавиши	Enter — mark · Shift+Enter — end line · Backspace — redo · F1 — all keys
 MoreOptions	Другие действия	More options
 HistoryDeviceAll	Все устройства	All devices
 HistoryDeviceThis	Это устройство	This device
@@ -567,3 +564,52 @@ DownloadsCachedFormat	В кэше · {0} · {1}	Cached · {0} · {1}
 DownloadsCachedCountFormat	В кэше: {0}	Cached: {0}
 DownloadsCachedNote	Играют без сети, пока их не сменят новые треки	They play offline until new tracks replace them
 DownloadsCachedEmpty	Здесь будут треки, прослушанные целиком: они играют без сети	Tracks played to the end will be here: they play offline
+ShortcutsTitle	Сочетания клавиш	Keyboard shortcuts
+ShortcutsGroupPlayback	Воспроизведение	Playback
+ShortcutsGroupWindow	Окно и разделы	Window and sections
+ShortcutsGroupLists	Списки треков	Track lists
+ShortcutsGroupEditor	Редактор текста: синхронизация	Lyrics editor: sync
+KeySpace	Пробел	Space
+KeyMenu	Меню	Menu
+ShortcutOr	или	or
+ShortcutPlayPause	Играть или пауза	Play or pause
+ShortcutNextPrevious	Следующий / предыдущий трек	Next / previous track
+ShortcutSeek	Вперёд / назад на 5 с	Forward / back 5 s
+ShortcutVolume	Громче / тише	Louder / quieter
+ShortcutMute	Без звука или со звуком	Mute or unmute
+ShortcutShuffle	Перемешать	Shuffle
+ShortcutRepeat	Повтор: всё, один трек, выключен	Repeat: all, one track, off
+ShortcutLike	В Избранное или убрать из Избранного	Add to or remove from Favorites
+ShortcutSearch	Поиск	Search
+ShortcutSections	Тренды / Новое / Библиотека	Trends / New / Library
+ShortcutSettings	Настройки	Settings
+ShortcutBack	Назад, закрыть «Сейчас играет»	Back, close Now playing
+ShortcutLyrics	Текст песни	Lyrics
+ShortcutQueue	Очередь	Queue
+ShortcutMini	Мини-плеер	Mini player
+ShortcutFullScreen	Во весь экран	Full screen
+ShortcutHelp	Сочетания клавиш	Keyboard shortcuts
+ShortcutRowPlay	Играть трек	Play the track
+ShortcutRowMenu	Меню трека	Track menu
+ShortcutRowRemove	Убрать из плейлиста, истории или очереди	Remove from the playlist, history or queue
+ShortcutRowMove	Переместить выше / ниже в своём плейлисте	Move up / down in your playlist
+ShortcutMark	Отметить строку или слово	Mark the line or word
+ShortcutMarkEnd	Конец строки	End of line
+ShortcutRemark	Отметить последнюю строку заново	Mark the last line again
+ShortcutCursor	Следующей отметить строку выше / ниже	Mark the line above / below next
+ShortcutEditorSeek	Назад / вперёд на 3 с	Back / forward 3 s
+ShortcutNudge	Последняя отметка раньше / позже на 0,1 с	Last mark 0.1 s earlier / later
+ShortcutUndo	Отменить	Undo
+ShortcutSave	Сохранить	Save
+MenuShortcuts	Сочетания клавиш	Keyboard shortcuts
+SettingsShortcuts.Header	Сочетания клавиш	Keyboard shortcuts
+SettingsShortcuts.Description	Все клавиши клиента · F1 или Ctrl+/	All keys of the app · F1 or Ctrl+/
+MenuShare	Поделиться	Share
+NavTrends.AccessKey	Т	T
+NavNew.AccessKey	Н	N
+NavLibrary.AccessKey	Б	L
+AccessKeySettings	А	S
+SearchBox.AccessKey	П	F
+PlayerMore.AccessKey	Е	M
+DropOpen	Открыть в Melogold	Open in Melogold
+DropImport	Импорт копии	Import a copy

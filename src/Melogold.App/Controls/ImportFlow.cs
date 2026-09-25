@@ -31,7 +31,13 @@ public static class ImportFlow
 #else
         if (await picker.PickSingleFileAsync() is not { } file) return;
 #endif
+        await ImportAsync(root, file.Path);
+    }
 
+    /// <summary>Импорт копии из файла: выбранного в окне или перетащенного в окно.</summary>
+    public static async Task ImportAsync(XamlRoot root, string path)
+    {
+        var name = Path.GetFileName(path);
         var running = new ContentDialog
         {
             XamlRoot = root,
@@ -44,17 +50,17 @@ public static class ImportFlow
         var failure = ImportFailure.Unreadable;
         try
         {
-            summary = await Task.Run(() => LibraryImport.Import(library, file.Path, AppInfo.Version));
-            Log.Info($"Imported {file.Name}: {summary}");
+            summary = await Task.Run(() => LibraryImport.Import(library, path, AppInfo.Version));
+            Log.Info($"Imported {name}: {summary}");
         }
         catch (ImportException e)
         {
             failure = e.Reason;
-            Log.Warn($"Import of {file.Name} failed: {e.Reason}", e.InnerException);
+            Log.Warn($"Import of {name} failed: {e.Reason}", e.InnerException);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or Microsoft.Data.Sqlite.SqliteException or InvalidOperationException)
         {
-            Log.Warn($"Import of {file.Name} failed", e);
+            Log.Warn($"Import of {name} failed", e);
         }
         running.Hide();
         await shown;

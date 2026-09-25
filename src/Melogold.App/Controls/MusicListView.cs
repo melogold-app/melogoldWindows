@@ -180,6 +180,12 @@ public sealed partial class MusicListView : ListView
             Activate(row);
             e.Handled = true;
         }
+        // Delete — «Убрать из плейлиста» или «Убрать из истории», где это есть в меню трека
+        else if (e.Key == VirtualKey.Delete && SelectedItem is RowVm { Owner.Remove: { } remove } selected)
+        {
+            remove(selected);
+            e.Handled = true;
+        }
     }
 
     private void OnContextRequested(UIElement sender, ContextRequestedEventArgs args)

@@ -64,11 +64,6 @@
                 </toolkit:SettingsCard.HeaderIcon>
                 <ToggleSwitch x:Name="NormalizeSwitch" Toggled="OnNormalizeToggled" />
             </toolkit:SettingsCard>
-            <controls:ClickableCard x:Name="StreamInfoCard" x:Uid="SettingsStreamInfo" Header="Stream info" Activated="OnStreamInfo">
-                <toolkit:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE946;" />
-                </toolkit:SettingsCard.HeaderIcon>
-            </controls:ClickableCard>
 
             <!-- Библиотека и история (Android DatabaseSettings) -->
             <TextBlock x:Uid="SettingsLibrary" Style="{StaticResource SettingsSectionHeaderStyle}" Text="Library and history" />
@@ -168,6 +163,11 @@
                 </toolkit:SettingsCard.HeaderIcon>
                 <Button x:Uid="OpenLogs" Content="Open folder" Click="OnOpenLogs" />
             </toolkit:SettingsCard>
+            <controls:ClickableCard x:Uid="SettingsShortcuts" Header="Keyboard shortcuts" Description="F1" Activated="OnShortcuts">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE765;" />
+                </toolkit:SettingsCard.HeaderIcon>
+            </controls:ClickableCard>
             <!-- Как «О приложении» Android: исходный код, сообщить о проблеме, предложить идею -->
             <controls:ClickableCard x:Uid="SettingsSource" Header="GitHub" Description="View the source code" Activated="OnOpenSource">
                 <toolkit:SettingsCard.HeaderIcon>

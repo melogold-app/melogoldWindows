@@ -54,16 +54,16 @@
   <data name="RepeatOne" xml:space="preserve"><value>Repeat track</value></data>
   <data name="PlayerArtwork.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Now playing</value></data>
   <data name="PlayerLike.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add to Favorites</value></data>
-  <data name="PlayerLike.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Add to Favorites</value></data>
+  <data name="PlayerLike.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Add to Favorites (Ctrl+D)</value></data>
   <data name="PlayerShuffle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Shuffle</value></data>
-  <data name="PlayerShuffle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Shuffle</value></data>
+  <data name="PlayerShuffle.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Shuffle (Ctrl+H)</value></data>
   <data name="PlayerPrevious.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Previous track</value></data>
-  <data name="PlayerPrevious.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Previous track</value></data>
+  <data name="PlayerPrevious.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Previous track (Ctrl+←)</value></data>
   <data name="PlayerNext.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Next track</value></data>
-  <data name="PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Next track</value></data>
+  <data name="PlayerNext.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Next track (Ctrl+→)</value></data>
   <data name="PlayerSeek.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Seek</value></data>
   <data name="PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mute</value></data>
-  <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Mute</value></data>
+  <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Mute (Ctrl+Shift+M)</value></data>
   <data name="PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Volume</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>More</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>More</value></data>
@@ -324,11 +324,10 @@
   <data name="ServerClientOutdated" xml:space="preserve"><value>This server needs a newer version of Melogold</value></data>
   <data name="ServerTooOld" xml:space="preserve"><value>The server is too old for this version of Melogold</value></data>
   <data name="PlayerLyricsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Lyrics</value></data>
-  <data name="PlayerLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Lyrics</value></data>
+  <data name="PlayerLyricsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Lyrics (Ctrl+L)</value></data>
   <data name="PlayerLyrics" xml:space="preserve"><value>Lyrics</value></data>
   <data name="NowPlaying" xml:space="preserve"><value>Now playing</value></data>
   <data name="NowPlayingArtwork" xml:space="preserve"><value>Artwork</value></data>
-  <data name="CollapsePlayer" xml:space="preserve"><value>Collapse player</value></data>
   <data name="LyricsLoading" xml:space="preserve"><value>Loading lyrics</value></data>
   <data name="LyricsUnavailable" xml:space="preserve"><value>Lyrics are not available</value></data>
   <data name="LyricsLoadFailed" xml:space="preserve"><value>Couldn't load the lyrics</value></data>
@@ -358,9 +357,9 @@
   <data name="ChooseLyricTrack" xml:space="preserve"><value>Choose a track with lyrics</value></data>
   <data name="NoLyricsFound" xml:space="preserve"><value>No lyrics found</value></data>
   <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Queue</value></data>
-  <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Queue</value></data>
+  <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Queue (Ctrl+Q)</value></data>
   <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mini player</value></data>
-  <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Mini player</value></data>
+  <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Mini player (Ctrl+M)</value></data>
   <data name="MiniPlayerExpand" xml:space="preserve"><value>Expand</value></data>
   <data name="QueueTitle" xml:space="preserve"><value>Queue</value></data>
   <data name="QueueActions" xml:space="preserve"><value>Queue actions</value></data>
@@ -391,8 +390,6 @@
   <data name="SpeedNormal" xml:space="preserve"><value>Normal</value></data>
   <data name="SettingsNormalize.Header" xml:space="preserve"><value>Loudness normalization</value></data>
   <data name="SettingsNormalize.Description" xml:space="preserve"><value>Keeps every track at the same loudness</value></data>
-  <data name="SettingsStreamInfo.Header" xml:space="preserve"><value>Stream info</value></data>
-  <data name="SettingsStreamInfo.Description" xml:space="preserve"><value>Format and source of the current track's audio</value></data>
   <data name="Previous" xml:space="preserve"><value>Previous track</value></data>
   <data name="Next" xml:space="preserve"><value>Next track</value></data>
   <data name="UpdateAvailableTitle" xml:space="preserve"><value>Version {0} is out</value></data>
@@ -485,7 +482,7 @@
   <data name="LyricsEditorDiscardTitle" xml:space="preserve"><value>Close without saving?</value></data>
   <data name="LyricsEditorDiscard" xml:space="preserve"><value>Close</value></data>
   <data name="LyricsEditorNoTime" xml:space="preserve"><value>—</value></data>
-  <data name="LyricsEditorKeysHint" xml:space="preserve"><value>Enter — mark · Shift+Enter — end line · Space — pause</value></data>
+  <data name="LyricsEditorKeysHint" xml:space="preserve"><value>Enter — mark · Shift+Enter — end line · Backspace — redo · F1 — all keys</value></data>
   <data name="MoreOptions" xml:space="preserve"><value>More options</value></data>
   <data name="HistoryDeviceAll" xml:space="preserve"><value>All devices</value></data>
   <data name="HistoryDeviceThis" xml:space="preserve"><value>This device</value></data>
@@ -558,4 +555,53 @@
   <data name="DownloadsCachedCountFormat" xml:space="preserve"><value>Cached: {0}</value></data>
   <data name="DownloadsCachedNote" xml:space="preserve"><value>They play offline until new tracks replace them</value></data>
   <data name="DownloadsCachedEmpty" xml:space="preserve"><value>Tracks played to the end will be here: they play offline</value></data>
+  <data name="ShortcutsTitle" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="ShortcutsGroupPlayback" xml:space="preserve"><value>Playback</value></data>
+  <data name="ShortcutsGroupWindow" xml:space="preserve"><value>Window and sections</value></data>
+  <data name="ShortcutsGroupLists" xml:space="preserve"><value>Track lists</value></data>
+  <data name="ShortcutsGroupEditor" xml:space="preserve"><value>Lyrics editor: sync</value></data>
+  <data name="KeySpace" xml:space="preserve"><value>Space</value></data>
+  <data name="KeyMenu" xml:space="preserve"><value>Menu</value></data>
+  <data name="ShortcutOr" xml:space="preserve"><value>or</value></data>
+  <data name="ShortcutPlayPause" xml:space="preserve"><value>Play or pause</value></data>
+  <data name="ShortcutNextPrevious" xml:space="preserve"><value>Next / previous track</value></data>
+  <data name="ShortcutSeek" xml:space="preserve"><value>Forward / back 5 s</value></data>
+  <data name="ShortcutVolume" xml:space="preserve"><value>Louder / quieter</value></data>
+  <data name="ShortcutMute" xml:space="preserve"><value>Mute or unmute</value></data>
+  <data name="ShortcutShuffle" xml:space="preserve"><value>Shuffle</value></data>
+  <data name="ShortcutRepeat" xml:space="preserve"><value>Repeat: all, one track, off</value></data>
+  <data name="ShortcutLike" xml:space="preserve"><value>Add to or remove from Favorites</value></data>
+  <data name="ShortcutSearch" xml:space="preserve"><value>Search</value></data>
+  <data name="ShortcutSections" xml:space="preserve"><value>Trends / New / Library</value></data>
+  <data name="ShortcutSettings" xml:space="preserve"><value>Settings</value></data>
+  <data name="ShortcutBack" xml:space="preserve"><value>Back, close Now playing</value></data>
+  <data name="ShortcutLyrics" xml:space="preserve"><value>Lyrics</value></data>
+  <data name="ShortcutQueue" xml:space="preserve"><value>Queue</value></data>
+  <data name="ShortcutMini" xml:space="preserve"><value>Mini player</value></data>
+  <data name="ShortcutFullScreen" xml:space="preserve"><value>Full screen</value></data>
+  <data name="ShortcutHelp" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="ShortcutRowPlay" xml:space="preserve"><value>Play the track</value></data>
+  <data name="ShortcutRowMenu" xml:space="preserve"><value>Track menu</value></data>
+  <data name="ShortcutRowRemove" xml:space="preserve"><value>Remove from the playlist, history or queue</value></data>
+  <data name="ShortcutRowMove" xml:space="preserve"><value>Move up / down in your playlist</value></data>
+  <data name="ShortcutMark" xml:space="preserve"><value>Mark the line or word</value></data>
+  <data name="ShortcutMarkEnd" xml:space="preserve"><value>End of line</value></data>
+  <data name="ShortcutRemark" xml:space="preserve"><value>Mark the last line again</value></data>
+  <data name="ShortcutCursor" xml:space="preserve"><value>Mark the line above / below next</value></data>
+  <data name="ShortcutEditorSeek" xml:space="preserve"><value>Back / forward 3 s</value></data>
+  <data name="ShortcutNudge" xml:space="preserve"><value>Last mark 0.1 s earlier / later</value></data>
+  <data name="ShortcutUndo" xml:space="preserve"><value>Undo</value></data>
+  <data name="ShortcutSave" xml:space="preserve"><value>Save</value></data>
+  <data name="MenuShortcuts" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="SettingsShortcuts.Header" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="SettingsShortcuts.Description" xml:space="preserve"><value>All keys of the app · F1 or Ctrl+/</value></data>
+  <data name="MenuShare" xml:space="preserve"><value>Share</value></data>
+  <data name="NavTrends.AccessKey" xml:space="preserve"><value>T</value></data>
+  <data name="NavNew.AccessKey" xml:space="preserve"><value>N</value></data>
+  <data name="NavLibrary.AccessKey" xml:space="preserve"><value>L</value></data>
+  <data name="AccessKeySettings" xml:space="preserve"><value>S</value></data>
+  <data name="SearchBox.AccessKey" xml:space="preserve"><value>F</value></data>
+  <data name="PlayerMore.AccessKey" xml:space="preserve"><value>M</value></data>
+  <data name="DropOpen" xml:space="preserve"><value>Open in Melogold</value></data>
+  <data name="DropImport" xml:space="preserve"><value>Import a copy</value></data>
 </root>

@@ -224,6 +224,7 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
         else if (anchor is not null && !string.IsNullOrWhiteSpace(track.ArtistsText)) Add(artistKey, "", () => OpenArtist(track, anchor));
         Add("MenuOtherVersions", "", () => OtherVersions(track));
         Add("MenuCopyLink", "", () => CopyLink(track));
+        Add("MenuShare", "", () => Share.Track(track));
         beforeRemovals?.Invoke(items);
 
         var removeKey = context switch

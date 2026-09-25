@@ -108,8 +108,7 @@ public sealed partial class LyricsEditorView : Grid
             _clock.Stop();
             _previewLyrics.Stop();
         };
-        // Enter — «Отметить», Shift+Enter — «Конец строки», раньше кнопки в фокусе (кроме полей ввода и перехода
-        // клавишей Tab); пробел — пауза, как везде
+        // Клавиши «Синхронизации» — раньше кнопки в фокусе (OnKeyDown)
         PreviewKeyDown += OnKeyDown;
 
         _tabs.SelectedItem = _tabs.Items[_draft.Lines.Count == 0 ? 0 : 1];
@@ -293,14 +292,77 @@ public sealed partial class LyricsEditorView : Grid
         Apply(d => d.MarkEnd(Math.Max(0, Position - ReactionMs)));
     }
 
+    /// <summary>
+    /// Клавиши «Синхронизации» (все — в окне «Сочетания клавиш», F1): Enter — «Отметить», Shift+Enter — «Конец строки»,
+    /// Backspace — отметить предыдущую строку заново, ↑ ↓ — какую строку отметить следующей, ← → — назад и вперёд на 3 с,
+    /// [ ] — последняя отметка раньше и позже на 0,1 с. Пробел — пауза, как везде. Поле ввода получает клавиши само;
+    /// Enter на кнопке, на которую перешли клавишей Tab, нажимает её.
+    /// </summary>
     private void OnKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key != VirtualKey.Enter || FocusManager.GetFocusedElement(XamlRoot) is TextBox or AutoSuggestBox or Control { FocusState: FocusState.Keyboard }) return;
-        if (_tabs.SelectedItem?.Tag is not 1) return;
+        if (_tabs.SelectedItem?.Tag is not 1 || FocusManager.GetFocusedElement(XamlRoot) is TextBox or AutoSuggestBox) return;
         var shift = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
-        if (shift) MarkEnd();
-        else Mark();
+        var control = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+        if (control) return;
+        switch (e.Key)
+        {
+            case VirtualKey.Enter:
+                if (FocusManager.GetFocusedElement(XamlRoot) is Control { FocusState: FocusState.Keyboard }) return;
+                if (shift) MarkEnd();
+                else Mark();
+                break;
+            case VirtualKey.Back:
+                Remark();
+                break;
+            case VirtualKey.Up when !shift:
+                MoveCursor(-1);
+                break;
+            case VirtualKey.Down when !shift:
+                MoveCursor(1);
+                break;
+            case VirtualKey.Left when !shift:
+                _engine.Seek(TimeSpan.FromMilliseconds(Math.Max(0, Position - RewindMs)));
+                break;
+            case VirtualKey.Right when !shift:
+                _engine.Seek(TimeSpan.FromMilliseconds(Position + RewindMs));
+                break;
+            case (VirtualKey)219: // [
+                NudgeLast(-NudgeMs);
+                break;
+            case (VirtualKey)221: // ]
+                NudgeLast(NudgeMs);
+                break;
+            default:
+                return;
+        }
         e.Handled = true;
+    }
+
+    /// <summary>Строка последней отметки: текущая, если в ней уже отмечены слова, иначе предыдущая.</summary>
+    private int LastMarked => _draft.Timing == LyricsTiming.Word && _draft.WordCursor > 0 ? _draft.Cursor : _draft.Cursor - 1;
+
+    /// <summary>Backspace: снять отметку последней строки, вернуться к ней и перемотать чуть раньше — отметить заново.</summary>
+    private void Remark()
+    {
+        var index = LastMarked;
+        if (index < 0 || index >= _draft.Lines.Count) return;
+        var start = _draft.Lines[index].StartMs;
+        Apply(d => d.ClearTiming(index).MovedTo(index));
+        if (start is { } at) _engine.Seek(TimeSpan.FromMilliseconds(Math.Max(0, at - ReplayLeadMs)));
+    }
+
+    /// <summary>↑ ↓: следующей отметить строку выше или ниже; у отмеченной — играть с чуть раньше, как по нажатию.</summary>
+    private void MoveCursor(int delta)
+    {
+        var index = Math.Clamp(_draft.Cursor + delta, 0, Math.Max(0, _draft.Lines.Count - 1));
+        Apply(d => d.MovedTo(index));
+        if (index < _draft.Lines.Count && _draft.Lines[index].StartMs is { } at) _engine.Seek(TimeSpan.FromMilliseconds(Math.Max(0, at - ReplayLeadMs)));
+    }
+
+    private void NudgeLast(long deltaMs)
+    {
+        var index = LastMarked;
+        if (index >= 0 && index < _draft.Lines.Count && _draft.Lines[index].StartMs is not null) Apply(d => d.Nudge(index, deltaMs));
     }
 
     /// <summary>Строки: время, текст (в режиме слов отмеченные слова цветом, следующее — жирным с чертой), подпевка, сторона и меню.</summary>

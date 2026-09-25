@@ -43,12 +43,14 @@ public sealed partial class NowPlayingView : Grid
     private readonly TextBlock _plain = new() { FontSize = 22, LineHeight = 34, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, Margin = new Thickness(0, 24, 0, 48) };
     private readonly StackPanel _message = new() { Spacing = 12, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly TextBlock _source = new() { FontSize = 12, Margin = new Thickness(16, 8, 16, 0) };
-    private readonly Button _close = new();
     private readonly List<TextBlock> _secondaryTexts = [];
     private ArtworkPalette? _palette;
     private string? _paletteKey;
     private bool _showLyricsInNarrow = true;
-    /// <summary>Обложка — кадр видео 16:9: показывается целиком, прямоугольником, а не квадратным куском.</summary>
+    /// <summary>
+    /// Обложка — широкий кадр видео: показывается целиком, прямоугольником 16:9, а не квадратным куском. Решает сама
+    /// картинка, а не адрес: у видео-«статики» кадр в кэше уже без чёрных полей и квадратный (VideoFrames).
+    /// </summary>
     private bool _wideArtwork;
     private CancellationTokenSource? _paletteLoad;
 
@@ -59,17 +61,12 @@ public sealed partial class NowPlayingView : Grid
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-        // Верх: «Свернуть» и переключатель в узком окне. Меню текста — в «…» панели плеера, одно на всё
+        // Верх: переключатель «Обложка · Текст» в узком окне. Закрывают «Назад» в заголовке окна и Esc — своей
+        // стрелки нет (пользователь: два одинаковых действия друг над другом); меню текста — в «…» панели плеера
         var top = new Grid { Padding = new Thickness(16, 8, 16, 0) };
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        _close.Content = new FontIcon { Glyph = "", FontSize = 16 };
-        _close.Style = (Style)Application.Current.Resources["PlayerIconButtonStyle"];
-        AutomationProperties.SetName(_close, Loc.Get("CollapsePlayer"));
-        ToolTipService.SetToolTip(_close, Loc.Get("CollapsePlayer"));
-        _close.Click += (_, _) => Close();
-        top.Children.Add(_close);
         _mode.Items.Add(new SelectorBarItem { Text = Loc.Get("NowPlayingArtwork"), Tag = "art" });
         _mode.Items.Add(new SelectorBarItem { Text = Loc.Get("PlayerLyrics"), Tag = "lyrics" });
         _mode.SelectionChanged += (_, _) =>
@@ -160,7 +157,6 @@ public sealed partial class NowPlayingView : Grid
         ShowTrack();
         ShowLyrics();
         _synced.Start();
-        _close.Focus(FocusState.Programmatic);
         if (flight is not null)
         {
             // После раскладки: большая обложка должна знать своё место
@@ -238,14 +234,23 @@ public sealed partial class NowPlayingView : Grid
         _title.Text = track.Title;
         _artist.Text = track.ArtistsText ?? "";
         var artwork = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 720);
-        _artworkImage.Source = Images.From(artwork);
-        if (_wideArtwork != Thumbnails.IsWide(artwork))
-        {
-            _wideArtwork = !_wideArtwork;
-            Arrange();
-        }
+        var image = Images.From(artwork);
+        _artworkImage.Source = image;
+        if (image is Microsoft.UI.Xaml.Media.Imaging.BitmapImage bitmap)
+            bitmap.ImageOpened += (_, _) =>
+            {
+                if (_artworkImage.Source == bitmap && bitmap.PixelHeight > 0) SetWide(bitmap.PixelWidth > bitmap.PixelHeight * 1.2);
+            };
+        else SetWide(false);
         AutomationProperties.SetName(this, $"{Loc.Get("NowPlaying")}: {track.Title}");
         _ = LoadPaletteAsync(force: false);
+    }
+
+    private void SetWide(bool wide)
+    {
+        if (_wideArtwork == wide) return;
+        _wideArtwork = wide;
+        Arrange();
     }
 
     /// <summary>Фон и цвета текста по обложке; у серой обложки — цвета темы.</summary>

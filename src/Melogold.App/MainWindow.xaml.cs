@@ -46,6 +46,7 @@ public sealed partial class MainWindow : Window
         Snackbar = App.Services.GetRequiredService<Snackbar>();
         InitializeComponent();
         SearchBox.Loaded += (_, _) => AttachSearchLayout();
+        AnimateSnackbar();
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -71,6 +72,8 @@ public sealed partial class MainWindow : Window
                 Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(settingsItem, Loc.Get("NavSettings"));
                 ToolTipService.SetToolTip(settingsItem, Loc.Get("NavSettings"));
                 settingsItem.Tag = "settings";
+                // Клавиша доступа (Alt, затем буква), как у разделов из x:Uid
+                settingsItem.AccessKey = Loc.Get("AccessKeySettings");
                 ShowUpdateBadge();
             }
             if (_navigator.Current == "settings") Nav.SelectedItem = Nav.SettingsItem;
@@ -107,14 +110,40 @@ public sealed partial class MainWindow : Window
         _navigator.Show(_settings.LastSection);
 
         var player = App.Services.GetRequiredService<PlayerViewModel>();
-        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.F, VirtualKeyModifiers.Control, FocusSearch));
-        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Left, VirtualKeyModifiers.Menu, () => _navigator.GoBack()));
-        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Escape, VirtualKeyModifiers.None, GoBack));
-        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.F11, VirtualKeyModifiers.None, ToggleFullScreen));
-        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Right, VirtualKeyModifiers.Control, () => player.Engine.Next()));
-        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Left, VirtualKeyModifiers.Control, () => player.Engine.Previous()));
-        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Up, VirtualKeyModifiers.Control, () => player.ChangeVolume(5)));
-        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Down, VirtualKeyModifiers.Control, () => player.ChangeVolume(-5)));
+        // Сочетания клавиш — все в окне «Сочетания клавиш» (F1, Ctrl+/; ShortcutsDialog). Стрелки с Ctrl и Shift в поле
+        // ввода остаются полю: там они двигают курсор и выделяют текст
+        const VirtualKeyModifiers ctrl = VirtualKeyModifiers.Control, shift = VirtualKeyModifiers.Shift;
+        void Key(VirtualKey key, VirtualKeyModifiers modifiers, Action action, bool inText = true) =>
+            Root.KeyboardAccelerators.Add(Accelerator(key, modifiers, action, inText ? null : FocusInTextInput));
+        Key(VirtualKey.F, ctrl, FocusSearch);
+        Key(VirtualKey.Left, VirtualKeyModifiers.Menu, () => _navigator.GoBack(), inText: false);
+        Key(VirtualKey.Escape, VirtualKeyModifiers.None, GoBack);
+        Key(VirtualKey.F11, VirtualKeyModifiers.None, ToggleFullScreen);
+        Key(VirtualKey.F1, VirtualKeyModifiers.None, ShowShortcuts);
+        Key((VirtualKey)191, ctrl, ShowShortcuts); // Ctrl+/
+        // Воспроизведение
+        Key(VirtualKey.Right, ctrl, () => player.Engine.Next(), inText: false);
+        Key(VirtualKey.Left, ctrl, () => player.Engine.Previous(), inText: false);
+        Key(VirtualKey.Right, shift, () => SeekBy(5), inText: false);
+        Key(VirtualKey.Left, shift, () => SeekBy(-5), inText: false);
+        Key(VirtualKey.Up, ctrl, () => player.ChangeVolume(5), inText: false);
+        Key(VirtualKey.Down, ctrl, () => player.ChangeVolume(-5), inText: false);
+        Key(VirtualKey.M, ctrl | shift, () => player.ToggleMuteCommand.Execute(null));
+        Key(VirtualKey.H, ctrl, () => player.ToggleShuffleCommand.Execute(null));
+        Key(VirtualKey.T, ctrl, () => player.CycleRepeatCommand.Execute(null));
+        Key(VirtualKey.D, ctrl, () => player.ToggleLikeCommand.Execute(null));
+        // Окно и разделы
+        Key(VirtualKey.Number1, ctrl, () => ShowSection("trends"));
+        Key(VirtualKey.Number2, ctrl, () => ShowSection("new"));
+        Key(VirtualKey.Number3, ctrl, () => ShowSection("library"));
+        Key((VirtualKey)188, ctrl, () => ShowSection("settings")); // Ctrl+,
+        Key(VirtualKey.L, ctrl, () => NowPlaying.Toggle(lyrics: true));
+        Key(VirtualKey.Q, ctrl, ToggleQueue);
+        Key(VirtualKey.M, ctrl, OpenMiniPlayer);
+        // Перетащить в окно ссылку YouTube или melogold:// — открыть; файл копии библиотеки — «Импорт копии»
+        Root.AllowDrop = true;
+        Root.DragOver += OnRootDragOver;
+        Root.Drop += OnRootDrop;
         Root.KeyDown += OnRootKeyDown;
         Root.PreviewKeyDown += OnRootPreviewKeyDown;
         Root.PreviewKeyUp += OnRootPreviewKeyUp;
@@ -207,15 +236,113 @@ public sealed partial class MainWindow : Window
         };
     }
 
-    private static KeyboardAccelerator Accelerator(VirtualKey key, VirtualKeyModifiers modifiers, Action action)
+    /// <summary>Плашка всплывает снизу и тает, как уведомление, а не появляется рывком.</summary>
+    private void AnimateSnackbar()
+    {
+        var compositor = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(SnackbarHost).Compositor;
+        Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(SnackbarHost, true);
+        var easing = compositor.CreateCubicBezierEasingFunction(new System.Numerics.Vector2(0.1f, 0.9f), new System.Numerics.Vector2(0.2f, 1f));
+
+        var fadeIn = compositor.CreateScalarKeyFrameAnimation();
+        fadeIn.Target = "Opacity";
+        fadeIn.InsertKeyFrame(0, 0);
+        fadeIn.InsertKeyFrame(1, 1, easing);
+        fadeIn.Duration = TimeSpan.FromMilliseconds(200);
+        var rise = compositor.CreateVector3KeyFrameAnimation();
+        rise.Target = "Translation";
+        rise.InsertKeyFrame(0, new System.Numerics.Vector3(0, 16, 0));
+        rise.InsertKeyFrame(1, System.Numerics.Vector3.Zero, easing);
+        rise.Duration = fadeIn.Duration;
+        var show = compositor.CreateAnimationGroup();
+        show.Add(fadeIn);
+        show.Add(rise);
+
+        var fadeOut = compositor.CreateScalarKeyFrameAnimation();
+        fadeOut.Target = "Opacity";
+        fadeOut.InsertKeyFrame(0, 1);
+        fadeOut.InsertKeyFrame(1, 0);
+        fadeOut.Duration = TimeSpan.FromMilliseconds(150);
+
+        Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetImplicitShowAnimation(SnackbarHost, show);
+        Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetImplicitHideAnimation(SnackbarHost, fadeOut);
+    }
+
+    /// <summary>Сочетание клавиш; <paramref name="skip"/> — когда оставить клавиши элементу в фокусе (поле ввода).</summary>
+    private static KeyboardAccelerator Accelerator(VirtualKey key, VirtualKeyModifiers modifiers, Action action, Func<bool>? skip = null)
     {
         var accelerator = new KeyboardAccelerator { Key = key, Modifiers = modifiers };
         accelerator.Invoked += (_, e) =>
         {
+            if (skip?.Invoke() == true) return;
             action();
             e.Handled = true;
         };
         return accelerator;
+    }
+
+    private void OnRootDragOver(object sender, DragEventArgs e)
+    {
+        // Перетаскивание внутри окна (очередь, свой плейлист) — не наше
+        if (e.Handled || e.DataView.Contains("Melogold.Internal")) return;
+        if (e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.StorageItems))
+        {
+            e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Copy;
+            e.DragUIOverride.Caption = Loc.Get("DropImport");
+        }
+        else if (e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.WebLink)
+                 || e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text))
+        {
+            e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Link;
+            e.DragUIOverride.Caption = Loc.Get("DropOpen");
+        }
+    }
+
+    private async void OnRootDrop(object sender, DragEventArgs e)
+    {
+        if (e.Handled) return;
+        var data = e.DataView;
+        var deferral = e.GetDeferral();
+        string? link = null, file = null;
+        try
+        {
+            if (data.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.StorageItems))
+                file = (await data.GetStorageItemsAsync()).OfType<Windows.Storage.StorageFile>().FirstOrDefault()?.Path;
+            else if (data.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.WebLink))
+                link = (await data.GetWebLinkAsync()).OriginalString;
+            else if (data.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text))
+                link = await data.GetTextAsync();
+        }
+        catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or UnauthorizedAccessException)
+        {
+            Log.Warn("Drop failed", ex);
+        }
+        finally
+        {
+            deferral.Complete();
+        }
+        if (file is not null) await ImportFlow.ImportAsync(Content.XamlRoot, file);
+        else if (!string.IsNullOrWhiteSpace(link)) App.Services.GetRequiredService<LinkRouter>().OpenText(link);
+    }
+
+    /// <summary>F1 и Ctrl+/: окно со всеми сочетаниями клавиш.</summary>
+    public void ShowShortcuts() => _ = ShortcutsDialog.ShowAsync(Content.XamlRoot);
+
+    /// <summary>Ctrl+1, 2, 3 и Ctrl+, — разделы, как нажатие в левой панели.</summary>
+    private void ShowSection(string key)
+    {
+        NowPlaying.Close();
+        if (key == _navigator.Current) _navigator.Reselect();
+        else _navigator.Show(key);
+    }
+
+    /// <summary>Shift+→ и Shift+←: вперёд и назад на <paramref name="seconds"/> с.</summary>
+    private static void SeekBy(double seconds)
+    {
+        var engine = App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>();
+        if (engine.Current is null) return;
+        var target = engine.Position + TimeSpan.FromSeconds(seconds);
+        var end = engine.Duration;
+        engine.Seek(target < TimeSpan.Zero ? TimeSpan.Zero : end > TimeSpan.Zero && target > end ? end - TimeSpan.FromSeconds(1) : target);
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]

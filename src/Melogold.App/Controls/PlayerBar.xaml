@@ -175,6 +175,13 @@
                 Click="OnLyricsClick">
                 <FontIcon Glyph="&#xE720;" />
             </ToggleButton>
+            <ToggleButton
+                x:Name="QueueButton"
+                x:Uid="PlayerQueueButton"
+                Style="{StaticResource PlayerIconToggleStyle}"
+                Click="OnQueueClick">
+                <FontIcon Glyph="&#xE90B;" />
+            </ToggleButton>
             <StackPanel x:Name="VolumePanel" Orientation="Horizontal" Spacing="4">
                 <Button x:Uid="PlayerMute" Style="{StaticResource PlayerIconButtonStyle}" Command="{x:Bind ViewModel.ToggleMuteCommand}">
                     <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" />
@@ -189,10 +196,23 @@
                     SmallChange="5"
                     Value="{x:Bind ViewModel.Volume, Mode=TwoWay}" />
             </StackPanel>
+            <Button
+                x:Name="MiniButton"
+                x:Uid="PlayerMiniButton"
+                Style="{StaticResource PlayerIconButtonStyle}"
+                IsEnabled="{x:Bind ViewModel.HasTrack, Mode=OneWay}"
+                Click="OnMiniClick">
+                <FontIcon Glyph="&#xE944;" />
+            </Button>
             <Button x:Uid="PlayerMore" Style="{StaticResource PlayerIconButtonStyle}" IsEnabled="{x:Bind ViewModel.HasTrack, Mode=OneWay}">
                 <FontIcon Glyph="&#xE712;" />
                 <Button.Flyout>
-                    <MenuFlyout Placement="TopEdgeAlignedRight">
+                    <MenuFlyout x:Name="MoreMenu" Placement="TopEdgeAlignedRight" Opening="OnMoreOpening">
+                        <MenuFlyoutSubItem x:Name="SleepMenu">
+                            <MenuFlyoutSubItem.Icon>
+                                <FontIcon Glyph="&#xE708;" />
+                            </MenuFlyoutSubItem.Icon>
+                        </MenuFlyoutSubItem>
                         <MenuFlyoutItem x:Uid="MenuStreamInfo" Text="Stream info" Click="OnStreamInfoClick">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE946;" />

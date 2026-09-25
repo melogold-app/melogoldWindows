@@ -5,10 +5,13 @@ namespace Melogold.Playback;
 
 /// <summary>
 /// Чтение диапазонов адреса потока (docs/PROMPT.md §4, грабли §8.1): 403 и истёкший адрес — не пропуск трека, а свежий
-/// адрес и повтор (до двух раз); сетевая ошибка — повтор через 1 и 3 с. Короткие диапазоны googlevideo не душит.
+/// адрес и повтор (до двух раз подряд); сетевая ошибка — повтор через 1 и 3 с. Короткие диапазоны googlevideo не душит.
+/// Параллельные чтения (текущий фрагмент и упреждающие) получают 403 на один и тот же истёкший адрес разом: адрес
+/// обновляет первое из них, остальные просто повторяют со свежим и не тратят попытки.
 /// </summary>
 public sealed class HttpRangeReader(HttpClient http, StreamInfo info, Func<CancellationToken, Task<StreamInfo>> refresh)
 {
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private int _refreshes;
 
     public StreamInfo Info { get; private set; } = info;
@@ -35,13 +38,27 @@ public sealed class HttpRangeReader(HttpClient http, StreamInfo info, Func<Cance
                 using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
                 if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Gone or HttpStatusCode.Unauthorized)
                 {
-                    if (Interlocked.Increment(ref _refreshes) > 2)
-                        throw new StreamException(StreamErrorKind.Extractor, $"googlevideo {(int)response.StatusCode} after fresh URLs");
-                    Info = await refresh(ct).ConfigureAwait(false);
+                    await _refreshLock.WaitAsync(ct).ConfigureAwait(false);
+                    try
+                    {
+                        // Адрес уже обновило другое чтение — повторить с ним
+                        if (ReferenceEquals(Info, current))
+                        {
+                            if (++_refreshes > 2)
+                                throw new StreamException(StreamErrorKind.Extractor, $"googlevideo {(int)response.StatusCode} after fresh URLs");
+                            Info = await refresh(ct).ConfigureAwait(false);
+                        }
+                    }
+                    finally
+                    {
+                        _refreshLock.Release();
+                    }
                     continue;
                 }
                 if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable) return [];
                 response.EnsureSuccessStatusCode();
+                // Свежий адрес работает: следующий 403 (адрес истёк через часы) снова может его обновить
+                if (ReferenceEquals(Info, current)) Volatile.Write(ref _refreshes, 0);
                 if (response.Content.Headers.ContentRange?.Length is { } full) TotalLength = full;
                 return await response.Content.ReadAsByteArrayAsync(timeout.Token).ConfigureAwait(false);
             }

@@ -8,7 +8,7 @@
       [-Steps "История|Чаще всего|@history.png|Логин=value"]
   -Steps — шаги через «|» по UI Automation, без мыши и фокуса:
     «имя» нажимает элемент (точное имя, иначе начало имени), «имя=текст» вводит текст в поле,
-    «@файл.png» снимает окно посреди сценария. В конце окно снимается в -Out.
+    «@файл.png» снимает окно посреди сценария, «@mini:файл.png» — мини-плеер. В конце окно снимается в -Out.
 #>
 param(
     [string]$Out = "shot.png",
@@ -36,10 +36,12 @@ public static class Win {
 "@
 
 function Capture([IntPtr]$h, [string]$path) {
+    $request = "shot-request"
+    if ($path.StartsWith("mini:")) { $request = "shot-request-mini"; $path = $path.Substring(5) }
     $target = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine((Get-Location).Path, $path))  # путь может быть абсолютным
     if (-not $Window) {
         Remove-Item $target -ErrorAction SilentlyContinue
-        Set-Content -Path (Join-Path $DataDir "shot-request") -Value $target -Encoding UTF8
+        Set-Content -Path (Join-Path $DataDir $request) -Value $target -Encoding UTF8
         $until = (Get-Date).AddSeconds(10)
         while (-not (Test-Path $target) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
         if (-not (Test-Path $target)) { throw "snapshot not saved: $target" }
@@ -105,6 +107,7 @@ if ($Steps) {
         if ($target.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) { $pattern.Invoke() }
         elseif ($target.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern, [ref]$pattern)) { $pattern.Toggle() }
         elseif ($target.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$pattern)) { $pattern.Select() }
+        elseif ($target.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$pattern)) { $pattern.Expand() }
         else { throw "element '$step' can't be invoked" }
         Start-Sleep -Seconds 3
     }

@@ -84,6 +84,7 @@ public partial class App : Application
         services.AddSingleton<CollectionMenu>();
         services.AddSingleton(sp => new LyricsFetcher(sp.GetRequiredService<YouTubeMusic>(), new LrcLib(LrcLib.CreateClient(AppInfo.ToolUserAgent)), new KuGou(KuGou.CreateClient())));
         services.AddSingleton<LyricsService>();
+        services.AddSingleton<AudioLevels>();
         return services.BuildServiceProvider();
     }
 
@@ -107,6 +108,7 @@ public partial class App : Application
         _window.Closed += (_, _) =>
         {
             Services.GetRequiredService<PlayerEngine>().Dispose();
+            Services.GetRequiredService<AudioLevels>().Dispose();
             // Правки последних двух секунд — на сервер до выхода
             Services.GetRequiredService<LibrarySync>().Flush(TimeSpan.FromSeconds(3));
         };

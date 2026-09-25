@@ -20,6 +20,10 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         InitializeComponent();
         ThemeBox.SelectedIndex = (int)_settings.Theme;
         VersionCard.Description = Loc.Format("VersionFormat", AppInfo.Version);
+        // Скорость 0,5–2× — одна на все треки (§4)
+        foreach (var speed in Speeds) SpeedBox.Items.Add(new ComboBoxItem { Content = speed == 1 ? Loc.Get("SpeedNormal") : $"{speed.ToString(System.Globalization.CultureInfo.CurrentCulture)}×" });
+        SpeedBox.SelectedIndex = Math.Max(0, Array.IndexOf(Speeds, _settings.Speed));
+        NormalizeSwitch.IsOn = _settings.NormalizeVolume;
         SignInButton.Content = Loc.Get("AccountSignIn");
         RegisterButton.Content = Loc.Get("AccountRegister");
         _account.StateChanged += _ => DispatcherQueue.TryEnqueue(ShowAccount);
@@ -63,6 +67,8 @@ public sealed partial class SettingsPage : Page, IScrollToTop
                 break;
         }
         ServerCard.Description = AccountTexts.Host(_account.ServerUrl);
+        // «Сведения о потоке» — когда что-то играет
+        StreamInfoCard.IsEnabled = App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>().Stream is not null;
     }
 
     private void OnAccountClick(object sender, RoutedEventArgs e)
@@ -79,6 +85,25 @@ public sealed partial class SettingsPage : Page, IScrollToTop
     private static void Open(Type page) => App.Services.GetRequiredService<Navigator>().Open(page);
 
     public void ScrollToTop() => Scroller.ChangeView(null, 0, null);
+
+    private static readonly double[] Speeds = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+    private void OnSpeedChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_ready || SpeedBox.SelectedIndex < 0) return;
+        _settings.Speed = Speeds[SpeedBox.SelectedIndex];
+        App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>().ApplyVolume();
+    }
+
+    private void OnNormalizeToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _settings.NormalizeVolume = NormalizeSwitch.IsOn;
+        App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>().ApplyVolume();
+    }
+
+    private async void OnStreamInfo(object sender, RoutedEventArgs e) =>
+        await Controls.StreamInfoDialog.ShowAsync(XamlRoot, App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>());
 
     private void OnThemeChanged(object sender, SelectionChangedEventArgs e)
     {

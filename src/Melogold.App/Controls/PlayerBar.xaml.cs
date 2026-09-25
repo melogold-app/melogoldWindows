@@ -57,26 +57,42 @@ public sealed partial class PlayerBar : UserControl
         App.Services.GetRequiredService<TrackActions>().OpenArtist(track, SubtitleLink);
     }
 
-    private async void OnStreamInfoClick(object sender, RoutedEventArgs e)
+    private async void OnStreamInfoClick(object sender, RoutedEventArgs e) => await StreamInfoDialog.ShowAsync(XamlRoot, ViewModel.Engine);
+
+    /// <summary>«Очередь»: панель справа.</summary>
+    private void OnQueueClick(object sender, RoutedEventArgs e) => App.Current?.Window?.ToggleQueue();
+
+    /// <summary>Кнопка «Очередь» нажата, пока панель открыта.</summary>
+    public void SetQueueOpen(bool open) => QueueButton.IsChecked = open;
+
+    private void OnMiniClick(object sender, RoutedEventArgs e) => App.Current?.Window?.OpenMiniPlayer();
+
+    /// <summary>
+    /// Таймер сна (§4): 15, 30, 45 или 60 минут и «До конца трека»; заведённый — с остатком и «Выключить таймер».
+    /// Пункты собираются при открытии меню синхронно: всё известно заранее, меню не дёргается.
+    /// </summary>
+    private void OnMoreOpening(object sender, object e)
     {
-        if (ViewModel.Engine.Stream is not { } stream) return;
-        var dialog = new ContentDialog
+        var engine = ViewModel.Engine;
+        SleepMenu.Items.Clear();
+        SleepMenu.Text = engine.SleepAt is { } at
+            ? Loc.Format("SleepTimerLeftFormat", Loc.Plural("MinutesLeft", Math.Max(1, (long)Math.Ceiling((at - DateTimeOffset.Now).TotalMinutes))))
+            : engine.SleepAtTrackEnd ? Loc.Format("SleepTimerLeftFormat", Loc.Get("SleepUntilTrackEnd")) : Loc.Get("SleepTimer");
+        foreach (var minutes in new[] { 15, 30, 45, 60 })
         {
-            XamlRoot = XamlRoot,
-            Title = Loc.Get("StreamInfoTitle"),
-            CloseButtonText = Loc.Get("Close"),
-            DefaultButton = ContentDialogButton.Close,
-            Content = new TextBlock
-            {
-                IsTextSelectionEnabled = true,
-                Text = string.Join("\n",
-                    $"videoId: {stream.VideoId}",
-                    $"itag: {stream.Itag} · {stream.Codec}",
-                    $"{Loc.Get("StreamBitrate")}: {(stream.Bitrate ?? 0) / 1000} kbps",
-                    $"{Loc.Get("StreamSource")}: {stream.Source}",
-                    stream.LoudnessDb is { } db ? $"loudnessDb: {db:0.0}" : "loudnessDb: —"),
-            },
-        };
-        await dialog.ShowAsync();
+            var item = new MenuFlyoutItem { Text = Loc.Plural("Minutes", minutes) };
+            item.Click += (_, _) => engine.SetSleepTimer(TimeSpan.FromMinutes(minutes));
+            SleepMenu.Items.Add(item);
+        }
+        var trackEnd = new MenuFlyoutItem { Text = Loc.Get("SleepUntilTrackEnd") };
+        trackEnd.Click += (_, _) => engine.SetSleepAtTrackEnd();
+        SleepMenu.Items.Add(trackEnd);
+        if (engine.SleepTimerSet)
+        {
+            SleepMenu.Items.Add(new MenuFlyoutSeparator());
+            var off = new MenuFlyoutItem { Text = Loc.Get("SleepTimerOff") };
+            off.Click += (_, _) => engine.CancelSleepTimer();
+            SleepMenu.Items.Add(off);
+        }
     }
 }

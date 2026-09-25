@@ -359,3 +359,42 @@ LyricsLater05	Позже на 0,5 с	0.5 s later
 LyricsResetShiftFormat	Сбросить сдвиг ({0} с)	Reset the shift ({0} s)
 ChooseLyricTrack	Выберите трек с текстом	Choose a track with lyrics
 NoLyricsFound	Тексты песен не найдены	No lyrics found
+# Отделка плеера: очередь, таймер сна, мини-плеер, воспроизведение
+PlayerQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Очередь	Queue
+PlayerQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Очередь	Queue
+PlayerMiniButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Мини-плеер	Mini player
+PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Мини-плеер	Mini player
+MiniPlayerExpand	Развернуть	Expand
+QueueTitle	Очередь	Queue
+QueueActions	Действия с очередью	Queue actions
+QueueNowPlaying	Сейчас играет	Now playing
+QueueUpNext	Далее	Up next
+QueueSimilar	Далее — похожие	Up next — similar
+QueueSaveAsPlaylist	Сохранить как плейлист	Save as playlist
+QueueClear	Очистить	Clear
+QueueRemoved	Убрано из очереди	Removed from the queue
+QueueCleared	Очередь очищена	Queue cleared
+QueueSavedFormat	Сохранено как «{0}»	Saved as “{0}”
+SleepTimer	Таймер сна	Sleep timer
+SleepTimerLeftFormat	Таймер сна · {0}	Sleep timer · {0}
+SleepUntilTrackEnd	До конца трека	Until the end of the track
+SleepTimerOff	Выключить таймер	Turn off the timer
+SleepTimerEnded	Таймер сна завершён	Sleep timer ended
+Minutes_one	{0} минута	{0} minute
+Minutes_few	{0} минуты	{0} minutes
+Minutes_many	{0} минут	{0} minutes
+Minutes_other	{0} минуты	{0} minutes
+MinutesLeft_one	осталась {0} минута	{0} minute left
+MinutesLeft_few	осталось {0} минуты	{0} minutes left
+MinutesLeft_many	осталось {0} минут	{0} minutes left
+MinutesLeft_other	осталось {0} минуты	{0} minutes left
+SettingsPlayback.Text	Воспроизведение	Playback
+SettingsSpeed.Header	Скорость воспроизведения	Playback speed
+SettingsSpeed.Description	Для всех треков	For all tracks
+SpeedNormal	Обычная	Normal
+SettingsNormalize.Header	Нормализация громкости	Loudness normalization
+SettingsNormalize.Description	Регулирует громкость до фиксированного уровня	Keeps every track at the same loudness
+SettingsStreamInfo.Header	Сведения о потоке	Stream info
+SettingsStreamInfo.Description	Формат и источник звука текущего трека	Format and source of the current track's audio
+Previous	Предыдущий трек	Previous track
+Next	Следующий трек	Next track

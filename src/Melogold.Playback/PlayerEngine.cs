@@ -131,6 +131,9 @@ public sealed class PlayerEngine : IDisposable
 
     public TimeSpan Position => _player.PlaybackSession.Position;
 
+    /// <summary>Громкость на выходе (с нормализацией), 0 — без звука: уровни захвата звука делятся на неё.</summary>
+    public double OutputVolume => _player.IsMuted ? 0 : _player.Volume;
+
     public TimeSpan Duration
     {
         get
@@ -431,8 +434,69 @@ public sealed class PlayerEngine : IDisposable
 
     private void OnEnded()
     {
+        if (SleepAtTrackEnd)
+        {
+            // «До конца трека»: следующий трек встаёт на паузу в начале
+            FinishListening();
+            CancelSleepTimer();
+            if (Queue.MoveNext(userAction: false)) _ = LoadCurrentAsync(play: false);
+            else Pause();
+            SleepTimerFired?.Invoke();
+            return;
+        }
         FinishListening();
         Next(userAction: false);
+    }
+
+    // ---------- Таймер сна ----------
+
+    private Timer? _sleepTimer;
+
+    /// <summary>Когда сработает таймер сна; null — не заведён или «до конца трека».</summary>
+    public DateTimeOffset? SleepAt { get; private set; }
+
+    public bool SleepAtTrackEnd { get; private set; }
+
+    public bool SleepTimerSet => SleepAt is not null || SleepAtTrackEnd;
+
+    public event Action? SleepTimerChanged;
+
+    /// <summary>Таймер сработал: воспроизведение на паузе.</summary>
+    public event Action? SleepTimerFired;
+
+    /// <summary>Таймер сна: 15, 30, 45 или 60 минут (docs/PROMPT.md §4).</summary>
+    public void SetSleepTimer(TimeSpan duration)
+    {
+        StopSleepTimer();
+        SleepAt = DateTimeOffset.Now + duration;
+        _sleepTimer = new Timer(_ => Post(() =>
+        {
+            CancelSleepTimer();
+            Pause();
+            SleepTimerFired?.Invoke();
+        }), null, duration, Timeout.InfiniteTimeSpan);
+        SleepTimerChanged?.Invoke();
+    }
+
+    public void SetSleepAtTrackEnd()
+    {
+        StopSleepTimer();
+        SleepAtTrackEnd = true;
+        SleepTimerChanged?.Invoke();
+    }
+
+    public void CancelSleepTimer()
+    {
+        StopSleepTimer();
+        SleepTimerChanged?.Invoke();
+    }
+
+    private void StopSleepTimer()
+    {
+        _sleepTimer?.Dispose();
+        _sleepTimer = null;
+        SleepAt = null;
+        SleepAtTrackEnd = false;
     }
 
     private void OnSessionStateChanged()
@@ -641,6 +705,7 @@ public sealed class PlayerEngine : IDisposable
     public void Dispose()
     {
         FinishListening();
+        _sleepTimer?.Dispose();
         _load?.Cancel();
         foreach (var task in _preloaded.Values) _ = task.ContinueWith(t => t.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion);
         _player.Dispose();

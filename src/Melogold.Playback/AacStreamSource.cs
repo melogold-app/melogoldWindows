@@ -113,7 +113,8 @@ public sealed class AacStreamSource : IDisposable
         {
             if (_fragments.ContainsKey(index)) return;
         }
-        _ = Fragment(index);
+        // Ошибку упреждающей загрузки увидит чтение фрагмента: оно загрузит его заново
+        _ = Fragment(index).ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
 
     private async Task<Loaded> LoadAsync(int index)

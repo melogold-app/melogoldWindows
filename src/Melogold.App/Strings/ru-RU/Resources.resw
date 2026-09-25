@@ -352,4 +352,42 @@
   <data name="LyricsResetShiftFormat" xml:space="preserve"><value>Сбросить сдвиг ({0} с)</value></data>
   <data name="ChooseLyricTrack" xml:space="preserve"><value>Выберите трек с текстом</value></data>
   <data name="NoLyricsFound" xml:space="preserve"><value>Тексты песен не найдены</value></data>
+  <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Очередь</value></data>
+  <data name="PlayerQueueButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Очередь</value></data>
+  <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Мини-плеер</value></data>
+  <data name="PlayerMiniButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Мини-плеер</value></data>
+  <data name="MiniPlayerExpand" xml:space="preserve"><value>Развернуть</value></data>
+  <data name="QueueTitle" xml:space="preserve"><value>Очередь</value></data>
+  <data name="QueueActions" xml:space="preserve"><value>Действия с очередью</value></data>
+  <data name="QueueNowPlaying" xml:space="preserve"><value>Сейчас играет</value></data>
+  <data name="QueueUpNext" xml:space="preserve"><value>Далее</value></data>
+  <data name="QueueSimilar" xml:space="preserve"><value>Далее — похожие</value></data>
+  <data name="QueueSaveAsPlaylist" xml:space="preserve"><value>Сохранить как плейлист</value></data>
+  <data name="QueueClear" xml:space="preserve"><value>Очистить</value></data>
+  <data name="QueueRemoved" xml:space="preserve"><value>Убрано из очереди</value></data>
+  <data name="QueueCleared" xml:space="preserve"><value>Очередь очищена</value></data>
+  <data name="QueueSavedFormat" xml:space="preserve"><value>Сохранено как «{0}»</value></data>
+  <data name="SleepTimer" xml:space="preserve"><value>Таймер сна</value></data>
+  <data name="SleepTimerLeftFormat" xml:space="preserve"><value>Таймер сна · {0}</value></data>
+  <data name="SleepUntilTrackEnd" xml:space="preserve"><value>До конца трека</value></data>
+  <data name="SleepTimerOff" xml:space="preserve"><value>Выключить таймер</value></data>
+  <data name="SleepTimerEnded" xml:space="preserve"><value>Таймер сна завершён</value></data>
+  <data name="Minutes_one" xml:space="preserve"><value>{0} минута</value></data>
+  <data name="Minutes_few" xml:space="preserve"><value>{0} минуты</value></data>
+  <data name="Minutes_many" xml:space="preserve"><value>{0} минут</value></data>
+  <data name="Minutes_other" xml:space="preserve"><value>{0} минуты</value></data>
+  <data name="MinutesLeft_one" xml:space="preserve"><value>осталась {0} минута</value></data>
+  <data name="MinutesLeft_few" xml:space="preserve"><value>осталось {0} минуты</value></data>
+  <data name="MinutesLeft_many" xml:space="preserve"><value>осталось {0} минут</value></data>
+  <data name="MinutesLeft_other" xml:space="preserve"><value>осталось {0} минуты</value></data>
+  <data name="SettingsPlayback.Text" xml:space="preserve"><value>Воспроизведение</value></data>
+  <data name="SettingsSpeed.Header" xml:space="preserve"><value>Скорость воспроизведения</value></data>
+  <data name="SettingsSpeed.Description" xml:space="preserve"><value>Для всех треков</value></data>
+  <data name="SpeedNormal" xml:space="preserve"><value>Обычная</value></data>
+  <data name="SettingsNormalize.Header" xml:space="preserve"><value>Нормализация громкости</value></data>
+  <data name="SettingsNormalize.Description" xml:space="preserve"><value>Регулирует громкость до фиксированного уровня</value></data>
+  <data name="SettingsStreamInfo.Header" xml:space="preserve"><value>Сведения о потоке</value></data>
+  <data name="SettingsStreamInfo.Description" xml:space="preserve"><value>Формат и источник звука текущего трека</value></data>
+  <data name="Previous" xml:space="preserve"><value>Предыдущий трек</value></data>
+  <data name="Next" xml:space="preserve"><value>Следующий трек</value></data>
 </root>

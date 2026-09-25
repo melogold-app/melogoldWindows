@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Разметка собирается в коде (QueuePanel.cs); файл регистрирует тип для шаблона списка -->
+<Grid
+    x:Class="Melogold.App.Controls.QueueRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" />

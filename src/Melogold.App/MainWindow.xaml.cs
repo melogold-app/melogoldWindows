@@ -88,6 +88,16 @@ public sealed partial class MainWindow : Window
         Root.Children.Add(NowPlaying);
         _navigator.Changed += () => NowPlaying.Close();
         NowPlaying.OpenChanged += _ => UpdateChrome();
+        // Очередь — панель справа: в широком окне сдвигает содержимое, в узком ложится поверх
+        Grid.SetRow(Queue, 1);
+        Queue.HorizontalAlignment = HorizontalAlignment.Right;
+        Root.Children.Add(Queue);
+        Queue.OpenChanged += open =>
+        {
+            Player.SetQueueOpen(open);
+            LayoutQueue();
+        };
+        Root.SizeChanged += (_, _) => LayoutQueue();
         _navigator.Show(_settings.LastSection);
 
         var player = App.Services.GetRequiredService<PlayerViewModel>();
@@ -101,6 +111,16 @@ public sealed partial class MainWindow : Window
         Root.KeyDown += OnRootKeyDown;
         Root.PointerPressed += OnRootPointerPressed;
 
+        // Таймер сна сработал: воспроизведение на паузе — сказать об этом
+        player.Engine.SleepTimerFired += () => DispatcherQueue.TryEnqueue(() => Snackbar.Show(Loc.Get("SleepTimerEnded")));
+        // Кнопки ⏮ ⏯ ⏭ на миниатюре в панели задач — когда у окна уже есть кнопка на панели
+        Activated += (_, _) =>
+        {
+            if (_taskbar is not null) return;
+            _taskbar = new TaskbarButtons(player.Engine, WinRT.Interop.WindowNative.GetWindowHandle(this), DispatcherQueue);
+            _taskbar.Add();
+        };
+
         // Размер в эффективных пикселях: при масштабе 150 % окно не должно выйти маленьким
         var scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
         AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(1280 * scale), (int)(820 * scale)));
@@ -113,6 +133,41 @@ public sealed partial class MainWindow : Window
     }
 
     public Snackbar Snackbar { get; }
+
+    /// <summary>Очередь — панель справа около 320 px (§5.2).</summary>
+    public QueuePanel Queue { get; } = new();
+
+    private TaskbarButtons? _taskbar;
+    private MiniPlayerWindow? _mini;
+
+    public void ToggleQueue() => Queue.Toggle();
+
+    private void LayoutQueue()
+    {
+        var wide = Root.ActualWidth >= 900;
+        var margin = new Thickness(0, 0, Queue.IsOpen && wide ? Queue.Width : 0, 0);
+        Nav.Margin = margin;
+        NowPlaying.Margin = margin;
+    }
+
+    /// <summary>Мини-плеер: отдельное окно поверх остальных; главное окно на это время скрыто.</summary>
+    public void OpenMiniPlayer()
+    {
+        if (_mini is not null)
+        {
+            _mini.Activate();
+            return;
+        }
+        _mini = new MiniPlayerWindow();
+        _mini.Closed += (_, _) =>
+        {
+            _mini = null;
+            AppWindow.Show();
+            Activate();
+        };
+        _mini.Activate();
+        AppWindow.Hide();
+    }
 
     public static Visibility IsSet(string? value) => string.IsNullOrEmpty(value) ? Visibility.Collapsed : Visibility.Visible;
 

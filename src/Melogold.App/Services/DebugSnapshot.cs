@@ -15,36 +15,37 @@ namespace Melogold.App.Services;
 /// </summary>
 public static class DebugSnapshot
 {
-    private const string RequestName = "shot-request";
-    private static FileSystemWatcher? _watcher;
-    private static bool _busy;
+    private static readonly Dictionary<string, FileSystemWatcher> Watchers = [];
+    private static readonly HashSet<string> Busy = [];
 
-    public static void Start(FrameworkElement root)
+    /// <summary>Снимки окна по запросу-файлу <paramref name="requestName"/> (главное окно — <c>shot-request</c>).</summary>
+    public static void Start(FrameworkElement root, string requestName = "shot-request")
     {
-        _watcher = new FileSystemWatcher(AppPaths.DataDirectory, RequestName) { EnableRaisingEvents = true };
-        FileSystemEventHandler handler = (_, _) => root.DispatcherQueue.TryEnqueue(async () => await SaveAsync(root));
-        _watcher.Created += handler;
-        _watcher.Changed += handler;
+        if (Watchers.Remove(requestName, out var old)) old.Dispose();
+        var watcher = new FileSystemWatcher(AppPaths.DataDirectory, requestName) { EnableRaisingEvents = true };
+        FileSystemEventHandler handler = (_, _) => root.DispatcherQueue.TryEnqueue(async () => await SaveAsync(root, requestName));
+        watcher.Created += handler;
+        watcher.Changed += handler;
+        Watchers[requestName] = watcher;
     }
 
-    private static async Task SaveAsync(FrameworkElement root)
+    private static async Task SaveAsync(FrameworkElement root, string requestName)
     {
         // Created и Changed приходят парой на один запрос
-        if (_busy) return;
-        _busy = true;
+        if (!Busy.Add(requestName)) return;
         try
         {
-            await SaveOnceAsync(root);
+            await SaveOnceAsync(root, requestName);
         }
         finally
         {
-            _busy = false;
+            Busy.Remove(requestName);
         }
     }
 
-    private static async Task SaveOnceAsync(FrameworkElement root)
+    private static async Task SaveOnceAsync(FrameworkElement root, string requestName)
     {
-        var request = Path.Combine(AppPaths.DataDirectory, RequestName);
+        var request = Path.Combine(AppPaths.DataDirectory, requestName);
         string target;
         try
         {

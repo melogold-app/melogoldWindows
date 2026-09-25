@@ -25,6 +25,15 @@
                 Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
                 <Image Source="{x:Bind app:Images.Row(Item.ArtworkUrl), Mode=OneWay}" Stretch="UniformToFill" />
             </Border>
+            <!-- Столбики «играет» на обложке текущего трека (§4): создаются только у него -->
+            <Grid
+                x:Name="PlayingOverlay"
+                x:Load="{x:Bind Item.IsCurrent, Mode=OneWay}"
+                IsHitTestVisible="False"
+                CornerRadius="{x:Bind local:MusicRow.Corner(Item.IsRound), Mode=OneWay}"
+                Background="{ThemeResource SmokeFillColorDefaultBrush}">
+                <local:PlayingBars Width="18" Height="16" />
+            </Grid>
             <Button
                 x:Name="PlayOverlay"
                 x:Uid="RowPlayButton"

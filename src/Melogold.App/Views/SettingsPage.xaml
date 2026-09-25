@@ -38,6 +38,26 @@
                 </ComboBox>
             </toolkit:SettingsCard>
 
+            <!-- Воспроизведение: скорость для всех треков, нормализация, сведения о потоке (§5.4) -->
+            <TextBlock x:Uid="SettingsPlayback" Style="{StaticResource SettingsSectionHeaderStyle}" Text="Playback" />
+            <toolkit:SettingsCard x:Uid="SettingsSpeed" Header="Playback speed" Description="For all tracks">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xEC4A;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="SpeedBox" MinWidth="200" SelectionChanged="OnSpeedChanged" />
+            </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="SettingsNormalize" Header="Loudness normalization" Description="Keeps tracks at the same loudness">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE767;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="NormalizeSwitch" Toggled="OnNormalizeToggled" />
+            </toolkit:SettingsCard>
+            <controls:ClickableCard x:Name="StreamInfoCard" x:Uid="SettingsStreamInfo" Header="Stream info" Activated="OnStreamInfo">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE946;" />
+                </toolkit:SettingsCard.HeaderIcon>
+            </controls:ClickableCard>
+
             <!-- О приложении -->
             <TextBlock x:Uid="SettingsAbout" Style="{StaticResource SettingsSectionHeaderStyle}" Text="About" />
             <toolkit:SettingsCard x:Name="VersionCard" x:Uid="SettingsVersion" Header="Melogold">

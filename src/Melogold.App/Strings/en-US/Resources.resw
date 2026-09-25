@@ -41,7 +41,7 @@
   <data name="SettingsWithoutAccount.Header" xml:space="preserve"><value>Works without an account</value></data>
   <data name="SettingsWithoutAccount.Description" xml:space="preserve"><value>Sign in to keep Favorites, playlists and saved items the same on all your devices</value></data>
   <data name="SignIn" xml:space="preserve"><value>Sign in</value></data>
-  <data name="SettingsServer.Header" xml:space="preserve"><value>Server</value></data>
+  <data name="SettingsServer.Header" xml:space="preserve"><value>Melogold server</value></data>
   <data name="ComingSoon" xml:space="preserve"><value>Coming soon</value></data>
   <data name="Play" xml:space="preserve"><value>Play</value></data>
   <data name="Pause" xml:space="preserve"><value>Pause</value></data>
@@ -227,4 +227,96 @@
   <data name="AlbumsEmptyHint" xml:space="preserve"><value>Saved albums will appear here</value></data>
   <data name="ArtistsEmpty" xml:space="preserve"><value>No subscriptions yet</value></data>
   <data name="ArtistsEmptyHint" xml:space="preserve"><value>Artists and channels you subscribe to will appear here</value></data>
+  <data name="NoAccountTitle" xml:space="preserve"><value>Melogold works without an account</value></data>
+  <data name="NoAccountText" xml:space="preserve"><value>You only need to sign in to sync between devices</value></data>
+  <data name="AccountSignedInAsFormat" xml:space="preserve"><value>Signed in as {0}</value></data>
+  <data name="AccountAuthRequiredTitle" xml:space="preserve"><value>Sign in again</value></data>
+  <data name="AccountAuthRequiredText" xml:space="preserve"><value>The server ended the session. Your library is still on this device</value></data>
+  <data name="SyncStatusSyncing" xml:space="preserve"><value>Syncing…</value></data>
+  <data name="SyncStatusDoneFormat" xml:space="preserve"><value>Synced · {0}</value></data>
+  <data name="SyncStatusNever" xml:space="preserve"><value>Not synced yet</value></data>
+  <data name="SyncStatusOffline" xml:space="preserve"><value>Can't reach the server</value></data>
+  <data name="SyncStatusFailed" xml:space="preserve"><value>Couldn't sync</value></data>
+  <data name="JustNow" xml:space="preserve"><value>just now</value></data>
+  <data name="MinutesAgo_one" xml:space="preserve"><value>{0} minute ago</value></data>
+  <data name="MinutesAgo_few" xml:space="preserve"><value>{0} minutes ago</value></data>
+  <data name="MinutesAgo_many" xml:space="preserve"><value>{0} minutes ago</value></data>
+  <data name="MinutesAgo_other" xml:space="preserve"><value>{0} minutes ago</value></data>
+  <data name="HoursAgo_one" xml:space="preserve"><value>{0} hour ago</value></data>
+  <data name="HoursAgo_few" xml:space="preserve"><value>{0} hours ago</value></data>
+  <data name="HoursAgo_many" xml:space="preserve"><value>{0} hours ago</value></data>
+  <data name="HoursAgo_other" xml:space="preserve"><value>{0} hours ago</value></data>
+  <data name="DaysAgo_one" xml:space="preserve"><value>{0} day ago</value></data>
+  <data name="DaysAgo_few" xml:space="preserve"><value>{0} days ago</value></data>
+  <data name="DaysAgo_many" xml:space="preserve"><value>{0} days ago</value></data>
+  <data name="DaysAgo_other" xml:space="preserve"><value>{0} days ago</value></data>
+  <data name="AccountSignInTitle" xml:space="preserve"><value>Sign in</value></data>
+  <data name="AccountSignInText" xml:space="preserve"><value>Sign in to have the same Favorites, playlists and saved albums on all your devices</value></data>
+  <data name="AccountRegisterTitle" xml:space="preserve"><value>New account</value></data>
+  <data name="AccountRegisterText" xml:space="preserve"><value>Only a login and a password. The server never asks for an email or a phone number</value></data>
+  <data name="AccountLogin" xml:space="preserve"><value>Login</value></data>
+  <data name="AccountLoginHint" xml:space="preserve"><value>3–32 characters: Latin letters, digits, dot, _ and -</value></data>
+  <data name="AccountPassword" xml:space="preserve"><value>Password</value></data>
+  <data name="AccountPasswordHint" xml:space="preserve"><value>At least 8 characters</value></data>
+  <data name="AccountPasswordRepeat" xml:space="preserve"><value>Password again</value></data>
+  <data name="AccountSignIn" xml:space="preserve"><value>Sign in</value></data>
+  <data name="AccountRegister" xml:space="preserve"><value>Create account</value></data>
+  <data name="AccountNoAccount" xml:space="preserve"><value>No account? Create one</value></data>
+  <data name="AccountOnServerFormat" xml:space="preserve"><value>Server: {0}</value></data>
+  <data name="AccountErrorCredentials" xml:space="preserve"><value>Wrong login or password</value></data>
+  <data name="AccountErrorThrottled" xml:space="preserve"><value>Too many attempts. Try again in a few minutes</value></data>
+  <data name="AccountErrorDeviceLimit" xml:space="preserve"><value>The account already has the most devices it can. Unlink one on another device</value></data>
+  <data name="AccountErrorLoginTaken" xml:space="preserve"><value>This login is taken</value></data>
+  <data name="AccountErrorLoginFormat" xml:space="preserve"><value>Login: 3–32 characters, Latin letters, digits, dot, _ and -</value></data>
+  <data name="AccountErrorPasswordShort" xml:space="preserve"><value>The password is shorter than 8 characters</value></data>
+  <data name="AccountErrorPasswordWeak" xml:space="preserve"><value>The password is too easy to guess. Make it longer or a phrase of a few words</value></data>
+  <data name="AccountErrorPasswordMismatch" xml:space="preserve"><value>The passwords don't match</value></data>
+  <data name="AccountErrorRegistrationClosed" xml:space="preserve"><value>Registration is closed on this server</value></data>
+  <data name="AccountErrorNetwork" xml:space="preserve"><value>Can't reach the server</value></data>
+  <data name="AccountErrorPasswordNeeded" xml:space="preserve"><value>This device is new on the account: confirm with the password</value></data>
+  <data name="AccountErrorInvalidPassword" xml:space="preserve"><value>Wrong password</value></data>
+  <data name="AccountErrorUnknown" xml:space="preserve"><value>Something went wrong. Try again</value></data>
+  <data name="AccountRecoveryTitle" xml:space="preserve"><value>Recovery code</value></data>
+  <data name="AccountRecoveryText" xml:space="preserve"><value>If you forget the password, this code gets you back into the account. It is shown only once: keep it in a password manager or write it down</value></data>
+  <data name="AccountRecoveryCopy" xml:space="preserve"><value>Copy</value></data>
+  <data name="AccountRecoveryCopied" xml:space="preserve"><value>Code copied</value></data>
+  <data name="AccountRecoverySaved" xml:space="preserve"><value>I saved the code</value></data>
+  <data name="AccountSyncGroup" xml:space="preserve"><value>Sync</value></data>
+  <data name="AccountSyncNow" xml:space="preserve"><value>Sync now</value></data>
+  <data name="AccountSyncWhat" xml:space="preserve"><value>Favorites, playlists, saved albums and artists</value></data>
+  <data name="AccountDevicesGroup" xml:space="preserve"><value>Devices</value></data>
+  <data name="AccountDeviceCurrent" xml:space="preserve"><value>This device</value></data>
+  <data name="AccountDeviceSeenFormat" xml:space="preserve"><value>Last seen {0}</value></data>
+  <data name="AccountDeviceRevoke" xml:space="preserve"><value>Unlink</value></data>
+  <data name="AccountDeviceRevokeTitleFormat" xml:space="preserve"><value>Unlink “{0}”?</value></data>
+  <data name="AccountDeviceRevokeText" xml:space="preserve"><value>It signs out of the account and keeps its library</value></data>
+  <data name="AccountRevokeOthers" xml:space="preserve"><value>Sign out on other devices</value></data>
+  <data name="AccountRevokeOthersTitle" xml:space="preserve"><value>Sign out on other devices?</value></data>
+  <data name="AccountRevokeOthersText" xml:space="preserve"><value>Every device but this one signs out of the account</value></data>
+  <data name="AccountRevokedOthersFormat" xml:space="preserve"><value>Devices unlinked: {0}</value></data>
+  <data name="AccountSignOut" xml:space="preserve"><value>Sign out</value></data>
+  <data name="AccountSignOutTitle" xml:space="preserve"><value>Sign out of the account?</value></data>
+  <data name="AccountSignOutText" xml:space="preserve"><value>The library stays on this device but stops syncing</value></data>
+  <data name="AccountPasswordConfirm" xml:space="preserve"><value>Confirm</value></data>
+  <data name="ServerTitle" xml:space="preserve"><value>Melogold server</value></data>
+  <data name="ServerText" xml:space="preserve"><value>Your library syncs through this server. You can use your own: the server is open source and installs with one command</value></data>
+  <data name="ServerAddress" xml:space="preserve"><value>Server address</value></data>
+  <data name="ServerCheck" xml:space="preserve"><value>Check</value></data>
+  <data name="ServerConnect" xml:space="preserve"><value>Connect</value></data>
+  <data name="ServerDefault" xml:space="preserve"><value>Default server</value></data>
+  <data name="ServerInfoFormat" xml:space="preserve"><value>{0} · version {1}</value></data>
+  <data name="ServerRegistrationOpen" xml:space="preserve"><value>Registration is open</value></data>
+  <data name="ServerRegistrationClosed" xml:space="preserve"><value>Registration is closed</value></data>
+  <data name="ServerRegistrationFirst" xml:space="preserve"><value>Registration is open for the first account</value></data>
+  <data name="ServerNotMelogold" xml:space="preserve"><value>This is not a Melogold server</value></data>
+  <data name="ServerUnreachable" xml:space="preserve"><value>The server doesn't answer</value></data>
+  <data name="ServerHttpsNeeded" xml:space="preserve"><value>An internet address must start with https://</value></data>
+  <data name="ServerSwitchSignsOut" xml:space="preserve"><value>After switching servers you will sign in again</value></data>
+  <data name="ServerErrorMalformed" xml:space="preserve"><value>This doesn't look like a server address</value></data>
+  <data name="ServerErrorScheme" xml:space="preserve"><value>The address starts with https:// or http://</value></data>
+  <data name="ServerErrorParams" xml:space="preserve"><value>The address can't contain a login, parameters or #</value></data>
+  <data name="ServerInsecure" xml:space="preserve"><value>Not a secure connection: use it only at home</value></data>
+  <data name="ServerCurrent" xml:space="preserve"><value>In use</value></data>
+  <data name="ServerClientOutdated" xml:space="preserve"><value>This server needs a newer version of Melogold</value></data>
+  <data name="ServerTooOld" xml:space="preserve"><value>The server is too old for this version of Melogold</value></data>
 </root>

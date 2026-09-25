@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Разметка собирается в коде (AccountPages.cs); файл регистрирует тип страницы для Frame -->
+<Page
+    x:Class="Melogold.App.Views.AccountPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" />

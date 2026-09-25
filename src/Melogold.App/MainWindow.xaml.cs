@@ -51,6 +51,9 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "melogold.ico"));
         ApplyBackdrop();
         ApplyTheme();
+#if DEBUG
+        DebugSnapshot.Start(Root);
+#endif
         _settings.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(SettingsStore.Theme)) ApplyTheme();
@@ -62,6 +65,9 @@ public sealed partial class MainWindow : Window
             if (Nav.SettingsItem is NavigationViewItem settingsItem)
             {
                 settingsItem.Content = Loc.Get("NavSettings");
+                // Экранный диктор читает то же, что видно, а не имя из шаблона
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(settingsItem, Loc.Get("NavSettings"));
+                ToolTipService.SetToolTip(settingsItem, Loc.Get("NavSettings"));
                 settingsItem.Tag = "settings";
             }
             if (_navigator.Current == "settings") Nav.SelectedItem = Nav.SettingsItem;

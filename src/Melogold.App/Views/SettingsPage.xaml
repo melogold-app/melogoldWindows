@@ -3,10 +3,27 @@
     x:Class="Melogold.App.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls">
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
+    xmlns:controls="using:Melogold.App.Controls">
     <ScrollViewer x:Name="Scroller">
         <StackPanel Margin="{StaticResource PageContentMargin}" MaxWidth="1000" Spacing="{StaticResource SettingsCardSpacing}">
             <TextBlock x:Uid="SettingsTitle" Style="{StaticResource PageTitleStyle}" Text="Settings" />
+
+            <!-- Аккаунт и сервер (Android AccountCard и ServerSettingsRow): текст — в коде, по состоянию -->
+            <controls:ClickableCard x:Name="AccountCard" Activated="OnAccountClick">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon x:Name="AccountIcon" Glyph="&#xE77B;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <StackPanel x:Name="AccountButtons" Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="SignInButton" Style="{StaticResource AccentButtonStyle}" Click="OnSignIn" />
+                    <Button x:Name="RegisterButton" Click="OnRegister" />
+                </StackPanel>
+            </controls:ClickableCard>
+            <controls:ClickableCard x:Name="ServerCard" x:Uid="SettingsServer" Header="Melogold server" Activated="OnServerClick">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE968;" />
+                </toolkit:SettingsCard.HeaderIcon>
+            </controls:ClickableCard>
 
             <!-- Внешний вид -->
             <TextBlock x:Uid="SettingsAppearance" Style="{StaticResource SettingsSectionHeaderStyle}" Text="Appearance" />
@@ -34,14 +51,14 @@
                 </toolkit:SettingsCard.HeaderIcon>
                 <Button x:Uid="OpenLogs" Content="Open folder" Click="OnOpenLogs" />
             </toolkit:SettingsCard>
-            <toolkit:SettingsCard x:Uid="SettingsSource" Header="Source code" Description="GPL-3.0" IsClickEnabled="True" Click="OnOpenSource">
+            <controls:ClickableCard x:Uid="SettingsSource" Header="Source code" Description="GPL-3.0" Activated="OnOpenSource">
                 <toolkit:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE943;" />
                 </toolkit:SettingsCard.HeaderIcon>
                 <toolkit:SettingsCard.ActionIcon>
                     <FontIcon Glyph="&#xE8A7;" />
                 </toolkit:SettingsCard.ActionIcon>
-            </toolkit:SettingsCard>
+            </controls:ClickableCard>
         </StackPanel>
     </ScrollViewer>
 </Page>

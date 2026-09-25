@@ -40,7 +40,7 @@ OpenSource.Content	Открыть	Open
 SettingsWithoutAccount.Header	Работает без аккаунта	Works without an account
 SettingsWithoutAccount.Description	Войдите, чтобы Избранное, плейлисты и сохранённое совпадали на всех устройствах	Sign in to keep Favorites, playlists and saved items the same on all your devices
 SignIn	Войти	Sign in
-SettingsServer.Header	Сервер	Server
+SettingsServer.Header	Сервер Melogold	Melogold server
 # Пустые разделы
 ComingSoon	Скоро здесь	Coming soon
 # Плеер
@@ -232,3 +232,96 @@ AlbumsEmpty	Сохранённых альбомов пока нет	No saved alb
 AlbumsEmptyHint	Здесь появятся сохранённые альбомы	Saved albums will appear here
 ArtistsEmpty	Подписок пока нет	No subscriptions yet
 ArtistsEmptyHint	Здесь появятся исполнители и каналы, на которые вы подписались	Artists and channels you subscribe to will appear here
+# Аккаунт и синхронизация (Android strings_account.xml)
+NoAccountTitle	Melogold работает без аккаунта	Melogold works without an account
+NoAccountText	Вход нужен только для синхронизации между устройствами	You only need to sign in to sync between devices
+AccountSignedInAsFormat	Вы вошли как {0}	Signed in as {0}
+AccountAuthRequiredTitle	Нужно войти снова	Sign in again
+AccountAuthRequiredText	Сервер завершил сеанс. Библиотека осталась на устройстве	The server ended the session. Your library is still on this device
+SyncStatusSyncing	Синхронизация…	Syncing…
+SyncStatusDoneFormat	Синхронизировано · {0}	Synced · {0}
+SyncStatusNever	Ещё не синхронизировано	Not synced yet
+SyncStatusOffline	Нет связи с сервером	Can't reach the server
+SyncStatusFailed	Не удалось синхронизировать	Couldn't sync
+JustNow	только что	just now
+MinutesAgo_one	{0} минуту назад	{0} minute ago
+MinutesAgo_few	{0} минуты назад	{0} minutes ago
+MinutesAgo_many	{0} минут назад	{0} minutes ago
+MinutesAgo_other	{0} минуты назад	{0} minutes ago
+HoursAgo_one	{0} час назад	{0} hour ago
+HoursAgo_few	{0} часа назад	{0} hours ago
+HoursAgo_many	{0} часов назад	{0} hours ago
+HoursAgo_other	{0} часа назад	{0} hours ago
+DaysAgo_one	{0} день назад	{0} day ago
+DaysAgo_few	{0} дня назад	{0} days ago
+DaysAgo_many	{0} дней назад	{0} days ago
+DaysAgo_other	{0} дня назад	{0} days ago
+AccountSignInTitle	Вход	Sign in
+AccountSignInText	Войдите, чтобы Избранное, плейлисты и сохранённые альбомы были одинаковыми на всех ваших устройствах	Sign in to have the same Favorites, playlists and saved albums on all your devices
+AccountRegisterTitle	Новый аккаунт	New account
+AccountRegisterText	Нужны только логин и пароль. Почту и телефон сервер не спрашивает	Only a login and a password. The server never asks for an email or a phone number
+AccountLogin	Логин	Login
+AccountLoginHint	3–32 символа: латиница, цифры, точка, _ и -	3–32 characters: Latin letters, digits, dot, _ and -
+AccountPassword	Пароль	Password
+AccountPasswordHint	Не короче 8 символов	At least 8 characters
+AccountPasswordRepeat	Пароль ещё раз	Password again
+AccountSignIn	Войти	Sign in
+AccountRegister	Создать аккаунт	Create account
+AccountNoAccount	Нет аккаунта? Создать	No account? Create one
+AccountOnServerFormat	Сервер: {0}	Server: {0}
+AccountErrorCredentials	Неверный логин или пароль	Wrong login or password
+AccountErrorThrottled	Слишком много попыток. Попробуйте через несколько минут	Too many attempts. Try again in a few minutes
+AccountErrorDeviceLimit	На аккаунте уже максимум устройств. Отвяжите одно из них на другом устройстве	The account already has the most devices it can. Unlink one on another device
+AccountErrorLoginTaken	Этот логин уже занят	This login is taken
+AccountErrorLoginFormat	Логин: 3–32 символа, латиница, цифры, точка, _ и -	Login: 3–32 characters, Latin letters, digits, dot, _ and -
+AccountErrorPasswordShort	Пароль короче 8 символов	The password is shorter than 8 characters
+AccountErrorPasswordWeak	Пароль слишком простой. Возьмите длиннее или фразу из нескольких слов	The password is too easy to guess. Make it longer or a phrase of a few words
+AccountErrorPasswordMismatch	Пароли не совпадают	The passwords don't match
+AccountErrorRegistrationClosed	Регистрация на этом сервере закрыта	Registration is closed on this server
+AccountErrorNetwork	Нет связи с сервером	Can't reach the server
+AccountErrorPasswordNeeded	Это устройство новое на аккаунте: подтвердите паролем	This device is new on the account: confirm with the password
+AccountErrorInvalidPassword	Неверный пароль	Wrong password
+AccountErrorUnknown	Не получилось. Попробуйте ещё раз	Something went wrong. Try again
+AccountRecoveryTitle	Код восстановления	Recovery code
+AccountRecoveryText	Если забудете пароль, этот код вернёт доступ к аккаунту. Он показывается один раз: сохраните его в менеджере паролей или запишите	If you forget the password, this code gets you back into the account. It is shown only once: keep it in a password manager or write it down
+AccountRecoveryCopy	Копировать	Copy
+AccountRecoveryCopied	Код скопирован	Code copied
+AccountRecoverySaved	Я сохранил код	I saved the code
+AccountSyncGroup	Синхронизация	Sync
+AccountSyncNow	Синхронизировать сейчас	Sync now
+AccountSyncWhat	Избранное, плейлисты, сохранённые альбомы и исполнители	Favorites, playlists, saved albums and artists
+AccountDevicesGroup	Устройства	Devices
+AccountDeviceCurrent	Это устройство	This device
+AccountDeviceSeenFormat	Был в сети {0}	Last seen {0}
+AccountDeviceRevoke	Отвязать	Unlink
+AccountDeviceRevokeTitleFormat	Отвязать «{0}»?	Unlink “{0}”?
+AccountDeviceRevokeText	На нём выйдет из аккаунта, библиотека на нём останется	It signs out of the account and keeps its library
+AccountRevokeOthers	Выйти на других устройствах	Sign out on other devices
+AccountRevokeOthersTitle	Выйти на других устройствах?	Sign out on other devices?
+AccountRevokeOthersText	Все устройства, кроме этого, выйдут из аккаунта	Every device but this one signs out of the account
+AccountRevokedOthersFormat	Устройств отвязано: {0}	Devices unlinked: {0}
+AccountSignOut	Выйти	Sign out
+AccountSignOutTitle	Выйти из аккаунта?	Sign out of the account?
+AccountSignOutText	Библиотека останется на этом устройстве, но перестанет синхронизироваться	The library stays on this device but stops syncing
+AccountPasswordConfirm	Подтвердить	Confirm
+ServerTitle	Сервер Melogold	Melogold server
+ServerText	Библиотека синхронизируется через этот сервер. Можно указать свой — сервер открытый и ставится одной командой	Your library syncs through this server. You can use your own: the server is open source and installs with one command
+ServerAddress	Адрес сервера	Server address
+ServerCheck	Проверить	Check
+ServerConnect	Подключить	Connect
+ServerDefault	Сервер по умолчанию	Default server
+ServerInfoFormat	{0} · версия {1}	{0} · version {1}
+ServerRegistrationOpen	Регистрация открыта	Registration is open
+ServerRegistrationClosed	Регистрация закрыта	Registration is closed
+ServerRegistrationFirst	Регистрация открыта для первого аккаунта	Registration is open for the first account
+ServerNotMelogold	Это не сервер Melogold	This is not a Melogold server
+ServerUnreachable	Сервер не отвечает	The server doesn't answer
+ServerHttpsNeeded	Адрес в интернете должен начинаться с https://	An internet address must start with https://
+ServerSwitchSignsOut	После смены сервера нужно будет войти заново	After switching servers you will sign in again
+ServerErrorMalformed	Это не похоже на адрес сервера	This doesn't look like a server address
+ServerErrorScheme	Адрес начинается с https:// или http://	The address starts with https:// or http://
+ServerErrorParams	Адрес не должен содержать логин, параметры или #	The address can't contain a login, parameters or #
+ServerInsecure	Незащищённое соединение: только для домашней сети	Not a secure connection: use it only at home
+ServerCurrent	Используется	In use
+ServerClientOutdated	Этому серверу нужна более новая версия Melogold	This server needs a newer version of Melogold
+ServerTooOld	Сервер слишком старый для этой версии Melogold	The server is too old for this version of Melogold

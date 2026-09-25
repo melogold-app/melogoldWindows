@@ -1,0 +1,103 @@
+#if DEBUG
+using System.Runtime.InteropServices.WindowsRuntime;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Graphics.Imaging;
+using Windows.Storage.Streams;
+
+namespace Melogold.App.Services;
+
+/// <summary>
+/// Только в отладочной сборке: снимок окна изнутри (RenderTargetBitmap) по запросу <c>tools/shot.ps1</c> — файл
+/// <c>shot-request</c> с путём PNG в папке данных. Нужен, когда снимок снаружи (PrintWindow) пустой: экран выключен и
+/// DWM не рисует окно. Mica под содержимым заменяется цветом фона темы, открытые всплывающие окна (диалоги) — поверх.
+/// </summary>
+public static class DebugSnapshot
+{
+    private const string RequestName = "shot-request";
+    private static FileSystemWatcher? _watcher;
+
+    public static void Start(FrameworkElement root)
+    {
+        _watcher = new FileSystemWatcher(AppPaths.DataDirectory, RequestName) { EnableRaisingEvents = true };
+        FileSystemEventHandler handler = (_, _) => root.DispatcherQueue.TryEnqueue(async () => await SaveAsync(root));
+        _watcher.Created += handler;
+        _watcher.Changed += handler;
+    }
+
+    private static async Task SaveAsync(FrameworkElement root)
+    {
+        var request = Path.Combine(AppPaths.DataDirectory, RequestName);
+        string target;
+        try
+        {
+            target = (await File.ReadAllTextAsync(request)).Trim();
+            File.Delete(request);
+        }
+        catch (IOException)
+        {
+            return;
+        }
+        if (target.Length == 0) return;
+        try
+        {
+            var scale = root.XamlRoot.RasterizationScale;
+            var width = (int)Math.Round(root.ActualWidth * scale);
+            var height = (int)Math.Round(root.ActualHeight * scale);
+            var dark = root.ActualTheme == ElementTheme.Dark;
+            byte bg = dark ? (byte)0x20 : (byte)0xF3;
+            var canvas = new byte[width * height * 4];
+            for (var i = 0; i < canvas.Length; i += 4)
+            {
+                canvas[i] = canvas[i + 1] = canvas[i + 2] = bg;
+                canvas[i + 3] = 255;
+            }
+            await DrawAsync(canvas, width, height, root, 0, 0);
+            foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(root.XamlRoot))
+            {
+                if (popup.Child is not FrameworkElement child || child.ActualWidth <= 0) continue;
+                var at = child.TransformToVisual(root).TransformPoint(new Windows.Foundation.Point(0, 0));
+                await DrawAsync(canvas, width, height, child, (int)Math.Round(at.X * scale), (int)Math.Round(at.Y * scale));
+            }
+            using var stream = new InMemoryRandomAccessStream();
+            var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
+            encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)width, (uint)height, 96 * scale, 96 * scale, canvas);
+            await encoder.FlushAsync();
+            var bytes = new byte[stream.Size];
+            stream.Seek(0);
+            await stream.ReadAsync(bytes.AsBuffer(), (uint)bytes.Length, InputStreamOptions.None);
+            await File.WriteAllBytesAsync(target + ".tmp", bytes);
+            File.Move(target + ".tmp", target, true);
+        }
+        catch (Exception e)
+        {
+            Log.Warn("Debug snapshot failed", e);
+        }
+    }
+
+    /// <summary>Рисует элемент поверх холста: пиксели RenderTargetBitmap — BGRA с предумноженной альфой.</summary>
+    private static async Task DrawAsync(byte[] canvas, int width, int height, UIElement element, int left, int top)
+    {
+        var bitmap = new RenderTargetBitmap();
+        await bitmap.RenderAsync(element);
+        var pixels = (await bitmap.GetPixelsAsync()).ToArray();
+        int w = bitmap.PixelWidth, h = bitmap.PixelHeight;
+        for (var y = 0; y < h; y++)
+        {
+            var cy = top + y;
+            if (cy < 0 || cy >= height) continue;
+            for (var x = 0; x < w; x++)
+            {
+                var cx = left + x;
+                if (cx < 0 || cx >= width) continue;
+                var s = (y * w + x) * 4;
+                var d = (cy * width + cx) * 4;
+                var alpha = pixels[s + 3];
+                if (alpha == 0) continue;
+                for (var c = 0; c < 3; c++) canvas[d + c] = (byte)Math.Min(255, pixels[s + c] + canvas[d + c] * (255 - alpha) / 255);
+            }
+        }
+    }
+}
+#endif

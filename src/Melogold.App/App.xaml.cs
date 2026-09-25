@@ -4,6 +4,7 @@ using Melogold.App.Views;
 using Melogold.Core.Data;
 using Melogold.InnerTube;
 using Melogold.Playback;
+using Melogold.Server;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
@@ -67,6 +68,11 @@ public partial class App : Application
         services.AddSingleton<YouTubeMusic>();
         services.AddSingleton<StreamResolver>();
         services.AddSingleton<CatalogCache>();
+        services.AddSingleton(sp => new AccountService(new DpapiSessionStore(AppPaths.Account), new WindowsDeviceIdentity(),
+            sp.GetRequiredService<SettingsStore>().ServerUrl));
+        services.AddSingleton(sp => new SyncStore(sp.GetRequiredService<Library>()));
+        services.AddSingleton(sp => new LibrarySync(sp.GetRequiredService<AccountService>(), sp.GetRequiredService<SyncStore>(),
+            (message, error) => Log.Warn(message, error)));
         services.AddSingleton<ForYouBuilder>();
         // Всё, что ниже, создаётся в потоке интерфейса: плеер запоминает его контекст, плашка — его очередь
         services.AddSingleton<Snackbar>();
@@ -95,7 +101,13 @@ public partial class App : Application
         });
         _window = new MainWindow();
         _window.Activate();
-        _window.Closed += (_, _) => Services.GetRequiredService<PlayerEngine>().Dispose();
+        _window.Closed += (_, _) =>
+        {
+            Services.GetRequiredService<PlayerEngine>().Dispose();
+            // Правки последних двух секунд — на сервер до выхода
+            Services.GetRequiredService<LibrarySync>().Flush(TimeSpan.FromSeconds(3));
+        };
+        Services.GetRequiredService<LibrarySync>().Start();
         if (_args.Length > 0) Services.GetRequiredService<LinkRouter>().OpenArguments(_args);
     }
 

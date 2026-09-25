@@ -41,7 +41,7 @@
   <data name="SettingsWithoutAccount.Header" xml:space="preserve"><value>Работает без аккаунта</value></data>
   <data name="SettingsWithoutAccount.Description" xml:space="preserve"><value>Войдите, чтобы Избранное, плейлисты и сохранённое совпадали на всех устройствах</value></data>
   <data name="SignIn" xml:space="preserve"><value>Войти</value></data>
-  <data name="SettingsServer.Header" xml:space="preserve"><value>Сервер</value></data>
+  <data name="SettingsServer.Header" xml:space="preserve"><value>Сервер Melogold</value></data>
   <data name="ComingSoon" xml:space="preserve"><value>Скоро здесь</value></data>
   <data name="Play" xml:space="preserve"><value>Воспроизвести</value></data>
   <data name="Pause" xml:space="preserve"><value>Пауза</value></data>
@@ -227,4 +227,96 @@
   <data name="AlbumsEmptyHint" xml:space="preserve"><value>Здесь появятся сохранённые альбомы</value></data>
   <data name="ArtistsEmpty" xml:space="preserve"><value>Подписок пока нет</value></data>
   <data name="ArtistsEmptyHint" xml:space="preserve"><value>Здесь появятся исполнители и каналы, на которые вы подписались</value></data>
+  <data name="NoAccountTitle" xml:space="preserve"><value>Melogold работает без аккаунта</value></data>
+  <data name="NoAccountText" xml:space="preserve"><value>Вход нужен только для синхронизации между устройствами</value></data>
+  <data name="AccountSignedInAsFormat" xml:space="preserve"><value>Вы вошли как {0}</value></data>
+  <data name="AccountAuthRequiredTitle" xml:space="preserve"><value>Нужно войти снова</value></data>
+  <data name="AccountAuthRequiredText" xml:space="preserve"><value>Сервер завершил сеанс. Библиотека осталась на устройстве</value></data>
+  <data name="SyncStatusSyncing" xml:space="preserve"><value>Синхронизация…</value></data>
+  <data name="SyncStatusDoneFormat" xml:space="preserve"><value>Синхронизировано · {0}</value></data>
+  <data name="SyncStatusNever" xml:space="preserve"><value>Ещё не синхронизировано</value></data>
+  <data name="SyncStatusOffline" xml:space="preserve"><value>Нет связи с сервером</value></data>
+  <data name="SyncStatusFailed" xml:space="preserve"><value>Не удалось синхронизировать</value></data>
+  <data name="JustNow" xml:space="preserve"><value>только что</value></data>
+  <data name="MinutesAgo_one" xml:space="preserve"><value>{0} минуту назад</value></data>
+  <data name="MinutesAgo_few" xml:space="preserve"><value>{0} минуты назад</value></data>
+  <data name="MinutesAgo_many" xml:space="preserve"><value>{0} минут назад</value></data>
+  <data name="MinutesAgo_other" xml:space="preserve"><value>{0} минуты назад</value></data>
+  <data name="HoursAgo_one" xml:space="preserve"><value>{0} час назад</value></data>
+  <data name="HoursAgo_few" xml:space="preserve"><value>{0} часа назад</value></data>
+  <data name="HoursAgo_many" xml:space="preserve"><value>{0} часов назад</value></data>
+  <data name="HoursAgo_other" xml:space="preserve"><value>{0} часа назад</value></data>
+  <data name="DaysAgo_one" xml:space="preserve"><value>{0} день назад</value></data>
+  <data name="DaysAgo_few" xml:space="preserve"><value>{0} дня назад</value></data>
+  <data name="DaysAgo_many" xml:space="preserve"><value>{0} дней назад</value></data>
+  <data name="DaysAgo_other" xml:space="preserve"><value>{0} дня назад</value></data>
+  <data name="AccountSignInTitle" xml:space="preserve"><value>Вход</value></data>
+  <data name="AccountSignInText" xml:space="preserve"><value>Войдите, чтобы Избранное, плейлисты и сохранённые альбомы были одинаковыми на всех ваших устройствах</value></data>
+  <data name="AccountRegisterTitle" xml:space="preserve"><value>Новый аккаунт</value></data>
+  <data name="AccountRegisterText" xml:space="preserve"><value>Нужны только логин и пароль. Почту и телефон сервер не спрашивает</value></data>
+  <data name="AccountLogin" xml:space="preserve"><value>Логин</value></data>
+  <data name="AccountLoginHint" xml:space="preserve"><value>3–32 символа: латиница, цифры, точка, _ и -</value></data>
+  <data name="AccountPassword" xml:space="preserve"><value>Пароль</value></data>
+  <data name="AccountPasswordHint" xml:space="preserve"><value>Не короче 8 символов</value></data>
+  <data name="AccountPasswordRepeat" xml:space="preserve"><value>Пароль ещё раз</value></data>
+  <data name="AccountSignIn" xml:space="preserve"><value>Войти</value></data>
+  <data name="AccountRegister" xml:space="preserve"><value>Создать аккаунт</value></data>
+  <data name="AccountNoAccount" xml:space="preserve"><value>Нет аккаунта? Создать</value></data>
+  <data name="AccountOnServerFormat" xml:space="preserve"><value>Сервер: {0}</value></data>
+  <data name="AccountErrorCredentials" xml:space="preserve"><value>Неверный логин или пароль</value></data>
+  <data name="AccountErrorThrottled" xml:space="preserve"><value>Слишком много попыток. Попробуйте через несколько минут</value></data>
+  <data name="AccountErrorDeviceLimit" xml:space="preserve"><value>На аккаунте уже максимум устройств. Отвяжите одно из них на другом устройстве</value></data>
+  <data name="AccountErrorLoginTaken" xml:space="preserve"><value>Этот логин уже занят</value></data>
+  <data name="AccountErrorLoginFormat" xml:space="preserve"><value>Логин: 3–32 символа, латиница, цифры, точка, _ и -</value></data>
+  <data name="AccountErrorPasswordShort" xml:space="preserve"><value>Пароль короче 8 символов</value></data>
+  <data name="AccountErrorPasswordWeak" xml:space="preserve"><value>Пароль слишком простой. Возьмите длиннее или фразу из нескольких слов</value></data>
+  <data name="AccountErrorPasswordMismatch" xml:space="preserve"><value>Пароли не совпадают</value></data>
+  <data name="AccountErrorRegistrationClosed" xml:space="preserve"><value>Регистрация на этом сервере закрыта</value></data>
+  <data name="AccountErrorNetwork" xml:space="preserve"><value>Нет связи с сервером</value></data>
+  <data name="AccountErrorPasswordNeeded" xml:space="preserve"><value>Это устройство новое на аккаунте: подтвердите паролем</value></data>
+  <data name="AccountErrorInvalidPassword" xml:space="preserve"><value>Неверный пароль</value></data>
+  <data name="AccountErrorUnknown" xml:space="preserve"><value>Не получилось. Попробуйте ещё раз</value></data>
+  <data name="AccountRecoveryTitle" xml:space="preserve"><value>Код восстановления</value></data>
+  <data name="AccountRecoveryText" xml:space="preserve"><value>Если забудете пароль, этот код вернёт доступ к аккаунту. Он показывается один раз: сохраните его в менеджере паролей или запишите</value></data>
+  <data name="AccountRecoveryCopy" xml:space="preserve"><value>Копировать</value></data>
+  <data name="AccountRecoveryCopied" xml:space="preserve"><value>Код скопирован</value></data>
+  <data name="AccountRecoverySaved" xml:space="preserve"><value>Я сохранил код</value></data>
+  <data name="AccountSyncGroup" xml:space="preserve"><value>Синхронизация</value></data>
+  <data name="AccountSyncNow" xml:space="preserve"><value>Синхронизировать сейчас</value></data>
+  <data name="AccountSyncWhat" xml:space="preserve"><value>Избранное, плейлисты, сохранённые альбомы и исполнители</value></data>
+  <data name="AccountDevicesGroup" xml:space="preserve"><value>Устройства</value></data>
+  <data name="AccountDeviceCurrent" xml:space="preserve"><value>Это устройство</value></data>
+  <data name="AccountDeviceSeenFormat" xml:space="preserve"><value>Был в сети {0}</value></data>
+  <data name="AccountDeviceRevoke" xml:space="preserve"><value>Отвязать</value></data>
+  <data name="AccountDeviceRevokeTitleFormat" xml:space="preserve"><value>Отвязать «{0}»?</value></data>
+  <data name="AccountDeviceRevokeText" xml:space="preserve"><value>На нём выйдет из аккаунта, библиотека на нём останется</value></data>
+  <data name="AccountRevokeOthers" xml:space="preserve"><value>Выйти на других устройствах</value></data>
+  <data name="AccountRevokeOthersTitle" xml:space="preserve"><value>Выйти на других устройствах?</value></data>
+  <data name="AccountRevokeOthersText" xml:space="preserve"><value>Все устройства, кроме этого, выйдут из аккаунта</value></data>
+  <data name="AccountRevokedOthersFormat" xml:space="preserve"><value>Устройств отвязано: {0}</value></data>
+  <data name="AccountSignOut" xml:space="preserve"><value>Выйти</value></data>
+  <data name="AccountSignOutTitle" xml:space="preserve"><value>Выйти из аккаунта?</value></data>
+  <data name="AccountSignOutText" xml:space="preserve"><value>Библиотека останется на этом устройстве, но перестанет синхронизироваться</value></data>
+  <data name="AccountPasswordConfirm" xml:space="preserve"><value>Подтвердить</value></data>
+  <data name="ServerTitle" xml:space="preserve"><value>Сервер Melogold</value></data>
+  <data name="ServerText" xml:space="preserve"><value>Библиотека синхронизируется через этот сервер. Можно указать свой — сервер открытый и ставится одной командой</value></data>
+  <data name="ServerAddress" xml:space="preserve"><value>Адрес сервера</value></data>
+  <data name="ServerCheck" xml:space="preserve"><value>Проверить</value></data>
+  <data name="ServerConnect" xml:space="preserve"><value>Подключить</value></data>
+  <data name="ServerDefault" xml:space="preserve"><value>Сервер по умолчанию</value></data>
+  <data name="ServerInfoFormat" xml:space="preserve"><value>{0} · версия {1}</value></data>
+  <data name="ServerRegistrationOpen" xml:space="preserve"><value>Регистрация открыта</value></data>
+  <data name="ServerRegistrationClosed" xml:space="preserve"><value>Регистрация закрыта</value></data>
+  <data name="ServerRegistrationFirst" xml:space="preserve"><value>Регистрация открыта для первого аккаунта</value></data>
+  <data name="ServerNotMelogold" xml:space="preserve"><value>Это не сервер Melogold</value></data>
+  <data name="ServerUnreachable" xml:space="preserve"><value>Сервер не отвечает</value></data>
+  <data name="ServerHttpsNeeded" xml:space="preserve"><value>Адрес в интернете должен начинаться с https://</value></data>
+  <data name="ServerSwitchSignsOut" xml:space="preserve"><value>После смены сервера нужно будет войти заново</value></data>
+  <data name="ServerErrorMalformed" xml:space="preserve"><value>Это не похоже на адрес сервера</value></data>
+  <data name="ServerErrorScheme" xml:space="preserve"><value>Адрес начинается с https:// или http://</value></data>
+  <data name="ServerErrorParams" xml:space="preserve"><value>Адрес не должен содержать логин, параметры или #</value></data>
+  <data name="ServerInsecure" xml:space="preserve"><value>Незащищённое соединение: только для домашней сети</value></data>
+  <data name="ServerCurrent" xml:space="preserve"><value>Используется</value></data>
+  <data name="ServerClientOutdated" xml:space="preserve"><value>Этому серверу нужна более новая версия Melogold</value></data>
+  <data name="ServerTooOld" xml:space="preserve"><value>Сервер слишком старый для этой версии Melogold</value></data>
 </root>

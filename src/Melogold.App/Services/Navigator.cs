@@ -89,6 +89,15 @@ public sealed class Navigator
         else if (frame.Content is IScrollToTop page) page.ScrollToTop();
     }
 
+    /// <summary>К корню текущего раздела (после входа, регистрации, выхода).</summary>
+    public void BackToRoot()
+    {
+        var frame = CurrentFrame;
+        if (!frame.CanGoBack) return;
+        while (frame.BackStack.Count > 1) frame.BackStack.RemoveAt(frame.BackStack.Count - 1);
+        frame.GoBack(new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
+    }
+
     /// <summary>Открыть экран в стеке текущего раздела.</summary>
     public void Open(Type page, object? parameter = null)
     {

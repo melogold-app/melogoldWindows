@@ -1,10 +1,14 @@
 <#
   Скриншот окна Melogold для отчёта по срезу (docs/PROMPT.md §2).
-  Запускает отладочную сборку с отдельной папкой данных, ждёт, снимает только окно Melogold (PrintWindow — даже если
-  оно перекрыто другими окнами; чужие окна в снимок не попадают) и закрывает приложение.
+  Запускает отладочную сборку с отдельной папкой данных, ждёт, снимает только окно Melogold и закрывает приложение.
+  Снимок делает само приложение (DebugSnapshot, RenderTargetBitmap): чужие окна в него не попадают, и он не зависит
+  от экрана — при выключенном экране PrintWindow отдаёт чёрный или устаревший кадр. -Window снимает окно снаружи
+  (PrintWindow, с Mica и кнопками заголовка).
     powershell -File tools/shot.ps1 -Out shot.png [-AppArgs "текст или ссылка"] [-Wait 6] [-Keep] [-Lang ru-RU]
-      [-Click "История|Чаще всего"]
-  -Click нажимает элементы по имени (UI Automation, начало имени) по очереди через «|», без мыши и фокуса.
+      [-Steps "История|Чаще всего|@history.png|Логин=value"]
+  -Steps — шаги через «|» по UI Automation, без мыши и фокуса:
+    «имя» нажимает элемент (точное имя, иначе начало имени), «имя=текст» вводит текст в поле,
+    «@файл.png» снимает окно посреди сценария. В конце окно снимается в -Out.
 #>
 param(
     [string]$Out = "shot.png",
@@ -14,7 +18,8 @@ param(
     [string]$Exe = "$PSScriptRoot\..\src\Melogold.App\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64\Melogold.exe",
     [string]$DataDir = "$env:TEMP\melogold-dev",
     [string]$Lang = "",
-    [string]$Click = ""
+    [string]$Steps = "",
+    [switch]$Window
 )
 
 Add-Type -AssemblyName System.Drawing
@@ -30,6 +35,44 @@ public static class Win {
 }
 "@
 
+function Capture([IntPtr]$h, [string]$path) {
+    $target = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine((Get-Location).Path, $path))  # путь может быть абсолютным
+    if (-not $Window) {
+        Remove-Item $target -ErrorAction SilentlyContinue
+        Set-Content -Path (Join-Path $DataDir "shot-request") -Value $target -Encoding UTF8
+        $until = (Get-Date).AddSeconds(10)
+        while (-not (Test-Path $target) -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 200 }
+        if (-not (Test-Path $target)) { throw "snapshot not saved: $target" }
+        return "saved $target"
+    }
+    [Win]::ShowWindow($h, 4) | Out-Null   # SW_SHOWNOACTIVATE: из свёрнутого, без перехвата фокуса
+    Start-Sleep -Milliseconds 500
+    $r = New-Object Win+RECT
+    [Win]::GetWindowRect($h, [ref]$r) | Out-Null
+    $w = $r.Right - $r.Left; $hgt = $r.Bottom - $r.Top
+    $bmp = New-Object System.Drawing.Bitmap $w, $hgt
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $hdc = $g.GetHdc()
+    [Win]::PrintWindow($h, $hdc, 2) | Out-Null  # PW_RENDERFULLCONTENT: окно целиком, с содержимым DirectComposition
+    $g.ReleaseHdc($hdc)
+    $bmp.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
+    $g.Dispose(); $bmp.Dispose()
+    "saved $target ${w}x$hgt"
+}
+
+function Find-Element($root, [string]$name) {
+    $until = (Get-Date).AddSeconds(15)
+    while ((Get-Date) -lt $until) {
+        $all = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
+            Where-Object { -not $_.Current.IsOffscreen }
+        $found = $all | Where-Object { $_.Current.Name -eq $name } | Select-Object -First 1
+        if (-not $found) { $found = $all | Where-Object { $_.Current.Name -like "$name*" } | Select-Object -First 1 }
+        if ($found) { return $found }
+        Start-Sleep -Milliseconds 300
+    }
+    throw "element '$name' not found"
+}
+
 [Win]::SetProcessDPIAware() | Out-Null  # размеры окна — в физических пикселях, иначе снимок обрезан
 $env:MELOGOLD_DATA_DIR = $DataDir
 $env:MELOGOLD_LANG = $Lang
@@ -43,37 +86,32 @@ Start-Sleep -Seconds $Wait
 $p.Refresh()
 if ($p.HasExited) { throw "Melogold exited with code $($p.ExitCode)" }
 $h = $p.MainWindowHandle
-if ($Click) {
+try {
+if ($Steps) {
     Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($h)
-    foreach ($name in $Click.Split("|")) {
-        $target = $null
-        $until = (Get-Date).AddSeconds(10)
-        while (-not $target -and (Get-Date) -lt $until) {
-            $target = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
-                Where-Object { $_.Current.Name -like "$name*" -and -not $_.Current.IsOffscreen } | Select-Object -First 1
-            if (-not $target) { Start-Sleep -Milliseconds 300 }
-        }
-        if (-not $target) { throw "element '$name' not found" }
+    foreach ($step in $Steps.Split("|")) {
+        if ($step.StartsWith("@")) { Capture $h $step.Substring(1); continue }
         $pattern = $null
+        if ($step.Contains("=")) {
+            $name, $value = $step.Split("=", 2)
+            $target = Find-Element $root $name
+            if (-not $target.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$pattern)) { throw "element '$name' takes no text" }
+            $pattern.SetValue($value)
+            Start-Sleep -Milliseconds 500
+            continue
+        }
+        $target = Find-Element $root $step
         if ($target.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) { $pattern.Invoke() }
+        elseif ($target.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern, [ref]$pattern)) { $pattern.Toggle() }
         elseif ($target.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$pattern)) { $pattern.Select() }
-        else { throw "element '$name' can't be invoked" }
+        else { throw "element '$step' can't be invoked" }
         Start-Sleep -Seconds 3
     }
 }
-[Win]::ShowWindow($h, 4) | Out-Null   # SW_SHOWNOACTIVATE: из свёрнутого, без перехвата фокуса
-Start-Sleep -Milliseconds 500
-$r = New-Object Win+RECT
-[Win]::GetWindowRect($h, [ref]$r) | Out-Null
-$w = $r.Right - $r.Left; $hgt = $r.Bottom - $r.Top
-$bmp = New-Object System.Drawing.Bitmap $w, $hgt
-$g = [System.Drawing.Graphics]::FromImage($bmp)
-$hdc = $g.GetHdc()
-[Win]::PrintWindow($h, $hdc, 2) | Out-Null  # PW_RENDERFULLCONTENT: окно целиком, с содержимым DirectComposition
-$g.ReleaseHdc($hdc)
-$target = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine((Get-Location).Path, $Out))  # $Out может быть абсолютным
-$bmp.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
-$g.Dispose(); $bmp.Dispose()
-if (-not $Keep) { $p.Kill(); $p.WaitForExit(5000) | Out-Null }
-"saved $target ${w}x$hgt"
+Capture $h $Out
+}
+finally {
+    # И после ошибки шага: окно не остаётся висеть и не держит exe для следующей сборки
+    if (-not $Keep -and -not $p.HasExited) { $p.Kill(); $p.WaitForExit(5000) | Out-Null }
+}

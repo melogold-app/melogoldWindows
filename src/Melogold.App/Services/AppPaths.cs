@@ -15,11 +15,15 @@ public static class AppPaths
 
     public static string Settings => Path.Combine(DataDirectory, "settings.json");
 
+    /// <summary>Сессия на сервере Melogold, зашифрованная DPAPI для пользователя Windows.</summary>
     public static string Account => Path.Combine(DataDirectory, "account.dat");
+
+    /// <summary>Соль установки для hwid (API §1.6): случайная, создаётся один раз.</summary>
+    public static string InstallSalt => Path.Combine(DataDirectory, "install-salt");
 
     public static string Logs => Path.Combine(DataDirectory, "logs");
 
-        public static string Cache => Path.Combine(DataDirectory, "cache");
+    public static string Cache => Path.Combine(DataDirectory, "cache");
 
     public static string Updates => Path.Combine(DataDirectory, "updates");
 

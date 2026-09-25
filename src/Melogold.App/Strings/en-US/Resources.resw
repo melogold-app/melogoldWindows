@@ -516,4 +516,11 @@
   <data name="ImportUnsupported" xml:space="preserve"><value>Backups of InnerTune, Metrolist and similar apps are not supported yet.</value></data>
   <data name="ImportUnreadable" xml:space="preserve"><value>The file could not be read. It may be damaged.</value></data>
   <data name="ImportOpenHistory" xml:space="preserve"><value>Open history</value></data>
+  <data name="AllTracks" xml:space="preserve"><value>All tracks</value></data>
+  <data name="AllTracksEmpty" xml:space="preserve"><value>All the tracks you played, liked or added to playlists will be here</value></data>
+  <data name="SortRecentlyPlayed" xml:space="preserve"><value>Recently played</value></data>
+  <data name="SortListeningTime" xml:space="preserve"><value>Listening time</value></data>
+  <data name="SortDuration" xml:space="preserve"><value>Duration</value></data>
+  <data name="DurationHoursMinutesFormat" xml:space="preserve"><value>{0} h {1} min</value></data>
+  <data name="DurationMinutesFormat" xml:space="preserve"><value>{0} min</value></data>
 </root>

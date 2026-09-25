@@ -516,4 +516,11 @@
   <data name="ImportUnsupported" xml:space="preserve"><value>Копии InnerTune, Metrolist и похожих приложений пока не поддерживаются.</value></data>
   <data name="ImportUnreadable" xml:space="preserve"><value>Файл не читается. Возможно, он повреждён.</value></data>
   <data name="ImportOpenHistory" xml:space="preserve"><value>Открыть историю</value></data>
+  <data name="AllTracks" xml:space="preserve"><value>Все треки</value></data>
+  <data name="AllTracksEmpty" xml:space="preserve"><value>Здесь будут все треки, которые вы слушали, лайкали или добавляли в плейлисты</value></data>
+  <data name="SortRecentlyPlayed" xml:space="preserve"><value>Недавно слушали</value></data>
+  <data name="SortListeningTime" xml:space="preserve"><value>Время прослушивания</value></data>
+  <data name="SortDuration" xml:space="preserve"><value>Длительность</value></data>
+  <data name="DurationHoursMinutesFormat" xml:space="preserve"><value>{0} ч {1} мин</value></data>
+  <data name="DurationMinutesFormat" xml:space="preserve"><value>{0} мин</value></data>
 </root>

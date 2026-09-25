@@ -78,6 +78,8 @@ function Find-Element($root, [string]$name, [switch]$Offscreen) {
         # Среди одноимённых — сначала то, что нажимается (кнопка «Текст», а не подпись с тем же словом)
         $exact = @($all | Where-Object { $_.Current.Name -eq $name })
         $found = $exact | Where-Object { Test-Actionable $_ } | Select-Object -First 1
+        # Кнопка с именем «Все треки, 195 треков» важнее подписи «Все треки» внутри неё
+        if (-not $found) { $found = $all | Where-Object { $_.Current.Name -like "$name*" -and (Test-Actionable $_) } | Select-Object -First 1 }
         if (-not $found) { $found = $exact | Select-Object -First 1 }
         if (-not $found) { $found = $all | Where-Object { $_.Current.Name -like "$name*" } | Select-Object -First 1 }
         if ($found) { return $found }

@@ -63,6 +63,88 @@ public sealed partial class ListToolbar : Grid
     };
 }
 
+/// <summary>
+/// «Все треки» (tasks/0005): всё прослушанное, лайкнутое и лежащее в своих плейлистах — как «Песни» в ViTune. Во второй
+/// строке — сколько трек слушали; сортировки «Недавно слушали», «Время прослушивания», «Название», «Исполнитель»,
+/// «Длительность» (выбор помнится); фильтр по названию и исполнителю.
+/// </summary>
+public sealed partial class AllTracksPage : CatalogPage
+{
+    private readonly MusicListView _list = new() { Padding = new Thickness(36, 24, 36, 24) };
+    private readonly CollectionHeader _header = new();
+    private readonly ListToolbar _toolbar;
+    private readonly StateView _state = new();
+    private readonly Library _library = App.Services.GetRequiredService<Library>();
+    private List<AllTracksEntry> _all = [];
+    private Dictionary<string, long> _playTime = [];
+
+    public AllTracksPage()
+    {
+        InitializeComponent();
+        _toolbar = new ListToolbar("allTracks",
+            [("recent", Loc.Get("SortRecentlyPlayed")), ("time", Loc.Get("SortListeningTime")), ("title", Loc.Get("SortTitle")), ("artist", Loc.Get("SortArtist")), ("duration", Loc.Get("SortDuration"))],
+            Show);
+        var top = new StackPanel();
+        top.Children.Add(_header);
+        top.Children.Add(_toolbar);
+        top.Children.Add(_state);
+        _list.Header = top;
+        Content = _list;
+        var actions = App.Services.GetRequiredService<TrackActions>();
+        _header.AddButton(Loc.Get("PlayAll"), "\uE768", () => actions.Play(Visible(), 0, new TrackContext.List()), accent: true);
+        _header.AddButton(Loc.Get("Shuffle"), "\uE8B1", () => actions.PlayShuffled(Visible()));
+        _library.Changed += change =>
+        {
+            if ((change & (LibraryChange.Likes | LibraryChange.Playlists | LibraryChange.History | LibraryChange.Blocks)) != 0) DispatcherQueue.TryEnqueue(Load);
+        };
+        Loaded += (_, _) => Load();
+    }
+
+    public override void ScrollToTop() => SearchPage.FindScrollViewer(_list)?.ChangeView(null, 0, null);
+
+    private async void Load()
+    {
+        _all = await Task.Run(_library.AllTracks);
+        _playTime = _all.ToDictionary(e => e.Track.VideoId, e => e.PlayTimeMs);
+        var total = _all.Sum(e => e.Track.DurationMs ?? 0);
+        _header.Set(Loc.Get("AllTracks"), $"{Loc.Plural("Tracks", _all.Count)} · {ListeningTime(total)}", null, null);
+        Show();
+    }
+
+    /// <summary>«35 ч 54 мин», «12 мин» — как длительность очереди.</summary>
+    public static string ListeningTime(long ms)
+    {
+        var minutes = ms / 60_000;
+        return minutes >= 60 ? Loc.Format("DurationHoursMinutesFormat", minutes / 60, minutes % 60) : Loc.Format("DurationMinutesFormat", minutes);
+    }
+
+    private List<Track> Visible()
+    {
+        var entries = _all.Where(e => ListToolbar.Matches(e.Track, _toolbar.Filter));
+        entries = _toolbar.SortKey switch
+        {
+            "time" => entries.OrderByDescending(e => e.PlayTimeMs),
+            "title" => entries.OrderBy(e => e.Track.Title, StringComparer.CurrentCultureIgnoreCase),
+            "artist" => entries.OrderBy(e => e.Track.ArtistsText ?? "", StringComparer.CurrentCultureIgnoreCase).ThenBy(e => e.Track.Title, StringComparer.CurrentCultureIgnoreCase),
+            "duration" => entries.OrderByDescending(e => e.Track.DurationMs ?? 0),
+            _ => entries,
+        };
+        return entries.Select(e => e.Track).ToList();
+    }
+
+    private void Show()
+    {
+        var visible = Visible();
+        _list.SetItems(visible, new RowOwner(new TrackContext.List())
+        {
+            Detail = track => _playTime.GetValueOrDefault(track.VideoId) is > 0 and var ms ? ListeningTime(ms) : null,
+        });
+        if (_all.Count == 0) _state.ShowEmpty("\uE8D6", Loc.Get("AllTracks"), Loc.Get("AllTracksEmpty"), (Loc.Get("FindMusic"), () => App.Current?.Window?.FocusSearchBox()));
+        else if (visible.Count == 0) _state.ShowEmpty("\uE721", Loc.Get("NothingFound"));
+        else _state.ShowContent();
+    }
+}
+
 /// <summary>Избранное (REWRITE §3.2.2): список играет целиком, фильтр и сортировка.</summary>
 public sealed partial class FavoritesPage : CatalogPage
 {

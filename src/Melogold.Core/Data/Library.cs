@@ -51,6 +51,9 @@ public sealed record HistoryDevice(string? DeviceId, bool ThisDevice)
 
 public sealed record TopEntry(Track Track, long PlayTimeMs);
 
+/// <summary>Трек «Всех треков»: когда слушали последний раз (null — не слушали) и сколько всего.</summary>
+public sealed record AllTracksEntry(Track Track, long? LastPlayedAt, long PlayTimeMs);
+
 /// <summary>
 /// Текст трека (Android <c>Lyrics</c>): у каждой стороны null — ещё не искали, "" — не нашли. Источник —
 /// <see cref="LyricsSources"/>. <see cref="OffsetMs"/> — сдвиг синхронного текста у этого трека (положительный — раньше),
@@ -729,6 +732,39 @@ public sealed class Library(LibraryDatabase db)
         LibraryDatabase.Scalar(c, "SELECT COUNT(*) FROM artists WHERE bookmarked_at IS NOT NULL")));
 
     /// <summary>Сколько всего в библиотеке — для диалога первой синхронизации.</summary>
+    /// <summary>
+    /// Что входит во «Все треки» (tasks/0005 §2): прослушанное, лайкнутое, лежащее в своих плейлистах; не скрытое. Треки
+    /// альбомов, которые только открывали, — нет: копии ViTune хранят их тысячами.
+    /// </summary>
+    private const string AllTracksWhere = """
+        (p.video_id IS NOT NULL OR t.total_play_ms > 0 OR t.liked_at IS NOT NULL
+         OR EXISTS (SELECT 1 FROM playlist_items i WHERE i.video_id = t.video_id))
+        AND NOT EXISTS (SELECT 1 FROM content_blocks b WHERE b.type = 'track' AND b.key = t.video_id)
+        """;
+
+    /// <summary>«Все треки» по умолчанию — «Недавно слушали»: последнее прослушивание, у непрослушанных — лайк, остальные в конце.</summary>
+    public List<AllTracksEntry> AllTracks() => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = $"""
+            SELECT {string.Join(", ", TrackColumns.Split(", ").Select(x => "t." + x))}, p.last
+            FROM tracks t
+            LEFT JOIN (SELECT video_id, MAX(played_at) AS last FROM play_events GROUP BY video_id) p ON p.video_id = t.video_id
+            WHERE {AllTracksWhere}
+            ORDER BY COALESCE(p.last, t.liked_at, 0) DESC
+            """;
+        using var r = command.ExecuteReader();
+        var list = new List<AllTracksEntry>();
+        while (r.Read()) list.Add(new AllTracksEntry(ReadTrack(r), r.IsDBNull(14) ? null : r.GetInt64(14), r.GetInt64(13)));
+        return list;
+    });
+
+    public int AllTracksCount() => Database.Read(c => Convert.ToInt32(LibraryDatabase.Scalar(c, $"""
+        SELECT COUNT(*) FROM tracks t
+        LEFT JOIN (SELECT DISTINCT video_id FROM play_events) p ON p.video_id = t.video_id
+        WHERE {AllTracksWhere}
+        """), System.Globalization.CultureInfo.InvariantCulture));
+
     public (int Likes, int Playlists, int Albums, int Artists) Counts() => Database.Read(c => (
         Convert.ToInt32(LibraryDatabase.Scalar(c, "SELECT COUNT(*) FROM tracks WHERE liked_at IS NOT NULL")),
         Convert.ToInt32(LibraryDatabase.Scalar(c, "SELECT COUNT(*) FROM playlists")),

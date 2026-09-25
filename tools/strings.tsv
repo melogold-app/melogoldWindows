@@ -525,3 +525,10 @@ ImportTooOld	Эта копия слишком старая.	This backup is too o
 ImportUnsupported	Копии InnerTune, Metrolist и похожих приложений пока не поддерживаются.	Backups of InnerTune, Metrolist and similar apps are not supported yet.
 ImportUnreadable	Файл не читается. Возможно, он повреждён.	The file could not be read. It may be damaged.
 ImportOpenHistory	Открыть историю	Open history
+AllTracks	Все треки	All tracks
+AllTracksEmpty	Здесь будут все треки, которые вы слушали, лайкали или добавляли в плейлисты	All the tracks you played, liked or added to playlists will be here
+SortRecentlyPlayed	Недавно слушали	Recently played
+SortListeningTime	Время прослушивания	Listening time
+SortDuration	Длительность	Duration
+DurationHoursMinutesFormat	{0} ч {1} мин	{0} h {1} min
+DurationMinutesFormat	{0} мин	{0} min

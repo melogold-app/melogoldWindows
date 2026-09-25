@@ -14,6 +14,9 @@ public sealed class RowOwner(TrackContext context)
 
     /// <summary>«Убрать из плейлиста / истории / очереди» для строки.</summary>
     public Action<RowVm>? Remove { get; init; }
+
+    /// <summary>Вторая строка после исполнителя вместо альбома — например, сколько трек слушали («Все треки»).</summary>
+    public Func<Track, string?>? Detail { get; init; }
 }
 
 /// <summary>
@@ -30,8 +33,10 @@ public sealed partial class RowVm : ObservableObject
         {
             case Track track:
                 Title = track.Title;
-                Subtitle = Join(showType ? Loc.Get(track.IsVideo ? "TypeVideo" : "TypeSong") : null, track.ArtistsText,
-                    track.IsVideo ? track.ViewsText : track.AlbumTitle);
+                Subtitle = owner.Detail is { } detail
+                    ? Join(track.ArtistsText, detail(track))
+                    : Join(showType ? Loc.Get(track.IsVideo ? "TypeVideo" : "TypeSong") : null, track.ArtistsText,
+                        track.IsVideo ? track.ViewsText : track.AlbumTitle);
                 ArtworkUrl = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 120);
                 Duration = track.VideoType == "live" ? Loc.Get("Live") : track.DurationText;
                 Explicit = track.Explicit;

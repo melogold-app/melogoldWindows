@@ -93,9 +93,11 @@ public sealed partial class LibraryPage : CatalogPage
     private async void Refresh()
     {
         _dirty = false;
-        var (counts, playlists, plays) = await Task.Run(() => (_library.Counts(), _library.Playlists(), _library.PlayCount()));
+        var (counts, playlists, plays, allTracks) = await Task.Run(() => (_library.Counts(), _library.Playlists(), _library.PlayCount(), _library.AllTracksCount()));
         _importFirst.Visibility = counts is { Likes: 0, Albums: 0, Artists: 0 } && playlists.Count == 0 && plays == 0 ? Visibility.Visible : Visibility.Collapsed;
         _collections.Children.Clear();
+        // «Все треки» — первой (tasks/0005): прослушанное, лайкнутое и из плейлистов, как «Песни» в ViTune
+        AddCollection("\uE8D6", Loc.Get("AllTracks"), Loc.Plural("Tracks", allTracks), () => Open(typeof(AllTracksPage)));
         AddCollection("", Loc.Get("Favorites"), Loc.Plural("Tracks", counts.Likes), () => Open(typeof(FavoritesPage)));
         AddCollection("", Loc.Get("History"), Loc.Get("HistoryHint"), () => Open(typeof(HistoryPage)));
         AddCollection("", Loc.Get("ResultsAlbums"), Loc.Plural("Albums", counts.Albums), () => Open(typeof(SavedPage), "albums"));

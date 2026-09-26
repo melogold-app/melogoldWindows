@@ -136,7 +136,8 @@ public partial class App : Application
             }
         });
         _window = new MainWindow();
-        _window.Activate();
+        if (Melogold.Core.Domain.QuietMode.IsOn) _window.ShowQuietly();
+        else _window.Activate();
         _window.Closed += (_, _) =>
         {
             Services.GetRequiredService<PlayerEngine>().Dispose();
@@ -146,7 +147,7 @@ public partial class App : Application
         };
         Services.GetRequiredService<LibrarySync>().Start();
         // Обновления: при каждом запуске и раз в 6 часов
-        Services.GetRequiredService<UpdateService>().Start();
+        if (!Melogold.Core.Domain.QuietMode.IsOn) Services.GetRequiredService<UpdateService>().Start();
         // Первый запуск новой версии: значок на панели задач и в ярлыках — новый, а не из кэша Windows
         var settings = Services.GetRequiredService<SettingsStore>();
         if (settings.LastRunVersion != AppInfo.Version)

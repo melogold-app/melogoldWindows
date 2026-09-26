@@ -98,7 +98,9 @@ public sealed class PlayerEngine : IDisposable
             AudioCategory = MediaPlayerAudioCategory.Media,
             AutoPlay = false,
         };
-        _player.CommandManager.IsEnabled = true;
+        // Тихий режим проверок: ни медиапанели Windows, ни медиаклавиш — они у пользовательского Melogold
+        _player.CommandManager.IsEnabled = !QuietMode.IsOn;
+        if (QuietMode.IsOn) _player.SystemMediaTransportControls.IsEnabled = false;
         _player.CommandManager.NextBehavior.EnablingRule = MediaCommandEnablingRule.Always;
         _player.CommandManager.PreviousBehavior.EnablingRule = MediaCommandEnablingRule.Always;
         _player.CommandManager.NextReceived += (_, e) =>
@@ -295,7 +297,7 @@ public sealed class PlayerEngine : IDisposable
             gain = Math.Pow(10, -loudness / 20);
         }
         _player.Volume = Math.Clamp(_settings.Volume * gain, 0, 1);
-        _player.IsMuted = _settings.Muted;
+        _player.IsMuted = _settings.Muted || QuietMode.IsOn;
         _player.PlaybackSession.PlaybackRate = Math.Clamp(_settings.Speed, 0.5, 2);
     }
 

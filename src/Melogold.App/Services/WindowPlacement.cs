@@ -76,6 +76,15 @@ public static class WindowPlacement
         return SetWindowPlacement(hwnd, ref placement);
     }
 
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int index);
+
+    /// <summary>
+    /// Левый край места правее всех мониторов: там окно тихого режима (<see cref="Core.Domain.QuietMode"/>) рисуется, но
+    /// его не видно.
+    /// </summary>
+    public static int OffScreenX() => GetSystemMetrics(76) + GetSystemMetrics(78) + 200;   // SM_XVIRTUALSCREEN + SM_CXVIRTUALSCREEN
+
     /// <summary>Точка левого верхнего угла на каком-нибудь мониторе (для окна без своего размера — мини-плеера).</summary>
     public static bool OnScreen(int x, int y, int width, int height)
     {

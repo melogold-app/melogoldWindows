@@ -187,7 +187,8 @@ public sealed partial class MainWindow : Window
         // Окно — там и такого размера, каким его закрыли, развёрнутое — развёрнутым. Впервые или если того монитора
         // больше нет — 1280×820 эффективных пикселей (при масштабе 150 % окно не выходит маленьким)
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-        if (!WindowPlacement.Restore(hwnd, _settings.WindowPlacement))
+        // Тихий режим ставит окно сам (ShowQuietly): сохранённое место могло бы развернуть его на экране
+        if (!QuietMode.IsOn && !WindowPlacement.Restore(hwnd, _settings.WindowPlacement))
         {
             var scale = GetDpiForWindow(hwnd) / 96.0;
             AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(1280 * scale), (int)(820 * scale)));
@@ -219,7 +220,7 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void SavePlacement(IntPtr hwnd)
     {
-        if (_fullScreen || !AppWindow.IsVisible) return;
+        if (_fullScreen || !AppWindow.IsVisible || QuietMode.IsOn) return;
         if (WindowPlacement.Capture(hwnd) is { } placement && placement != _settings.WindowPlacement) _settings.WindowPlacement = placement;
     }
 
@@ -244,22 +245,41 @@ public sealed partial class MainWindow : Window
         NowPlaying.Margin = margin;
     }
 
+    /// <summary>
+    /// Тихий режим (<see cref="QuietMode"/>): 1280×820 правее всех мониторов, без фокуса и без кнопки на панели задач —
+    /// проверка идёт, пока пользователь играет, и окно ему не мешает.
+    /// </summary>
+    public void ShowQuietly()
+    {
+        var scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
+        AppWindow.IsShownInSwitchers = false;
+        AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(WindowPlacement.OffScreenX(), 0, (int)(1280 * scale), (int)(820 * scale)));
+        AppWindow.Show(activateWindow: false);
+    }
+
+    /// <summary>Показать окно: обычно — с фокусом, в тихом режиме — без.</summary>
+    private void ShowWindow(Window window)
+    {
+        if (QuietMode.IsOn) window.AppWindow.Show(activateWindow: false);
+        else window.Activate();
+    }
+
     /// <summary>Мини-плеер: отдельное окно поверх остальных; главное окно на это время скрыто.</summary>
     public void OpenMiniPlayer()
     {
         if (_mini is not null)
         {
-            _mini.Activate();
+            ShowWindow(_mini);
             return;
         }
         _mini = new MiniPlayerWindow();
         _mini.Closed += (_, _) =>
         {
             _mini = null;
-            AppWindow.Show();
-            Activate();
+            AppWindow.Show(activateWindow: !QuietMode.IsOn);
+            if (!QuietMode.IsOn) Activate();
         };
-        _mini.Activate();
+        ShowWindow(_mini);
         AppWindow.Hide();
     }
 
@@ -408,6 +428,7 @@ public sealed partial class MainWindow : Window
 
     public void BringToFront()
     {
+        if (QuietMode.IsOn) return;
         if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter) presenter.Restore();
         Activate();
     }
@@ -617,6 +638,7 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void AnnounceUpdate(UpdateManifest manifest)
     {
+        if (QuietMode.IsOn) return;
         var settings = App.Services.GetRequiredService<SettingsStore>();
         if (settings.UpdateAnnouncedVersion == manifest.Version) return;
         settings.UpdateAnnouncedVersion = manifest.Version;

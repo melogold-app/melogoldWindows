@@ -1,6 +1,9 @@
 ﻿<#
   Скриншот окна Melogold для отчёта по срезу (docs/PROMPT.md §2).
   Запускает отладочную сборку с отдельной папкой данных, ждёт, снимает только окно Melogold и закрывает приложение.
+  Тихо (MELOGOLD_QUIET=1, QuietMode): окно правее всех мониторов, без фокуса, без кнопки на панели задач, без звука и
+  медиапанели Windows. Но шаги -Steps (нажатие, ввод через UI Automation) всё равно ставят фокус клавиатуры в окно
+  Melogold: набор пользователя уходит туда (2026-09-26). Пока пользователь за компьютером — только с его согласия.
   Снимок делает само приложение (DebugSnapshot, RenderTargetBitmap): чужие окна в него не попадают, и он не зависит
   от экрана — при выключенном экране PrintWindow отдаёт чёрный или устаревший кадр. -Window снимает окно снаружи
   (PrintWindow, с Mica и кнопками заголовка).
@@ -8,8 +11,8 @@
       [-Steps "История|Чаще всего|@history.png|Логин=value"]
   -Steps — шаги через «|» по UI Automation, без мыши и фокуса:
     «имя» нажимает элемент (точное имя, иначе начало имени), «имя=текст» вводит текст в поле,
-    «@файл.png» снимает окно посреди сценария, «@mini:файл.png» — мини-плеер, «!max» и «!restore» разворачивают и
-    восстанавливают окно, «!size:500x700» — окно такого размера (эффективные пиксели, как в XAML), «+имя» добавляет строку
+    «@файл.png» снимает окно посреди сценария, «@mini:файл.png» — мини-плеер, «!max» и «!restore» — окно размером с
+    рабочую область основного монитора и обычное 1280×820 (не сдвигая с места за экраном и не активируя), «!size:500x700» — окно такого размера (эффективные пиксели, как в XAML), «+имя» добавляет строку
     списка к выделению (как Ctrl+щелчок), «!wait:5» ждёт 5 с,
     «!show:имя» прокручивает до элемента. В конце окно снимается в -Out.
 #>
@@ -74,11 +77,21 @@ function Test-Actionable($e) {
     return $false
 }
 
+# Меню «…» и выпадающие списки WinUI — отдельные окна того же процесса: ищем сначала в них, потом в окне
+function Search-Roots($root) {
+    $process = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $root.Current.ProcessId)
+    $popups = [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, $process) |
+        Where-Object { $_.Current.NativeWindowHandle -ne $root.Current.NativeWindowHandle }
+    @($popups) + @($root)
+}
+
 function Find-Element($root, [string]$name, [switch]$Offscreen) {
     $until = (Get-Date).AddSeconds(15)
     while ((Get-Date) -lt $until) {
-        $all = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
-            Where-Object { $Offscreen -or -not $_.Current.IsOffscreen }
+        $all = foreach ($r in Search-Roots $root) {
+            $r.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
+                Where-Object { $Offscreen -or -not $_.Current.IsOffscreen }
+        }
         # Среди одноимённых — сначала то, что нажимается (кнопка «Текст», а не подпись с тем же словом)
         $exact = @($all | Where-Object { $_.Current.Name -eq $name })
         $found = $exact | Where-Object { Test-Actionable $_ } | Select-Object -First 1
@@ -95,6 +108,7 @@ function Find-Element($root, [string]$name, [switch]$Offscreen) {
 [Win]::SetProcessDPIAware() | Out-Null  # размеры окна — в физических пикселях, иначе снимок обрезан
 $env:MELOGOLD_DATA_DIR = $DataDir
 $env:MELOGOLD_LANG = $Lang
+$env:MELOGOLD_QUIET = "1"
 $exePath = (Resolve-Path $Exe).Path
 Get-Process Melogold -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $exePath } | ForEach-Object { $_.Kill(); $_.WaitForExit(5000) | Out-Null }
 $p = if ($AppArgs) { Start-Process $Exe -ArgumentList "`"$AppArgs`"" -PassThru } else { Start-Process $Exe -PassThru }
@@ -128,12 +142,17 @@ if ($Steps) {
             Start-Sleep -Milliseconds 500
             continue
         }
-        if ($step -eq "!max") { [Win]::ShowWindow($h, 3) | Out-Null; Start-Sleep -Seconds 2; continue }   # SW_MAXIMIZE
-        if ($step -eq "!restore") { [Win]::ShowWindow($h, 9) | Out-Null; Start-Sleep -Seconds 2; continue }   # SW_RESTORE
+        # Размеры — без перемещения и без фокуса (SW_MAXIMIZE и SW_RESTORE вытащили бы окно на экран и забрали фокус)
+        if ($step -eq "!max") {
+            Add-Type -AssemblyName System.Windows.Forms
+            $area = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+            [Win]::SetWindowPos($h, [IntPtr]::Zero, 0, 0, $area.Width, $area.Height, 0x0016) | Out-Null   # NOMOVE|NOZORDER|NOACTIVATE
+            Start-Sleep -Seconds 2; continue
+        }
+        if ($step -eq "!restore") { $step = "!size:1280x820" }
         if ($step.StartsWith("!size:")) {
-            # Размер в эффективных пикселях: умножается на масштаб экрана окна; без перемещения и без фокуса
+            # Размер в эффективных пикселях: умножается на масштаб экрана окна
             $wh = $step.Substring(6).Split("x"); $scale = [Win]::GetDpiForWindow($h) / 96.0
-            [Win]::ShowWindow($h, 9) | Out-Null
             [Win]::SetWindowPos($h, [IntPtr]::Zero, 0, 0, [int]([int]$wh[0] * $scale), [int]([int]$wh[1] * $scale), 0x0016) | Out-Null   # NOMOVE|NOZORDER|NOACTIVATE
             Start-Sleep -Seconds 2; continue
         }

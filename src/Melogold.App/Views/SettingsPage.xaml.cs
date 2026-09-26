@@ -209,20 +209,64 @@ public sealed partial class SettingsPage : Page, IScrollToTop
     /// <summary>Сколько занято кэшами, есть ли история поиска и скрытые треки.</summary>
     private async Task ShowStorageAsync()
     {
-        var (cache, images, songs, searches, hidden) = await Task.Run(() => (CacheSize(), _images.Size, _songs.Size, _library.RecentSearches(1).Count, _library.HiddenTracks().Count));
+        var downloads = App.Services.GetRequiredService<TrackDownloads>();
+        var (cache, images, songs, searches, hidden, downloaded, downloadedBytes) = await Task.Run(() =>
+            (CacheSize(), _images.Size, _songs.Size, _library.RecentSearches(1).Count, _library.HiddenTracks().Count, _library.DownloadIds().Count, downloads.Size));
         CacheCard.Description = Loc.Format("CacheUsedFormat", FormatSize(cache));
-        ImageCacheCard.Description = Used(images, _settings.ImageCacheMaxMb);
+        // Кэши — с полосой заполнения (Android CacheUsageEntry): видно, сколько места осталось до того, как новое начнёт
+        // сменять старое
+        ImageCacheCard.Description = Usage(Used(images, _settings.ImageCacheMaxMb), Fraction(images, _settings.ImageCacheMaxMb));
         ClearImagesButton.IsEnabled = images > 0;
         // «Занято X из Y» (tasks/0003 §3)
-        SongCacheCard.Description = _settings.SongCacheMaxMb > 0
+        SongCacheCard.Description = Usage(_settings.SongCacheMaxMb > 0
             ? Loc.Format("CacheUsedOfFormat", FormatSize(songs), FormatSize(_settings.SongCacheMaxMb * 1024 * 1024))
-            : Loc.Format("CacheUsedOfUnlimitedFormat", FormatSize(songs));
+            : Loc.Format("CacheUsedOfUnlimitedFormat", FormatSize(songs)), Fraction(songs, _settings.SongCacheMaxMb));
         ClearSongsButton.IsEnabled = songs > 0;
+        DownloadsCard.Description = downloaded == 0 ? Loc.Get("SettingsDownloadsEmpty") : $"{FormatSize(downloadedBytes)} · {Loc.Plural("Tracks", downloaded)}";
+        RemoveDownloadsButton.IsEnabled = downloaded > 0;
         ClearCacheButton.IsEnabled = cache > 0;
         SearchHistoryCard.Description = searches == 0 ? Loc.Get("EmptySearchHistory") : null!;
         ClearSearchesButton.IsEnabled = searches > 0;
         HiddenCard.Description = hidden == 0 ? Loc.Get("BlacklistEmpty") : Loc.Plural("Tracks", hidden);
         ResetHiddenButton.IsEnabled = hidden > 0;
+    }
+
+    private static double? Fraction(long bytes, long maxMb) => maxMb > 0 ? Math.Clamp((double)bytes / (maxMb * 1024 * 1024), 0, 1) : null;
+
+    /// <summary>Сколько занято — строкой и полосой под ней (без лимита — без полосы).</summary>
+    private static StackPanel Usage(string text, double? fraction)
+    {
+        var panel = new StackPanel { Spacing = 6 };
+        panel.Children.Add(new TextBlock { Text = text, Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"], Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] });
+        if (fraction is { } value)
+        {
+            var bar = new ProgressBar { Maximum = 1, Value = value, MinWidth = 200, MaxWidth = 360, HorizontalAlignment = HorizontalAlignment.Left };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(bar, text);
+            panel.Children.Add(bar);
+        }
+        return panel;
+    }
+
+    /// <summary>
+    /// «Удалить все загрузки?» — они единственная копия на устройстве; треки остаются в библиотеке, но без сети не играют
+    /// (Android <c>DownloadsGroup</c>).
+    /// </summary>
+    private async void OnRemoveDownloads(object sender, RoutedEventArgs e)
+    {
+        var downloads = App.Services.GetRequiredService<TrackDownloads>();
+        var count = _library.DownloadIds().Count;
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = Loc.Get("SettingsDownloadsDeleteAllTitle"),
+            Content = Loc.Format("SettingsDownloadsDeleteAllTextFormat", Loc.Plural("Tracks", count), FormatSize(downloads.Size)),
+            PrimaryButtonText = Loc.Get("SettingsDownloadsDelete"),
+            CloseButtonText = Loc.Get("Cancel"),
+            DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        await Task.Run(downloads.RemoveAll);
+        await ShowStorageAsync();
     }
 
     /// <summary>«12 МБ использовано (9%)»; без ограничения — без процента (Android <c>CacheUsageEntry</c>).</summary>

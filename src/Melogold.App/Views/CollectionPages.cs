@@ -148,23 +148,23 @@ public sealed partial class AllTracksPage : CatalogPage
 }
 
 /// <summary>
-/// «Скачанное» (tasks/0003 §2, §4): загрузок у Windows пока нет, поэтому здесь только «В кэше · N · X МБ» — треки,
-/// прослушанные целиком: они играют без сети, пока их не сменят новые.
+/// «Скачанное» (tasks/0003 §2): сверху скачанное — оно насовсем; ниже «В кэше» — прослушанное целиком, играет без сети,
+/// пока его не сменят новые треки. Delete в скачанном — «Удалить загрузку» с «Отменить».
 /// </summary>
 public sealed partial class DownloadsPage : CatalogPage
 {
     private readonly MusicListView _list = new() { Padding = new Thickness(36, 24, 36, 24) };
-    private readonly TextBlock _group = new() { Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"], Margin = new Thickness(0, 8, 0, 4) };
     private readonly StateView _state = new();
     private readonly Library _library = App.Services.GetRequiredService<Library>();
     private readonly Melogold.Playback.SongCache _cache = App.Services.GetRequiredService<Melogold.Playback.SongCache>();
+    private readonly Melogold.Playback.TrackDownloads _downloads = App.Services.GetRequiredService<Melogold.Playback.TrackDownloads>();
+    private bool _loadQueued;
 
     public DownloadsPage()
     {
         InitializeComponent();
         var top = new StackPanel();
         top.Children.Add(new TextBlock { Text = Loc.Get("Downloads"), Style = (Style)Application.Current.Resources["PageTitleStyle"] });
-        top.Children.Add(_group);
         top.Children.Add(new TextBlock
         {
             Text = Loc.Get("DownloadsCachedNote"),
@@ -176,26 +176,60 @@ public sealed partial class DownloadsPage : CatalogPage
         top.Children.Add(_state);
         _list.Header = top;
         Content = _list;
-        _cache.Changed += _ => DispatcherQueue.TryEnqueue(Load);
+        _cache.Changed += _ => QueueLoad();
+        _library.Changed += change =>
+        {
+            if (change.HasFlag(LibraryChange.Downloads)) QueueLoad();
+        };
+        // Доля скачанного обновляет метку строки сама; список — только когда загрузка закончилась или удалена
+        _downloads.Changed += videoId =>
+        {
+            if (_downloads.State(videoId)?.Status is null or Melogold.Playback.DownloadStatus.Completed or Melogold.Playback.DownloadStatus.Failed) QueueLoad();
+        };
         Loaded += (_, _) => Load();
     }
 
     public override void ScrollToTop() => SearchPage.FindScrollViewer(_list)?.ChangeView(null, 0, null);
 
+    private void QueueLoad()
+    {
+        if (_loadQueued) return;
+        _loadQueued = true;
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            _loadQueued = false;
+            if (IsLoaded) Load();
+        });
+    }
+
     private async void Load()
     {
-        var (tracks, bytes) = await Task.Run(() =>
+        var (downloaded, downloadedBytes, cached, cachedBytes) = await Task.Run(() =>
         {
-            var cached = _cache.CompleteTracks();
-            return (cached.Select(c => _library.GetTrack(c.VideoId)).OfType<Track>().ToList(), cached.Sum(c => c.Bytes));
+            var downloads = _library.Downloads();
+            var ids = downloads.Select(t => t.VideoId).ToHashSet();
+            var inCache = _cache.CompleteTracks().Where(c => !ids.Contains(c.VideoId)).ToList();
+            return (downloads, _downloads.Size, inCache.Select(c => _library.GetTrack(c.VideoId)).OfType<Track>().ToList(), inCache.Sum(c => c.Bytes));
         });
-        _group.Text = Loc.Format("DownloadsCachedFormat", tracks.Count, SettingsSize(bytes));
-        _list.SetItems(tracks, new RowOwner(new TrackContext.List()));
-        if (tracks.Count == 0) _state.ShowEmpty("\uE930", Loc.Get("DownloadsCachedEmpty"));
+        _list.Clear();
+        if (downloaded.Count > 0)
+        {
+            _list.AddSection(Loc.Format("DownloadsDownloadedFormat", downloaded.Count, SettingsSize(downloadedBytes)));
+            _list.AppendItems(downloaded, new RowOwner(new TrackContext.List())
+            {
+                Remove = row => App.Services.GetRequiredService<Snackbar>().ShowUndoable(Loc.Get("DownloadRemoved"), () => _downloads.Remove(row.Item is Track t ? t.VideoId : "")),
+            });
+        }
+        if (cached.Count > 0)
+        {
+            _list.AddSection(Loc.Format("DownloadsCachedFormat", cached.Count, SettingsSize(cachedBytes)));
+            _list.AppendItems(cached, new RowOwner(new TrackContext.List()));
+        }
+        if (downloaded.Count == 0 && cached.Count == 0) _state.ShowEmpty("\uE896", Loc.Get("DownloadsEmpty"));
         else _state.ShowContent();
     }
 
-    private static string SettingsSize(long bytes) => bytes >= 1024L * 1024 * 1024
+    public static string SettingsSize(long bytes) => bytes >= 1024L * 1024 * 1024
         ? Loc.Format("SizeGigabytesFormat", (bytes / 1024.0 / 1024 / 1024).ToString("0.#", CultureInfo.CurrentCulture))
         : Loc.Format("SizeMegabytesFormat", (bytes / 1024.0 / 1024).ToString("0.#", CultureInfo.CurrentCulture));
 }

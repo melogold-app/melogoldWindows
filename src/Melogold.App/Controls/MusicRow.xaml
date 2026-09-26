@@ -99,17 +99,30 @@
                 Glyph="{x:Bind local:MusicRow.HeartGlyph(Item.IsLiked), Mode=OneWay}" />
         </Button>
 
-        <!-- Контурный значок — трек целиком в кэше и играет без сети (tasks/0003) -->
-        <FontIcon
-            x:Uid="RowCached"
+        <!-- Метка «есть без сети» (tasks/0003, Android DownloadBadge): скачан — закрашенный значок, в кэше — контурный,
+             скачивается — кольцо с долей -->
+        <Grid
             Grid.Column="3"
-            FontSize="12"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Glyph="&#xE930;"
-            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-            Visibility="{x:Bind Item.Cached, Mode=OneWay}"
-            ToolTipService.ToolTip="{x:Bind local:MusicRow.CachedText()}" />
+            Background="Transparent"
+            ToolTipService.ToolTip="{x:Bind local:MusicRow.MarkText(Item.Mark, Item.Progress), Mode=OneWay}"
+            AutomationProperties.Name="{x:Bind local:MusicRow.MarkText(Item.Mark, Item.Progress), Mode=OneWay}">
+            <FontIcon
+                FontSize="12"
+                Glyph="{x:Bind local:MusicRow.MarkGlyph(Item.Mark), Mode=OneWay}"
+                Foreground="{x:Bind local:MusicRow.MarkBrush(Item.Mark), Mode=OneWay}"
+                Visibility="{x:Bind local:MusicRow.MarkIconVisible(Item.Mark), Mode=OneWay}" />
+            <ProgressRing
+                Width="14"
+                Height="14"
+                MinWidth="14"
+                MinHeight="14"
+                IsActive="{x:Bind local:MusicRow.IsDownloading(Item.Mark), Mode=OneWay}"
+                IsIndeterminate="{x:Bind local:MusicRow.NoProgress(Item.Progress), Mode=OneWay}"
+                Value="{x:Bind local:MusicRow.ProgressValue(Item.Progress), Mode=OneWay}"
+                Visibility="{x:Bind local:MusicRow.RingVisible(Item.Mark), Mode=OneWay}" />
+        </Grid>
 
         <!-- Длительность -->
         <TextBlock

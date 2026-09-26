@@ -430,7 +430,7 @@
   <data name="OfflineDataFromFormat" xml:space="preserve"><value>Нет сети — данные от {0}</value></data>
   <data name="LyricsSourceMelogold" xml:space="preserve"><value>Текст: сообщество Melogold</value></data>
   <data name="LyricsTooLarge" xml:space="preserve"><value>Текст слишком большой для сервера: он останется только на этом устройстве</value></data>
-  <data name="SettingsStorageDescription.Text" xml:space="preserve"><value>Кэш освобождается сам: первым уходит то, что дольше всего не использовалось.</value></data>
+  <data name="SettingsStorageDescription.Text" xml:space="preserve"><value>Кэш освобождается сам: когда он заполнится, новые треки и обложки займут место тех, что дольше всех не слушали и не показывали. Делать ничего не нужно. Скачанное в кэш не входит и само не удаляется.</value></data>
   <data name="SettingsImageCache.Header" xml:space="preserve"><value>Кэш изображений</value></data>
   <data name="SettingsSongCache.Header" xml:space="preserve"><value>Кэш музыки</value></data>
   <data name="SettingsImageCacheSize.Header" xml:space="preserve"><value>Максимальный размер</value></data>
@@ -553,7 +553,7 @@
   <data name="Downloads" xml:space="preserve"><value>Скачанное</value></data>
   <data name="DownloadsCachedFormat" xml:space="preserve"><value>В кэше · {0} · {1}</value></data>
   <data name="DownloadsCachedCountFormat" xml:space="preserve"><value>В кэше: {0}</value></data>
-  <data name="DownloadsCachedNote" xml:space="preserve"><value>Играют без сети, пока их не сменят новые треки</value></data>
+  <data name="DownloadsCachedNote" xml:space="preserve"><value>Скачанное — насовсем. «В кэше» играет без сети, пока его не сменят новые треки; ⋯ › Скачать оставит трек насовсем — сразу и без сети.</value></data>
   <data name="DownloadsCachedEmpty" xml:space="preserve"><value>Здесь будут треки, прослушанные целиком: они играют без сети</value></data>
   <data name="ShortcutsTitle" xml:space="preserve"><value>Сочетания клавиш</value></data>
   <data name="ShortcutsGroupPlayback" xml:space="preserve"><value>Воспроизведение</value></data>
@@ -606,4 +606,31 @@
   <data name="DropImport" xml:space="preserve"><value>Импорт копии</value></data>
   <data name="MenuMute" xml:space="preserve"><value>Без звука</value></data>
   <data name="MenuUnmute" xml:space="preserve"><value>Включить звук</value></data>
+  <data name="SettingsDownloads.Header" xml:space="preserve"><value>Загрузки</value></data>
+  <data name="SettingsDownloadsEmpty" xml:space="preserve"><value>Скачанного нет · ⋯ › Скачать у трека</value></data>
+  <data name="RemoveDownloadsButton.Content" xml:space="preserve"><value>Удалить все</value></data>
+  <data name="SettingsDownloadsDeleteAllTitle" xml:space="preserve"><value>Удалить все загрузки?</value></data>
+  <data name="SettingsDownloadsDeleteAllTextFormat" xml:space="preserve"><value>{0}, {1}. Треки останутся в библиотеке, но без сети играть не будут.</value></data>
+  <data name="SettingsDownloadsDelete" xml:space="preserve"><value>Удалить</value></data>
+  <data name="MenuDownload" xml:space="preserve"><value>Скачать</value></data>
+  <data name="MenuDownloadRemove" xml:space="preserve"><value>Удалить загрузку</value></data>
+  <data name="MenuDownloadRetry" xml:space="preserve"><value>Скачать снова</value></data>
+  <data name="MenuDownloadCancel" xml:space="preserve"><value>Скачивается · Отменить</value></data>
+  <data name="MenuDownloadCancelFormat" xml:space="preserve"><value>Скачивается {0} % · Отменить</value></data>
+  <data name="MenuDownloadLive" xml:space="preserve"><value>Трансляцию нельзя скачать</value></data>
+  <data name="MenuSaveFile" xml:space="preserve"><value>Сохранить файлом</value></data>
+  <data name="SaveFileType" xml:space="preserve"><value>Аудио M4A</value></data>
+  <data name="SaveFileStartedFormat" xml:space="preserve"><value>Сохраняем «{0}»…</value></data>
+  <data name="SaveFileDone" xml:space="preserve"><value>Файл сохранён</value></data>
+  <data name="SaveFileOpen" xml:space="preserve"><value>Открыть</value></data>
+  <data name="SaveFileFailedFormat" xml:space="preserve"><value>Не удалось сохранить «{0}»</value></data>
+  <data name="DownloadRemoved" xml:space="preserve"><value>Загрузка удалена</value></data>
+  <data name="DownloadCompleted" xml:space="preserve"><value>Скачано</value></data>
+  <data name="DownloadQueued" xml:space="preserve"><value>В очереди на загрузку</value></data>
+  <data name="DownloadStarting" xml:space="preserve"><value>Скачивается</value></data>
+  <data name="DownloadingFormat" xml:space="preserve"><value>Скачивается · {0} %</value></data>
+  <data name="DownloadFailed" xml:space="preserve"><value>Не удалось скачать</value></data>
+  <data name="DownloadsDownloadedFormat" xml:space="preserve"><value>Скачано · {0} · {1}</value></data>
+  <data name="DownloadsCountFormat" xml:space="preserve"><value>Скачано: {0} · в кэше: {1}</value></data>
+  <data name="DownloadsEmpty" xml:space="preserve"><value>Скачайте треки — они будут играть без сети. ⋯ › Скачать</value></data>
 </root>

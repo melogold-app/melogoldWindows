@@ -115,4 +115,28 @@ public sealed class SongCacheTests : IDisposable
         cache.Trim();
         Assert.Equal(4000, cache.Size);
     }
+
+    [Fact]
+    public void DownloadCopiesAWholeTrackFromTheCacheAndSurvivesClearing()
+    {
+        var songs = Cache();
+        var entry = songs.Entry(Info(length: 1000));
+        entry.Write(0, Bytes(0, 1000), 1000);
+        entry.Release();
+        var downloads = new SongCache(Path.Combine(_directory, "downloads"), () => 0, (_, _) => { });
+
+        // Неполный трек не копируется
+        Assert.False(downloads.CopyFrom(songs, "missing0000"));
+        Assert.True(downloads.CopyFrom(songs, "dQw4w9WgXcQ"));
+        Assert.True(downloads.IsComplete("dQw4w9WgXcQ"));
+        Assert.Equal(Bytes(0, 1000), downloads.ReadComplete("dQw4w9WgXcQ"));
+
+        // «Очистить кэш» загрузок не касается; удалённая загрузка уходит с диска
+        songs.Clear();
+        Assert.False(songs.IsComplete("dQw4w9WgXcQ"));
+        Assert.True(new SongCache(Path.Combine(_directory, "downloads"), () => 0, (_, _) => { }).IsComplete("dQw4w9WgXcQ"));
+        downloads.Remove("dQw4w9WgXcQ");
+        Assert.False(downloads.IsComplete("dQw4w9WgXcQ"));
+        Assert.Empty(Directory.GetFiles(Path.Combine(_directory, "downloads")));
+    }
 }

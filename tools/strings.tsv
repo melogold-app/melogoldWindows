@@ -439,7 +439,7 @@ LicensesServices	Звук и каталог — YouTube и YouTube Music; тек
 OfflineDataFromFormat	Нет сети — данные от {0}	No connection — data from {0}
 LyricsSourceMelogold	Текст: сообщество Melogold	Lyrics: Melogold community
 LyricsTooLarge	Текст слишком большой для сервера: он останется только на этом устройстве	The lyrics are too large for the server: they stay on this device only
-SettingsStorageDescription.Text	Кэш освобождается сам: первым уходит то, что дольше всего не использовалось.	Caches free themselves: what went unused the longest goes first.
+SettingsStorageDescription.Text	Кэш освобождается сам: когда он заполнится, новые треки и обложки займут место тех, что дольше всех не слушали и не показывали. Делать ничего не нужно. Скачанное в кэш не входит и само не удаляется.	Caches free themselves: once full, new tracks and artwork take the place of those unused the longest. There is nothing to do. Downloads are not part of the cache and are never removed on their own.
 SettingsImageCache.Header	Кэш изображений	Image cache
 SettingsSongCache.Header	Кэш музыки	Music cache
 SettingsImageCacheSize.Header	Максимальный размер	Max size
@@ -562,7 +562,7 @@ NoNetwork	Нет сети	No network
 Downloads	Скачанное	Downloads
 DownloadsCachedFormat	В кэше · {0} · {1}	Cached · {0} · {1}
 DownloadsCachedCountFormat	В кэше: {0}	Cached: {0}
-DownloadsCachedNote	Играют без сети, пока их не сменят новые треки	They play offline until new tracks replace them
+DownloadsCachedNote	Скачанное — насовсем. «В кэше» играет без сети, пока его не сменят новые треки; ⋯ › Скачать оставит трек насовсем — сразу и без сети.	Downloads stay for good. Cached tracks play without a network until newer ones replace them; ⋯ › Download keeps a track for good, at once and without a network.
 DownloadsCachedEmpty	Здесь будут треки, прослушанные целиком: они играют без сети	Tracks played to the end will be here: they play offline
 ShortcutsTitle	Сочетания клавиш	Keyboard shortcuts
 ShortcutsGroupPlayback	Воспроизведение	Playback
@@ -615,3 +615,30 @@ DropOpen	Открыть в Melogold	Open in Melogold
 DropImport	Импорт копии	Import a copy
 MenuMute	Без звука	Mute
 MenuUnmute	Включить звук	Unmute
+SettingsDownloads.Header	Загрузки	Downloads
+SettingsDownloadsEmpty	Скачанного нет · ⋯ › Скачать у трека	Nothing downloaded · ⋯ › Download on a track
+RemoveDownloadsButton.Content	Удалить все	Remove all
+SettingsDownloadsDeleteAllTitle	Удалить все загрузки?	Remove all downloads?
+SettingsDownloadsDeleteAllTextFormat	{0}, {1}. Треки останутся в библиотеке, но без сети играть не будут.	{0}, {1}. The tracks stay in the library but won't play without a network.
+SettingsDownloadsDelete	Удалить	Remove
+MenuDownload	Скачать	Download
+MenuDownloadRemove	Удалить загрузку	Remove download
+MenuDownloadRetry	Скачать снова	Download again
+MenuDownloadCancel	Скачивается · Отменить	Downloading · Cancel
+MenuDownloadCancelFormat	Скачивается {0} % · Отменить	Downloading {0}% · Cancel
+MenuDownloadLive	Трансляцию нельзя скачать	Live streams can't be downloaded
+MenuSaveFile	Сохранить файлом	Save as file
+SaveFileType	Аудио M4A	M4A audio
+SaveFileStartedFormat	Сохраняем «{0}»…	Saving “{0}”…
+SaveFileDone	Файл сохранён	File saved
+SaveFileOpen	Открыть	Open
+SaveFileFailedFormat	Не удалось сохранить «{0}»	Couldn’t save “{0}”
+DownloadRemoved	Загрузка удалена	Download removed
+DownloadCompleted	Скачано	Downloaded
+DownloadQueued	В очереди на загрузку	Queued for download
+DownloadStarting	Скачивается	Downloading
+DownloadingFormat	Скачивается · {0} %	Downloading · {0}%
+DownloadFailed	Не удалось скачать	Couldn't download
+DownloadsDownloadedFormat	Скачано · {0} · {1}	Downloaded · {0} · {1}
+DownloadsCountFormat	Скачано: {0} · в кэше: {1}	Downloaded: {0} · cached: {1}
+DownloadsEmpty	Скачайте треки — они будут играть без сети. ⋯ › Скачать	Download tracks to play them without a network. ⋯ › Download

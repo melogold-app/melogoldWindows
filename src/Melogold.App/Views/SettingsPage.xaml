@@ -123,6 +123,13 @@
                     </toolkit:SettingsCard>
                 </toolkit:SettingsExpander.Items>
             </toolkit:SettingsExpander>
+            <!-- Загрузки — не кэш: лимит и «Очистить кэш» их не трогают; удалить все — только отсюда, с вопросом -->
+            <toolkit:SettingsCard x:Name="DownloadsCard" x:Uid="SettingsDownloads" Header="Downloads">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE896;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <Button x:Name="RemoveDownloadsButton" x:Uid="RemoveDownloadsButton" Content="Remove all" Click="OnRemoveDownloads" />
+            </toolkit:SettingsCard>
             <toolkit:SettingsCard x:Name="CacheCard" x:Uid="SettingsCache" Header="Other cache">
                 <toolkit:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xEDA2;" />

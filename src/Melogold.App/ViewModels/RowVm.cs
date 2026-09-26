@@ -4,6 +4,21 @@ using Melogold.Core.Music;
 
 namespace Melogold.App.ViewModels;
 
+/// <summary>
+/// Метка строки (Android <c>DownloadBadge</c>, REWRITE §3.11.11): скачан — закрашенный значок, скачивается — кольцо
+/// с долей, ждёт очереди или сбой — свои значки; без загрузки — «есть без сети», если трек целиком в кэше (тот же значок
+/// контуром: его могут сменить новые треки).
+/// </summary>
+public enum OfflineMark
+{
+    None,
+    Cached,
+    Queued,
+    Downloading,
+    Downloaded,
+    Failed,
+}
+
 /// <summary>Список, к которому относится строка: что играет двойной клик и что значит «Убрать из…».</summary>
 public sealed class RowOwner(TrackContext context)
 {
@@ -31,8 +46,35 @@ public sealed partial class RowVm : ObservableObject
     /// <summary>Есть ли сеть (задаётся при запуске приложения).</summary>
     public static Func<bool>? IsOnline { get; set; }
 
-    /// <summary>Есть без сети: контурный значок у длительности.</summary>
-    public bool Cached { get; }
+    /// <summary>Загрузка трека (задаётся при запуске приложения).</summary>
+    public static Func<string, Melogold.Playback.DownloadState?>? DownloadOf { get; set; }
+
+    /// <summary>Есть без сети: скачан или целиком в кэше.</summary>
+    public bool Cached => Mark is OfflineMark.Cached or OfflineMark.Downloaded;
+
+    /// <summary>Метка у длительности; меняется на ходу (загрузка идёт, кэш дописан).</summary>
+    [ObservableProperty]
+    public partial OfflineMark Mark { get; set; }
+
+    /// <summary>Доля скачанного для кольца (0…100); null — ещё неизвестна.</summary>
+    [ObservableProperty]
+    public partial double? Progress { get; set; }
+
+    /// <summary>Метка заново: загрузка или кэш трека изменились.</summary>
+    public void RefreshMark()
+    {
+        if (Track is not { } track) return;
+        var download = DownloadOf?.Invoke(track.VideoId);
+        Progress = download?.Progress is { } fraction ? fraction * 100 : null;
+        Mark = download?.Status switch
+        {
+            Melogold.Playback.DownloadStatus.Completed => OfflineMark.Downloaded,
+            Melogold.Playback.DownloadStatus.Downloading => OfflineMark.Downloading,
+            Melogold.Playback.DownloadStatus.Queued => OfflineMark.Queued,
+            Melogold.Playback.DownloadStatus.Failed => OfflineMark.Failed,
+            _ => IsCached?.Invoke(track.VideoId) == true ? OfflineMark.Cached : OfflineMark.None,
+        };
+    }
 
     /// <summary>Сети нет, а трека нет в кэше: строка приглушена, воспроизвести его нельзя.</summary>
     public bool Dimmed { get; }
@@ -51,8 +93,8 @@ public sealed partial class RowVm : ObservableObject
                         track.IsVideo ? track.ViewsText : track.AlbumTitle);
                 ArtworkUrl = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 120);
                 Duration = track.VideoType == "live" ? Loc.Get("Live") : track.DurationText;
-                // Целиком в кэше — играет без сети; без сети остальные приглушены (tasks/0003 §4)
-                Cached = IsCached?.Invoke(track.VideoId) == true;
+                // Скачан или целиком в кэше — играет без сети; без сети остальные приглушены (tasks/0003 §4)
+                RefreshMark();
                 Dimmed = !Cached && IsOnline?.Invoke() == false;
                 Explicit = track.Explicit;
                 Unavailable = track.Unavailable;

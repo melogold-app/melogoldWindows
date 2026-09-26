@@ -17,7 +17,8 @@ public enum LibraryChange
     Searches = 32,
     Blocks = 64,
     Lyrics = 128,
-    All = Likes | Playlists | Bookmarks | History | Tracks | Searches | Blocks | Lyrics,
+    Downloads = 256,
+    All = Likes | Playlists | Bookmarks | History | Tracks | Searches | Blocks | Lyrics | Downloads,
 }
 
 /// <summary>Свой плейлист (в Библиотеке): <see cref="SyncId"/> — UUID сервера, если плейлист синхронизирован.</summary>
@@ -736,9 +737,62 @@ public sealed class Library(LibraryDatabase db)
     /// Что входит во «Все треки» (tasks/0005 §2): прослушанное, лайкнутое, лежащее в своих плейлистах; не скрытое. Треки
     /// альбомов, которые только открывали, — нет: копии ViTune хранят их тысячами.
     /// </summary>
+    // ---------- Загрузки ----------
+
+    /// <summary>«Скачать»: трек — в библиотеку (название, обложка для «Скачанного»), в список загрузок.</summary>
+    public void AddDownload(Track track)
+    {
+        Database.Write((c, t) =>
+        {
+            UpsertTrack(c, t, track);
+            LibraryDatabase.Exec(c, t, "INSERT OR IGNORE INTO downloads (video_id, added_at) VALUES ($v, $now)",
+                ("$v", track.VideoId), ("$now", IsoTime.NowMs()));
+        });
+        Changed?.Invoke(LibraryChange.Downloads);
+    }
+
+    /// <summary>«Удалить загрузку»: трек остаётся в библиотеке, но без сети играть не будет.</summary>
+    public void RemoveDownload(string videoId)
+    {
+        Database.Write((c, t) => LibraryDatabase.Exec(c, t, "DELETE FROM downloads WHERE video_id = $v", ("$v", videoId)));
+        Changed?.Invoke(LibraryChange.Downloads);
+    }
+
+    public void RemoveAllDownloads()
+    {
+        Database.Write((c, t) => LibraryDatabase.Exec(c, t, "DELETE FROM downloads"));
+        Changed?.Invoke(LibraryChange.Downloads);
+    }
+
+    /// <summary>Скачанные треки, сначала недавние.</summary>
+    public List<Track> Downloads() => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = $"""
+            SELECT {string.Join(", ", TrackColumns.Split(", ").Select(x => "t." + x))}
+            FROM downloads d JOIN tracks t ON t.video_id = d.video_id
+            ORDER BY d.added_at DESC
+            """;
+        using var r = command.ExecuteReader();
+        var list = new List<Track>();
+        while (r.Read()) list.Add(ReadTrack(r));
+        return list;
+    });
+
+    public HashSet<string> DownloadIds() => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT video_id FROM downloads";
+        using var r = command.ExecuteReader();
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        while (r.Read()) ids.Add(r.GetString(0));
+        return ids;
+    });
+
     private const string AllTracksWhere = """
         (p.video_id IS NOT NULL OR t.total_play_ms > 0 OR t.liked_at IS NOT NULL
-         OR EXISTS (SELECT 1 FROM playlist_items i WHERE i.video_id = t.video_id))
+         OR EXISTS (SELECT 1 FROM playlist_items i WHERE i.video_id = t.video_id)
+         OR EXISTS (SELECT 1 FROM downloads d WHERE d.video_id = t.video_id))
         AND NOT EXISTS (SELECT 1 FROM content_blocks b WHERE b.type = 'track' AND b.key = t.video_id)
         """;
 

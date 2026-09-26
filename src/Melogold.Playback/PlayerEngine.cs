@@ -541,11 +541,18 @@ public sealed class PlayerEngine : IDisposable
     /// <summary>Кэш песен (null — без него): прочитанное ложится на диск, целиком прочитанный трек играет без сети.</summary>
     public SongCache? Songs { get; set; }
 
+    /// <summary>Загрузки (null — без них): скачанный трек играет отсюда, без сети и без запросов.</summary>
+    public SongCache? Downloads { get; set; }
+
+    /// <summary>Трек есть без сети: скачан или целиком в кэше.</summary>
+    public bool IsOffline(string videoId) => Downloads?.IsComplete(videoId) == true || Songs?.IsComplete(videoId) == true;
+
     private Task<AacStreamSource> OpenSourceAsync(string videoId, CancellationToken ct) => Task.Run(async () =>
     {
-        // Трек целиком в кэше играет без запросов: ни player, ни адреса
-        var info = Songs?.Complete(videoId) ?? await _resolver.ResolveAsync(videoId, ct).ConfigureAwait(false);
-        var cache = Songs?.Entry(info);
+        // Скачанный или целиком закэшированный трек играет без запросов: ни player, ни адреса
+        var downloaded = Downloads?.Complete(videoId);
+        var info = downloaded ?? Songs?.Complete(videoId) ?? await _resolver.ResolveAsync(videoId, ct).ConfigureAwait(false);
+        var cache = downloaded is not null ? Downloads!.Entry(info) : Songs?.Entry(info);
         try
         {
             return await AacStreamSource.OpenAsync(_http, info, async token =>
@@ -600,7 +607,7 @@ public sealed class PlayerEngine : IDisposable
         {
             var videoId = Queue.Items[index].Track.VideoId;
             // Целиком в кэше — адрес не нужен
-            if (Songs?.IsComplete(videoId) == true) continue;
+            if (IsOffline(videoId)) continue;
             _ = Task.Run(async () =>
             {
                 try

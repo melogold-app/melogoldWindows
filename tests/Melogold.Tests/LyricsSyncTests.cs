@@ -169,6 +169,7 @@ public class LyricsSyncTests
                 command.CommandText = """
                     DROP TABLE synced_lyrics;
                     DROP TABLE history_ops;
+                    DROP TABLE downloads;
                     ALTER TABLE play_events DROP COLUMN device_id;
                     ALTER TABLE lyrics DROP COLUMN language;
                     INSERT INTO lyrics (video_id, synced, plain, source, plain_source, offset_ms, fetched_at) VALUES

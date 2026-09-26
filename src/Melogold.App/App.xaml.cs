@@ -44,7 +44,11 @@ public partial class App : Application
         Services = ConfigureServices();
         Images.Cache = Services.GetRequiredService<ImageCache>();
         var songs = Services.GetRequiredService<SongCache>();
+        var downloads = Services.GetRequiredService<TrackDownloads>();
         ViewModels.RowVm.IsCached = songs.IsComplete;
+        ViewModels.RowVm.DownloadOf = downloads.State;
+        // Прерванные загрузки продолжаются
+        downloads.Resume();
         ViewModels.RowVm.IsOnline = System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable;
         InitializeComponent();
     }
@@ -89,8 +93,18 @@ public partial class App : Application
             var settings = sp.GetRequiredService<SettingsStore>();
             return new SongCache(Path.Combine(AppPaths.Cache, "songs"), () => settings.SongCacheMaxMb * 1024L * 1024, (message, error) => Log.Warn(message, error));
         });
+        // Загрузки — свой кэш без лимита в своей папке (tasks/0003): плеер играет из него без сети
+        services.AddSingleton(sp => new TrackDownloads(
+            new SongCache(AppPaths.Downloads, () => 0, (message, error) => Log.Warn(message, error)),
+            sp.GetRequiredService<SongCache>(), sp.GetRequiredService<StreamResolver>(), sp.GetRequiredService<Library>(),
+            (message, error) => { if (error is null) Log.Info(message); else Log.Warn(message, error); }));
         services.AddSingleton(sp => new PlayerEngine(sp.GetRequiredService<StreamResolver>(), sp.GetRequiredService<YouTubeMusic>(),
-            sp.GetRequiredService<Library>(), sp.GetRequiredService<SettingsStore>()) { Songs = sp.GetRequiredService<SongCache>() });
+            sp.GetRequiredService<Library>(), sp.GetRequiredService<SettingsStore>())
+        {
+            Songs = sp.GetRequiredService<SongCache>(),
+            Downloads = sp.GetRequiredService<TrackDownloads>().Store,
+        });
+        services.AddSingleton<FileExport>();
         services.AddSingleton<PlayerViewModel>();
         services.AddSingleton<TrackActions>();
         services.AddSingleton<CollectionMenu>();

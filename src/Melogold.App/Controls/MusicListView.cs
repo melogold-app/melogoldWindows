@@ -84,10 +84,10 @@ public sealed partial class MusicListView : ListView
 
     private static TrackActions Actions => App.Services.GetRequiredService<TrackActions>();
 
-    /// <summary>Заменить строки списка; треки попадают в <see cref="RowOwner.Tracks"/> для «играть с этого трека».</summary>
     /// <summary>Уже этого окно узкое: поля по бокам меньше.</summary>
     public const double NarrowWidth = 600;
 
+    /// <summary>Заменить строки списка; треки попадают в <see cref="RowOwner.Tracks"/> для «играть с этого трека».</summary>
     public void SetItems(IEnumerable<MusicItem> items, RowOwner owner, bool showType = false)
     {
         owner.Tracks.Clear();
@@ -216,12 +216,16 @@ public sealed partial class MusicListView : ListView
     {
         App.Services.GetRequiredService<Library>().Changed += OnLibraryChanged;
         App.Services.GetRequiredService<PlayerEngine>().TrackChanged += OnTrackChanged;
+        App.Services.GetRequiredService<Melogold.Playback.TrackDownloads>().Changed += OnOfflineChanged;
+        App.Services.GetRequiredService<Melogold.Playback.SongCache>().Changed += OnOfflineChanged;
     }
 
     private void Unsubscribe()
     {
         App.Services.GetRequiredService<Library>().Changed -= OnLibraryChanged;
         App.Services.GetRequiredService<PlayerEngine>().TrackChanged -= OnTrackChanged;
+        App.Services.GetRequiredService<Melogold.Playback.TrackDownloads>().Changed -= OnOfflineChanged;
+        App.Services.GetRequiredService<Melogold.Playback.SongCache>().Changed -= OnOfflineChanged;
     }
 
     private void OnLibraryChanged(LibraryChange change)
@@ -236,6 +240,13 @@ public sealed partial class MusicListView : ListView
             }
         });
     }
+
+    /// <summary>Загрузка или кэш трека изменились: метка «есть без сети» в его строках.</summary>
+    private void OnOfflineChanged(string videoId) => DispatcherQueue.TryEnqueue(() =>
+    {
+        foreach (var row in Rows)
+            if (row.Track?.VideoId == videoId) row.RefreshMark();
+    });
 
     private void OnTrackChanged()
     {

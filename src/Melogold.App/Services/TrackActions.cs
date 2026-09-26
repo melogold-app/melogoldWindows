@@ -44,7 +44,8 @@ public abstract record TrackContext
 /// Действия с треком: тап по правилу очереди, меню (§5.3, пункты и тексты — как в меню трека Android), «В Избранное»,
 /// переходы к альбому и исполнителю. Всё, что показывает меню, известно до его открытия — меню не дёргается (§8.7).
 /// </summary>
-public sealed class TrackActions(PlayerEngine engine, Library library, Navigator navigator, Snackbar snackbar, YouTubeMusic music)
+public sealed class TrackActions(PlayerEngine engine, Library library, Navigator navigator, Snackbar snackbar, YouTubeMusic music,
+    TrackDownloads downloads, FileExport export)
 {
     // ---------- Воспроизведение ----------
 
@@ -56,7 +57,7 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
     {
         if (index < 0 || index >= tracks.Count) return;
         // Без сети играет только то, что целиком в кэше (tasks/0003 §4)
-        if (ViewModels.RowVm.IsOnline?.Invoke() == false && ViewModels.RowVm.IsCached?.Invoke(tracks[index].VideoId) != true)
+        if (ViewModels.RowVm.IsOnline?.Invoke() == false && !engine.IsOffline(tracks[index].VideoId))
         {
             snackbar.Show(Loc.Get("NoNetwork"));
             return;
@@ -197,6 +198,7 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
             Add("MenuAddToQueue", "", () => AddToQueue(track));
         }
         Add("MenuAddToPlaylist", "", () => PlaylistPicker.Show(track, library, snackbar));
+        AddDownloadItems(items, track, Add);
         if (!player) items.Add(new MenuFlyoutSeparator());
         Add("MenuTrackRadio", "", () => engine.StartRadio(track));
         if (!player)
@@ -245,6 +247,43 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
             if (player && engine.Current?.VideoId == track.VideoId) engine.Next();
             snackbar.Show(Loc.Get("TrackHidden"), Loc.Get("Undo"), () => library.SetTrackHidden(track, false));
         });
+    }
+
+    /// <summary>
+    /// «Скачать» по состоянию загрузки (Android <c>DownloadEntry</c>): «Скачать»; пока идёт — «Скачивается 45 % · Отменить»;
+    /// после сбоя — «Скачать снова»; скачан — «Удалить загрузку» с «Отменить». И «Сохранить файлом». У трансляции
+    /// скачать нечего — пункт неактивен с объяснением.
+    /// </summary>
+    private void AddDownloadItems(IList<MenuFlyoutItemBase> items, Track track, Action<string, string, Action> add)
+    {
+        if (track.VideoType == "live")
+        {
+            items.Add(new MenuFlyoutItem { Text = Loc.Get("MenuDownloadLive"), Icon = new FontIcon { Glyph = "\uE896" }, IsEnabled = false });
+            return;
+        }
+        var state = downloads.State(track.VideoId);
+        switch (state?.Status)
+        {
+            case null:
+                add("MenuDownload", "\uE896", () => downloads.Download(track));
+                break;
+            case DownloadStatus.Completed:
+                add("MenuDownloadRemove", "\uE74D", () => snackbar.ShowUndoable(Loc.Get("DownloadRemoved"), () => downloads.Remove(track.VideoId)));
+                break;
+            case DownloadStatus.Failed:
+                add("MenuDownloadRetry", "\uE72C", () => downloads.Retry(track.VideoId));
+                break;
+            default:
+                var cancel = new MenuFlyoutItem
+                {
+                    Text = state.Value.Progress is { } progress ? Loc.Format("MenuDownloadCancelFormat", (int)(progress * 100)) : Loc.Get("MenuDownloadCancel"),
+                    Icon = new FontIcon { Glyph = "\uE711" },
+                };
+                cancel.Click += (_, _) => downloads.Remove(track.VideoId);
+                items.Add(cancel);
+                break;
+        }
+        add("MenuSaveFile", "\uE74E", () => _ = export.SaveAsync(track));
     }
 
     public void ShowMenu(Track track, TrackContext context, FrameworkElement target, Windows.Foundation.Point? at = null, Action? onRemove = null)

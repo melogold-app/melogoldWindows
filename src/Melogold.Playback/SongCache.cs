@@ -145,6 +145,66 @@ public sealed class SongCache(string directory, Func<long> maxBytes, Action<stri
         foreach (var videoId in removed) Changed?.Invoke(videoId);
     }
 
+    /// <summary>
+    /// Трек, целиком лежащий в <paramref name="source"/>, — копией сюда (загрузка трека из кэша: сразу и без сети).
+    /// false — там его нет целиком или копия не удалась.
+    /// </summary>
+    public bool CopyFrom(SongCache source, string videoId)
+    {
+        SongCacheEntry? from;
+        lock (source._lock) from = source.Index.TryGetValue(videoId, out var known) && known.IsComplete ? known : null;
+        if (from is null) return false;
+        var basePath = Path.Combine(directory, $"{videoId}.{from.Itag}");
+        try
+        {
+            System.IO.Directory.CreateDirectory(directory);
+            if (!from.CopyTo(basePath)) return false;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            log($"Song cache: {videoId} not copied", e);
+            return false;
+        }
+        if (SongCacheEntry.Read(this, basePath, DateTime.UtcNow) is not { IsComplete: true } entry) return false;
+        lock (_lock)
+        {
+            if (Index.TryGetValue(videoId, out var old) && !ReferenceEquals(old, entry) && old.Itag != entry.Itag) old.DeleteFiles();
+            Index[videoId] = entry;
+        }
+        Changed?.Invoke(videoId);
+        return true;
+    }
+
+    /// <summary>
+    /// Удалить трек (загрузку): байты и сведения. Если он сейчас играет, чтение уйдёт в сеть; с
+    /// <paramref name="unlessPlaying"/> играющий остаётся (дубль в кэше после загрузки уйдёт при вытеснении).
+    /// </summary>
+    public void Remove(string videoId, bool unlessPlaying = false)
+    {
+        SongCacheEntry? entry;
+        lock (_lock)
+        {
+            if (!Index.TryGetValue(videoId, out entry) || (unlessPlaying && entry.Pinned)) return;
+            Index.Remove(videoId);
+        }
+        entry.DeleteFiles();
+        Changed?.Invoke(videoId);
+    }
+
+    /// <summary>Все байты трека, если он целиком здесь (для «Сохранить файлом»); иначе null.</summary>
+    public byte[]? ReadComplete(string videoId)
+    {
+        SongCacheEntry? entry;
+        lock (_lock) entry = Index.TryGetValue(videoId, out var known) && known.IsComplete ? known : null;
+        return entry is { Total: { } total } && total <= int.MaxValue && entry.TryRead(0, (int)total, out var data) ? data : null;
+    }
+
+    /// <summary>Треки, которые здесь есть (целиком или частично): загрузки, прерванные на середине, продолжаются.</summary>
+    public List<string> VideoIds()
+    {
+        lock (_lock) return Index.Keys.ToList();
+    }
+
     internal void OnCompleted(string videoId) => Changed?.Invoke(videoId);
 
     internal void Forget(SongCacheEntry entry)
@@ -325,6 +385,18 @@ public sealed class SongCacheEntry
         }
         LastRead = DateTime.UtcNow;
         if (completed) _cache.OnCompleted(VideoId);
+    }
+
+    /// <summary>Копия файлов записи под другим именем (<paramref name="basePath"/> без расширения).</summary>
+    internal bool CopyTo(string basePath)
+    {
+        lock (_lock)
+        {
+            if (_deleted) return false;
+            File.Copy(DataPath, basePath + ".data", overwrite: true);
+            File.Copy(MetaPath, basePath + ".json", overwrite: true);
+            return true;
+        }
     }
 
     /// <summary>Удалить байты и сведения (вытеснение, смена формата, «Очистить кэш»).</summary>

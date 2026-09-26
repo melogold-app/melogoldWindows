@@ -42,4 +42,25 @@ public sealed class AllTracksTests : IDisposable
         Assert.NotNull(all[1].LastPlayedAt);
         Assert.Equal(4, library.AllTracksCount());
     }
+
+    [Fact]
+    public void DownloadedTracksAreInAllTracksAndInDownloads()
+    {
+        var library = new Library(new LibraryDatabase(_path));
+        // Скачанный из поиска: ни прослушиваний, ни лайка, ни плейлиста — а в «Все треки» и «Скачанном» есть
+        library.AddDownload(T("ggggggggggg", "Downloaded"));
+        library.AddDownload(T("hhhhhhhhhhh", "Downloaded later"));
+        Assert.Equal(["ggggggggggg", "hhhhhhhhhhh"], library.AllTracks().Select(e => e.Track.VideoId).Order());
+        Assert.Equal(2, library.DownloadIds().Count);
+        Assert.Equal("Downloaded", library.Downloads().Single(t => t.VideoId == "ggggggggggg").Title);
+
+        library.RemoveDownload("ggggggggggg");
+        Assert.Equal(["hhhhhhhhhhh"], library.DownloadIds());
+        // Трек остался в библиотеке, но больше не «скачан»
+        Assert.NotNull(library.GetTrack("ggggggggggg"));
+        Assert.Equal(["hhhhhhhhhhh"], library.AllTracks().Select(e => e.Track.VideoId));
+
+        library.RemoveAllDownloads();
+        Assert.Empty(library.Downloads());
+    }
 }

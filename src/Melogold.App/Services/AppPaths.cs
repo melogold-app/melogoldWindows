@@ -25,6 +25,9 @@ public static class AppPaths
 
     public static string Cache => Path.Combine(DataDirectory, "cache");
 
+    /// <summary>Скачанные треки (tasks/0003): не кэш — ни лимит, ни «Очистить кэш» их не трогают.</summary>
+    public static string Downloads => Path.Combine(DataDirectory, "downloads");
+
     public static string Updates => Path.Combine(DataDirectory, "updates");
 
     public static string Backups => Path.Combine(DataDirectory, "backups");

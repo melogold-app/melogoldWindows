@@ -9,7 +9,7 @@ namespace Melogold.Core.Data;
 /// </summary>
 public sealed class LibraryDatabase
 {
-    public const int SchemaVersion = 4;
+    public const int SchemaVersion = 5;
 
     private readonly string _connectionString;
     private readonly Lock _writeLock = new();
@@ -137,6 +137,15 @@ public sealed class LibraryDatabase
                 CREATE TABLE history_ops (op_id TEXT PRIMARY KEY, kind TEXT NOT NULL, video_id TEXT, events_before INTEGER NOT NULL);
                 """);
             Exec(connection, transaction, "PRAGMA user_version = 4;");
+            transaction.Commit();
+            version = 4;
+        }
+        if (version < 5)
+        {
+            // v5: загрузки (tasks/0003, «Скачать») — какие треки пользователь скачал; байты — в своей папке, вне кэша
+            using var transaction = connection.BeginTransaction();
+            Exec(connection, transaction, "CREATE TABLE downloads (video_id TEXT PRIMARY KEY, added_at INTEGER NOT NULL);");
+            Exec(connection, transaction, "PRAGMA user_version = 5;");
             transaction.Commit();
         }
     }

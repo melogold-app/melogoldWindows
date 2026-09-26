@@ -102,13 +102,13 @@ public sealed partial class LibraryPage : CatalogPage
     {
         _dirty = false;
         var songs = App.Services.GetRequiredService<Melogold.Playback.SongCache>();
-        var (counts, playlists, plays, allTracks, cached) = await Task.Run(() => (_library.Counts(), _library.Playlists(), _library.PlayCount(), _library.AllTracksCount(), songs.CompleteTracks().Count));
+        var (counts, playlists, plays, allTracks, cached, downloaded) = await Task.Run(() => (_library.Counts(), _library.Playlists(), _library.PlayCount(), _library.AllTracksCount(), songs.CompleteTracks().Count, _library.DownloadIds().Count));
         _importFirst.Visibility = counts is { Likes: 0, Albums: 0, Artists: 0 } && playlists.Count == 0 && plays == 0 ? Visibility.Visible : Visibility.Collapsed;
         _collections.Children.Clear();
         // «Все треки» — первой (tasks/0005): прослушанное, лайкнутое и из плейлистов, как «Песни» в ViTune
         AddCollection("\uE8D6", Loc.Get("AllTracks"), Loc.Plural("Tracks", allTracks), () => Open(typeof(AllTracksPage)));
         // «Скачанное»: у Windows пока только «В кэше» (tasks/0003)
-        AddCollection("\uE896", Loc.Get("Downloads"), Loc.Format("DownloadsCachedCountFormat", cached), () => Open(typeof(DownloadsPage)));
+        AddCollection("\uE896", Loc.Get("Downloads"), downloaded > 0 ? Loc.Format("DownloadsCountFormat", downloaded, cached) : Loc.Format("DownloadsCachedCountFormat", cached), () => Open(typeof(DownloadsPage)));
         AddCollection("", Loc.Get("Favorites"), Loc.Plural("Tracks", counts.Likes), () => Open(typeof(FavoritesPage)));
         AddCollection("", Loc.Get("History"), Loc.Get("HistoryHint"), () => Open(typeof(HistoryPage)));
         AddCollection("", Loc.Get("ResultsAlbums"), Loc.Plural("Albums", counts.Albums), () => Open(typeof(SavedPage), "albums"));

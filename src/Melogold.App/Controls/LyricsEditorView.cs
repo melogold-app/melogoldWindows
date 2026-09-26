@@ -66,6 +66,13 @@ public sealed partial class LyricsEditorView : Grid
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _clock;
     private LyricsDraft _draft;
 
+    /// <summary>
+    /// Вкладка, которая сейчас на экране. <see cref="SelectorBar.SelectedItem"/> для этого не годится: в
+    /// <c>SelectionChanged</c> он уже новый, и набранное на «Тексте» не попадало в черновик при переходе на «Сведение»
+    /// (пользователь, 2026-09-26: «нестабильно, что применилось»), а по возвращении затиралось старым.
+    /// </summary>
+    private object? _shownTab;
+
     public LyricsEditorView(Track track, StoredLyrics? original, LyricsDraft initial)
     {
         _track = track;
@@ -118,7 +125,13 @@ public sealed partial class LyricsEditorView : Grid
     /// <summary>Закрыт: сохранён или закрыт без сохранения.</summary>
     public event Action? Closed;
 
-    private bool Changed => !_draft.Equals(_initial) || _text.Text != _draft.ToText();
+    private bool Changed => !_draft.Equals(_initial) || TextPending;
+
+    /// <summary>Набранное на «Тексте»; переводы строк TextBox (<c>\r</c>) — как в черновике.</summary>
+    private string TypedText => _text.Text.Replace("\r\n", "\n").Replace('\r', '\n');
+
+    /// <summary>На «Тексте» набрано то, чего ещё нет в черновике.</summary>
+    private bool TextPending => _shownTab is 0 && TypedText != _draft.ToText();
 
     // ---------- Верх: ✕ · «Текст песни» · Отменить, Сохранить, ⋯ ----------
 
@@ -536,7 +549,8 @@ public sealed partial class LyricsEditorView : Grid
         CommitText();
         _body.Children.Clear();
         _previewLyrics.Stop();
-        switch (_tabs.SelectedItem?.Tag)
+        _shownTab = _tabs.SelectedItem?.Tag;
+        switch (_shownTab)
         {
             case 0:
                 _text.Text = _draft.ToText();
@@ -568,14 +582,15 @@ public sealed partial class LyricsEditorView : Grid
     /// <summary>Текст вкладки «Текст» — в черновик при уходе с неё (Отменить — не по буквам).</summary>
     private void CommitText()
     {
-        if (_tabs.SelectedItem?.Tag is not 0 || _text.Text.Replace("\r", "\n") == _draft.ToText()) return;
+        if (!TextPending) return;
         _history.Add(_draft);
-        _draft = _draft.WithText(_text.Text.Replace("\r\n", "\n").Replace('\r', '\n'));
+        if (_history.Count > MaxUndo) _history.RemoveAt(0);
+        _draft = _draft.WithText(TypedText);
     }
 
     private void Undo()
     {
-        if (_tabs.SelectedItem?.Tag is 0 && _text.Text.Replace("\r", "\n") != _draft.ToText())
+        if (TextPending)
         {
             _text.Text = _draft.ToText();
             return;
@@ -590,7 +605,7 @@ public sealed partial class LyricsEditorView : Grid
     {
         if (_timing.SelectedItem?.Tag is LyricsTiming timing && timing != _draft.Timing)
             _timing.SelectedItem = _timing.Items[_draft.Timing == LyricsTiming.Word ? 1 : 0];
-        switch (_tabs.SelectedItem?.Tag)
+        switch (_shownTab)
         {
             case 0:
                 _text.Text = _draft.ToText();
@@ -605,7 +620,7 @@ public sealed partial class LyricsEditorView : Grid
         ShowUndo();
     }
 
-    private void ShowUndo() => _undo.IsEnabled = _history.Count > 0 || (_tabs.SelectedItem?.Tag is 0 && _text.Text.Replace("\r", "\n") != _draft.ToText());
+    private void ShowUndo() => _undo.IsEnabled = _history.Count > 0 || TextPending;
 
     /// <summary>Позиция, play/pause и что отметит следующее нажатие.</summary>
     private void ShowTransport()

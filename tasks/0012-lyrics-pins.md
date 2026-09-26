@@ -1,6 +1,6 @@
 # Закреплённый текст песни: одинаковый на всех устройствах
 
-Статус: открыто — ждёт сервер (`melogoldServer/tasks/0002-lyrics-pins.md`, контракт утверждён пользователем)
+Статус: открыто — сервер готов: контракт — `melogoldServer/docs/API.md` §4.8 (`lyrics.pin.set`, `lyricsPins`), сервер 0.1.1 работает на живом сервере; образец — Android 0.1.10
 
 Те же задания: `melogoldAndroid/tasks/0013-lyrics-pins.md`, `melogoldiOSmacOS/tasks/0015-lyrics-pins.md`,
 `melogoldLinux/tasks/0006-lyrics-pins.md`.

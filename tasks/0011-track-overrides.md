@@ -1,6 +1,6 @@
 # Своё название, исполнитель и альбом трека
 
-Статус: открыто — ждёт сервер (`melogoldServer/tasks/0001-track-overrides.md`: контракт ещё не утверждён)
+Статус: открыто — сервер готов: контракт — `melogoldServer/docs/API.md` §4.8 (`track.override.set`, `overrides`), сервер 0.1.1 работает на живом сервере; образец — Android 0.1.10
 
 Те же задания: `melogoldAndroid/tasks/0012-track-overrides.md`, `melogoldiOSmacOS/tasks/0014-track-overrides.md`,
 `melogoldLinux/tasks/0005-track-overrides.md`.

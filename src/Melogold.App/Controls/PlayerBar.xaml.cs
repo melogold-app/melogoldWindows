@@ -75,6 +75,9 @@ public sealed partial class PlayerBar : UserControl
     /// экране, таймер сна и сведения о потоке, в конце — «Не показывать этот трек». Собирается при нажатии синхронно:
     /// всё известно заранее, меню не дёргается.
     /// </summary>
+    /// <summary>Причина ошибки коротко → объяснение целиком.</summary>
+    private void OnErrorClick(object sender, RoutedEventArgs e) => FlyoutBase.ShowAttachedFlyout((FrameworkElement)sender);
+
     private void OnMoreClick(object sender, RoutedEventArgs e)
     {
         if (BuildMenu() is { } menu) menu.ShowAt(MoreButton);

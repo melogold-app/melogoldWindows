@@ -41,7 +41,7 @@ public sealed partial class PlayerViewModel : ObservableObject
             SaveQueue();
         };
         engine.QueueChanged += SaveQueue;
-        engine.Skipped += error => Notice = Loc.Format("SkippedFormat", error.Track.Title, ErrorText(error));
+        engine.Skipped += error => Notice = Loc.Format("SkippedFormat", error.Track.Title, NoticeText(error));
         library.Changed += change =>
         {
             if (change.HasFlag(LibraryChange.Likes)) DispatcherQueue.GetForCurrentThread()?.TryEnqueue(RefreshLike);
@@ -85,6 +85,10 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string? ErrorMessage { get; set; }
+
+    /// <summary>Причина целиком: по нажатию на <see cref="ErrorMessage"/> и в подсказке.</summary>
+    [ObservableProperty]
+    public partial string? ErrorDetails { get; set; }
 
     /// <summary>Разовое сообщение для плашки над плеером (пропуск трека).</summary>
     [ObservableProperty]
@@ -171,7 +175,9 @@ public sealed partial class PlayerViewModel : ObservableObject
         if (resolving && !IsResolving) _resolvingSince = DateTime.UtcNow;
         IsResolving = resolving;
         ShowResolvingText = resolving && DateTime.UtcNow - _resolvingSince > TimeSpan.FromSeconds(3);
-        ErrorMessage = Engine.Status == PlayerStatus.Error && Engine.Error is { } error ? ErrorText(error) : null;
+        var failed = Engine.Status == PlayerStatus.Error ? Engine.Error : null;
+        ErrorDetails = failed is null ? null : ErrorText(failed);
+        ErrorMessage = failed is null ? null : ErrorTitle(failed);
         Shuffle = Engine.Queue.Shuffled;
         OnPropertyChanged(nameof(Track));
         RefreshLike();
@@ -199,6 +205,18 @@ public sealed partial class PlayerViewModel : ObservableObject
     /// Текст причины: трек закрыт в стране — со страной, где YouTube видит устройство, и числом стран, где трек открыт
     /// (задание 0010); иначе по классу ошибки.
     /// </summary>
+    /// <summary>Причина коротко — для строки в панели плеера, где рядом «Повторить»: «Недоступно: Россия».</summary>
+    public static string ErrorTitle(PlayerError error) =>
+        error.Kind == StreamErrorKind.Geo && error.Country is { } code
+            ? Loc.Format("PlayErrorGeoCountryShortFormat", Melogold.Core.Domain.CountryNames.Of(code))
+            : ErrorText(error.Kind);
+
+    /// <summary>Причина в плашке «Пропущен „…“» (4 секунды — абзац не прочитать): «Недоступно в стране «Россия»».</summary>
+    public static string NoticeText(PlayerError error) =>
+        error.Kind == StreamErrorKind.Geo && error.Country is { } code
+            ? Loc.Format("PlayErrorGeoCountryNoticeFormat", Melogold.Core.Domain.CountryNames.Of(code))
+            : ErrorText(error.Kind);
+
     public static string ErrorText(PlayerError error)
     {
         if (error.Kind != StreamErrorKind.Geo || error.Country is not { } code) return ErrorText(error.Kind);

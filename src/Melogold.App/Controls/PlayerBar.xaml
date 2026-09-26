@@ -70,19 +70,36 @@
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Text="Getting the stream…"
                         Visibility="{x:Bind ViewModel.ShowResolvingText, Mode=OneWay}" />
-                    <StackPanel
-                        Orientation="Horizontal"
-                        Spacing="8"
+                    <!-- Причина коротко и «Повторить» сразу за ней; нажатие по причине или наведение — объяснение целиком
+                         (у «закрыт в стране» это абзац про VPN). Сетка по левому краю: причина обрезается, а не выталкивает
+                         «Повторить» за край -->
+                    <Grid
+                        HorizontalAlignment="Left"
+                        ColumnSpacing="8"
                         Visibility="{x:Bind local:PlayerBar.IsSet(ViewModel.ErrorMessage), Mode=OneWay}">
-                        <TextBlock
-                            VerticalAlignment="Center"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                            Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
-                            ToolTipService.ToolTip="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
-                            TextTrimming="CharacterEllipsis" />
-                        <HyperlinkButton x:Uid="RetryLink" Padding="0" Content="Retry" FontSize="12" Command="{x:Bind ViewModel.RetryCommand}" />
-                    </StackPanel>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <HyperlinkButton
+                            Padding="0"
+                            AutomationProperties.Name="{x:Bind ViewModel.ErrorDetails, Mode=OneWay}"
+                            ToolTipService.ToolTip="{x:Bind ViewModel.ErrorDetails, Mode=OneWay}"
+                            Click="OnErrorClick">
+                            <TextBlock
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                MaxLines="1" />
+                            <FlyoutBase.AttachedFlyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="360" TextWrapping="Wrap" Text="{x:Bind ViewModel.ErrorDetails, Mode=OneWay}" />
+                                </Flyout>
+                            </FlyoutBase.AttachedFlyout>
+                        </HyperlinkButton>
+                        <HyperlinkButton Grid.Column="1" x:Uid="RetryLink" Padding="0" Content="Retry" FontSize="12" Command="{x:Bind ViewModel.RetryCommand}" />
+                    </Grid>
                 </Grid>
             </StackPanel>
             <ToggleButton

@@ -80,6 +80,14 @@ public sealed class StreamResolver(InnerTubeClient client, Action<string>? log =
     private readonly Lock _lock = new();
     private readonly SemaphoreSlim _slots = new(2);
 
+#if DEBUG
+    /// <summary>
+    /// Только отладочная сборка: <c>MELOGOLD_FAKE_GEO=&lt;videoId&gt;:&lt;страна&gt;</c> — поток этого трека «не получен», а
+    /// YouTube «видит» устройство в этой стране. Чтобы увидеть карточку задания 0010, находясь не в России.
+    /// </summary>
+    private static readonly string[]? FakeGeo = Environment.GetEnvironmentVariable("MELOGOLD_FAKE_GEO")?.Split(':');
+#endif
+
     /// <summary>Порядок клиентов; <see cref="StreamClients"/> подменяет его свежим списком.</summary>
     public IReadOnlyList<ClientProfile> Clients { get; set; } = StreamClients.BuiltIn;
 
@@ -177,6 +185,9 @@ public sealed class StreamResolver(InnerTubeClient client, Action<string>? log =
 
     private async Task<StreamInfo> FromClientAsync(ClientProfile profile, string videoId, CancellationToken ct)
     {
+#if DEBUG
+        if (FakeGeo is [var fakeId, _] && fakeId == videoId) throw new StreamException(StreamErrorKind.Unavailable, $"{profile.Name}: UNPLAYABLE Video unavailable (MELOGOLD_FAKE_GEO)");
+#endif
         PlayerResponse response;
         try
         {
@@ -235,6 +246,9 @@ public sealed class StreamResolver(InnerTubeClient client, Action<string>? log =
         try
         {
             playability = await client.PlayabilityAsync(videoId, ct).ConfigureAwait(false);
+#if DEBUG
+            if (FakeGeo is [var fakeId, var country] && fakeId == videoId) playability = playability with { Country = country };
+#endif
         }
         catch (YouTubeException)
         {

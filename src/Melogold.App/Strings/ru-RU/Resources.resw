@@ -79,6 +79,8 @@
   <data name="PlayErrorNetwork" xml:space="preserve"><value>Нет соединения. Проверьте сеть или VPN</value></data>
   <data name="PlayErrorBot" xml:space="preserve"><value>YouTube просит подтвердить, что вы не робот. Попробуйте позже или смените сеть</value></data>
   <data name="PlayErrorGeo" xml:space="preserve"><value>Недоступно в вашей стране</value></data>
+  <data name="PlayErrorGeoCountryShortFormat" xml:space="preserve"><value>Недоступно: {0}</value></data>
+  <data name="PlayErrorGeoCountryNoticeFormat" xml:space="preserve"><value>Недоступно в стране «{0}»</value></data>
   <data name="PlayErrorGeoCountryFormat" xml:space="preserve"><value>Недоступно в стране «{0}»: YouTube считает, что вы там, а правообладатель закрыл трек для этой страны. С VPN выберите сервер другой страны: некоторые серверы YouTube тоже относит к стране «{0}».</value></data>
   <data name="PlayErrorGeoCountryOpenFormat" xml:space="preserve"><value>Недоступно в стране «{0}»: YouTube считает, что вы там, а правообладатель открыл трек {1}. С VPN выберите сервер другой страны: некоторые серверы YouTube тоже относит к стране «{0}».</value></data>
   <data name="GeoOtherCountries_one" xml:space="preserve"><value>в {0} другой стране</value></data>

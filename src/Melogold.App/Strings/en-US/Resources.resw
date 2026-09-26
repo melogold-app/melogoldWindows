@@ -65,6 +65,8 @@
   <data name="PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mute</value></data>
   <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Mute (Ctrl+M)</value></data>
   <data name="PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Volume</value></data>
+  <data name="PlayerVolumeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Volume</value></data>
+  <data name="PlayerVolumeButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Volume (mouse wheel changes it)</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>More</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>More</value></data>
   <data name="ResolvingText.Text" xml:space="preserve"><value>Getting the stream…</value></data>
@@ -604,8 +606,6 @@
   <data name="PlayerMore.AccessKey" xml:space="preserve"><value>M</value></data>
   <data name="DropOpen" xml:space="preserve"><value>Open in Melogold</value></data>
   <data name="DropImport" xml:space="preserve"><value>Import a copy</value></data>
-  <data name="MenuMute" xml:space="preserve"><value>Mute</value></data>
-  <data name="MenuUnmute" xml:space="preserve"><value>Unmute</value></data>
   <data name="SettingsDownloads.Header" xml:space="preserve"><value>Downloads</value></data>
   <data name="SettingsDownloadsEmpty" xml:space="preserve"><value>Nothing downloaded · ⋯ › Download on a track</value></data>
   <data name="RemoveDownloadsButton.Content" xml:space="preserve"><value>Remove all</value></data>

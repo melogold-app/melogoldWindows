@@ -127,11 +127,6 @@ public sealed partial class PlayerBar : UserControl
         }
         if (RepeatButton.Visibility == Visibility.Collapsed)
             hidden.Add(Command(ViewModel.RepeatLabel, ViewModel.RepeatGlyph, "Ctrl+T", ViewModel.CycleRepeatCommand));
-        if (VolumePanel.Visibility == Visibility.Collapsed)
-        {
-            var muted = App.Services.GetRequiredService<SettingsStore>().Muted;
-            hidden.Add(Command(Loc.Get(muted ? "MenuUnmute" : "MenuMute"), ViewModel.VolumeGlyph, "Ctrl+M", ViewModel.ToggleMuteCommand));
-        }
         if (MiniButton.Visibility == Visibility.Collapsed)
         {
             var mini = new MenuFlyoutItem { Text = Loc.Get("ShortcutMini"), Icon = new FontIcon { Glyph = "\uE944" }, KeyboardAcceleratorTextOverride = "Ctrl+Shift+M" };

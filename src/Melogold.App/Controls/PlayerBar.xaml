@@ -205,6 +205,40 @@
                     SmallChange="5"
                     Value="{x:Bind ViewModel.Volume, Mode=TwoWay}" />
             </StackPanel>
+            <!-- Окно уже: громкость — кнопкой, ползунок и «Без звука» — в панели над ней, как в «Медиаплеере» Windows
+                 (пользователь, 2026-09-26: кнопка звука пропадала, а оставшаяся только выключала звук) -->
+            <Button
+                x:Name="VolumeButton"
+                x:Uid="PlayerVolumeButton"
+                Style="{StaticResource PlayerIconButtonStyle}"
+                Visibility="Collapsed"
+                PointerWheelChanged="OnVolumeWheel">
+                <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" />
+                <Button.Flyout>
+                    <Flyout Placement="Top">
+                        <StackPanel Orientation="Horizontal" Spacing="8" PointerWheelChanged="OnVolumeWheel">
+                            <Button x:Uid="PlayerMute" Style="{StaticResource PlayerIconButtonStyle}" Command="{x:Bind ViewModel.ToggleMuteCommand}">
+                                <FontIcon Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}" />
+                            </Button>
+                            <Slider
+                                x:Uid="PlayerVolume"
+                                Width="180"
+                                VerticalAlignment="Center"
+                                Minimum="0"
+                                Maximum="100"
+                                StepFrequency="1"
+                                SmallChange="5"
+                                Value="{x:Bind ViewModel.Volume, Mode=TwoWay}" />
+                            <TextBlock
+                                MinWidth="28"
+                                VerticalAlignment="Center"
+                                TextAlignment="Right"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ViewModel.VolumeText, Mode=OneWay}" />
+                        </StackPanel>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
             <Button
                 x:Name="MiniButton"
                 x:Uid="PlayerMiniButton"
@@ -233,37 +267,40 @@
                         <AdaptiveTrigger MinWindowWidth="1100" />
                     </VisualState.StateTriggers>
                 </VisualState>
-                <!-- Без ползунка громкости: кнопка звука остаётся, громкость — колесом над ней -->
+                <!-- Громкость — кнопкой с ползунком в панели -->
                 <VisualState x:Name="Medium">
                     <VisualState.StateTriggers>
                         <AdaptiveTrigger MinWindowWidth="860" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="VolumeSlider.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumePanel.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeButton.Visibility" Value="Visible" />
                         <Setter Target="LeftColumn.MinWidth" Value="216" />
                         <Setter Target="RightColumn.MinWidth" Value="216" />
                     </VisualState.Setters>
                 </VisualState>
-                <!-- Справа только «Текст», «Очередь» и «…» -->
+                <!-- Справа только «Текст», «Очередь», громкость и «…» -->
                 <VisualState x:Name="Narrow">
                     <VisualState.StateTriggers>
                         <AdaptiveTrigger MinWindowWidth="720" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="VolumePanel.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeButton.Visibility" Value="Visible" />
                         <Setter Target="MiniButton.Visibility" Value="Collapsed" />
                         <Setter Target="LeftColumn.MinWidth" Value="200" />
                         <Setter Target="RightColumn.MinWidth" Value="200" />
                     </VisualState.Setters>
                 </VisualState>
                 <!-- Две строки, как «Медиаплеер» Windows: перемотка сверху во всю ширину, под ней трек, ⏮ ⏯ ⏭, «Текст»,
-                     «Очередь» и «…»; ♡, перемешать и повтор — в «…» -->
+                     «Очередь», громкость и «…»; ♡, перемешать и повтор — в «…» -->
                 <VisualState x:Name="Compact">
                     <VisualState.StateTriggers>
                         <AdaptiveTrigger MinWindowWidth="0" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="VolumePanel.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeButton.Visibility" Value="Visible" />
                         <Setter Target="MiniButton.Visibility" Value="Collapsed" />
                         <Setter Target="LikeButton.Visibility" Value="Collapsed" />
                         <Setter Target="ShuffleButton.Visibility" Value="Collapsed" />

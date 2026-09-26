@@ -65,6 +65,8 @@
   <data name="PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Без звука</value></data>
   <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Без звука (Ctrl+M)</value></data>
   <data name="PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Громкость</value></data>
+  <data name="PlayerVolumeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Громкость</value></data>
+  <data name="PlayerVolumeButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Громкость (колесо мыши меняет её)</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Ещё</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Ещё</value></data>
   <data name="ResolvingText.Text" xml:space="preserve"><value>Получаем поток…</value></data>
@@ -604,8 +606,6 @@
   <data name="PlayerMore.AccessKey" xml:space="preserve"><value>Е</value></data>
   <data name="DropOpen" xml:space="preserve"><value>Открыть в Melogold</value></data>
   <data name="DropImport" xml:space="preserve"><value>Импорт копии</value></data>
-  <data name="MenuMute" xml:space="preserve"><value>Без звука</value></data>
-  <data name="MenuUnmute" xml:space="preserve"><value>Включить звук</value></data>
   <data name="SettingsDownloads.Header" xml:space="preserve"><value>Загрузки</value></data>
   <data name="SettingsDownloadsEmpty" xml:space="preserve"><value>Скачанного нет · ⋯ › Скачать у трека</value></data>
   <data name="RemoveDownloadsButton.Content" xml:space="preserve"><value>Удалить все</value></data>

@@ -129,6 +129,9 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     public string VolumeGlyph => _settings.Muted || Volume == 0 ? "" : Volume < 34 ? "" : Volume < 67 ? "" : "";
 
+    /// <summary>Громкость числом рядом с ползунком в панели громкости.</summary>
+    public string VolumeText => Math.Round(Volume).ToString(System.Globalization.CultureInfo.CurrentCulture);
+
     public string PlayPauseLabel => Loc.Get(IsPlaying ? "Pause" : "Play");
 
     public string RepeatLabel => Loc.Get(Repeat switch { RepeatMode.All => "RepeatAll", RepeatMode.One => "RepeatOne", _ => "RepeatOff" });
@@ -148,6 +151,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     partial void OnVolumeChanged(double value)
     {
         OnPropertyChanged(nameof(VolumeGlyph));
+        OnPropertyChanged(nameof(VolumeText));
         // Начальное значение и повторная запись того же значения ползунком — не действие человека: «Без звука» не снимаем
         var volume = Math.Clamp(value / 100, 0, 1);
         if (_initializing || Math.Abs(volume - _settings.Volume) < 0.005) return;

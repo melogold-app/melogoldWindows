@@ -39,6 +39,9 @@ OutputDir={#OutputDir}
 OutputBaseFilename=Melogold-{#Arch}-setup
 SetupIconFile=..\src\Melogold.App\Assets\melogold.ico
 UninstallDisplayIcon={app}\{#AppExeName}
+; В конце установки — SHChangeNotify(SHCNE_ASSOCCHANGED): Windows перечитывает значки ярлыков и закреплённого на панели
+; задач, иначе после обновления там остаётся старый значок из кэша (пользователь, 2026-09-26)
+ChangesAssociations=yes
 UninstallDisplayName={#AppName}
 Compression=lzma2/max
 SolidCompression=yes

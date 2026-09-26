@@ -104,6 +104,10 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     [ObservableProperty]
     public partial string? WindowPlacement { get; set; }
 
+    /// <summary>Версия, запущенная в прошлый раз: первая после обновления сбрасывает кэш значков (<see cref="ShellIcons"/>).</summary>
+    [ObservableProperty]
+    public partial string? LastRunVersion { get; set; }
+
     /// <summary>Где стоял мини-плеер: «x,y» в пикселях экрана.</summary>
     [ObservableProperty]
     public partial string? MiniPlayerPosition { get; set; }
@@ -139,6 +143,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             UpdateAnnouncedVersion = data.UpdateAnnouncedVersion;
             WindowPlacement = data.WindowPlacement;
             MiniPlayerPosition = data.MiniPlayerPosition;
+            LastRunVersion = data.LastRunVersion;
             SongCacheSizeChosen = data.SongCacheSizeChosen;
             SongCacheMaxMb = data.SongCacheSizeChosen ? Math.Max(0, data.SongCacheMaxMb) : 4096;
         }
@@ -163,7 +168,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
                 Repeat = Repeat, Shuffle = Shuffle, Autoplay = Autoplay, PauseHistory = PauseHistory, ServerUrl = ServerUrl,
                 LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, PauseSearchHistory = PauseSearchHistory, Sorts = Sorts,
                 ImageCacheMaxMb = ImageCacheMaxMb, SongCacheMaxMb = SongCacheMaxMb, SongCacheSizeChosen = SongCacheSizeChosen, UpdateAnnouncedVersion = UpdateAnnouncedVersion,
-                WindowPlacement = WindowPlacement, MiniPlayerPosition = MiniPlayerPosition,
+                WindowPlacement = WindowPlacement, MiniPlayerPosition = MiniPlayerPosition, LastRunVersion = LastRunVersion,
             };
             var temp = _path + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(data, Json));
@@ -203,5 +208,6 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         public string? UpdateAnnouncedVersion { get; set; }
         public string? WindowPlacement { get; set; }
         public string? MiniPlayerPosition { get; set; }
+        public string? LastRunVersion { get; set; }
     }
 }

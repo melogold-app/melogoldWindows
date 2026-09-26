@@ -147,6 +147,13 @@ public partial class App : Application
         Services.GetRequiredService<LibrarySync>().Start();
         // Обновления: при каждом запуске и раз в 6 часов
         Services.GetRequiredService<UpdateService>().Start();
+        // Первый запуск новой версии: значок на панели задач и в ярлыках — новый, а не из кэша Windows
+        var settings = Services.GetRequiredService<SettingsStore>();
+        if (settings.LastRunVersion != AppInfo.Version)
+        {
+            _ = Task.Run(ShellIcons.Refresh);
+            settings.LastRunVersion = AppInfo.Version;
+        }
         if (_args.Length > 0) Services.GetRequiredService<LinkRouter>().OpenArguments(_args);
     }
 

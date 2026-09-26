@@ -1,6 +1,6 @@
 # Трек закрыт в стране: понятная ошибка со страной YouTube
 
-Статус: открыто
+Статус: сделано
 
 Те же задания: `melogoldAndroid/tasks/0008-geo-blocked-tracks.md` (сделано, Android 0.1.8),
 `melogoldiOSmacOS/tasks/0010-geo-blocked-tracks.md`, `melogoldLinux/tasks/0001-geo-blocked-tracks.md`.
@@ -73,3 +73,17 @@
 - **Вручную:** Saba «Photosynthesis» (`cYKAr38pZcY`) с российского адреса (или через VPN, который YouTube считает
   российским) показывает «Недоступно в стране «Россия»… в 122 других странах…». Из другой страны трек играет как
   обычно.
+
+## 5. Как сделано (Windows 0.1.10)
+
+- `Melogold.InnerTube/Playability.cs`: запрос `player` клиентом `WEB` на `youtubei.googleapis.com` без нашего
+  `visitorData` и по-английски (`hl=en`: причину сверяют с английскими фразами), таймаут 8 с; разбор `visitorData` →
+  страна, `availableCountries`.
+- `StreamResolver.ExplainAsync` / `Diagnose`: когда поток не получен (кроме сети и таймаута), один запрос-диагноз и
+  классификация по п. 2.3; строка в журнал на каждый отказ.
+- Текст — `PlayerViewModel.ErrorText(PlayerError)`; название страны — ICU Windows на языке интерфейса Melogold
+  (`CountryNames`: `RegionInfo.DisplayName` всегда на языке Windows). Длинный текст в панели плеера — целиком в подсказке.
+- Проверено: юнит-тесты `GeoBlockTests` (NL, DE, мусор; RU вне 122 → страна и число; открыт → прежняя ошибка; фразы;
+  тексты ru/en, 121/122; названия стран) и живые `PlayabilityTellsCountryAndOpenCountries`,
+  `ClosedTrackFailsWithCountry` (`MELOGOLD_LIVE=1`). Отсюда YouTube видит Нидерланды: трек открыт и играет. Российский
+  адрес проверен только юнит-тестом; снимок карточки не делался — пользователь в это время играл.

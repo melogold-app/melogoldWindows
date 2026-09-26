@@ -38,7 +38,9 @@ public enum PlayerStatus
 }
 
 /// <summary>Причина ошибки для текста (REWRITE §3.10.9 Android).</summary>
-public sealed record PlayerError(StreamErrorKind Kind, string Message, Track Track);
+/// <param name="Country">трек закрыт в стране: где YouTube видит устройство (задание 0010)</param>
+/// <param name="OpenCountries">в скольких странах трек открыт</param>
+public sealed record PlayerError(StreamErrorKind Kind, string Message, Track Track, string? Country = null, int? OpenCountries = null);
 
 /// <summary>
 /// Плеер (docs/PROMPT.md §4): очередь <see cref="PlayQueue"/>, поток через <see cref="StreamResolver"/> и
@@ -351,7 +353,8 @@ public sealed class PlayerEngine : IDisposable
                 _stream = stream;
                 stream.Failed += error => Post(() =>
                 {
-                    if (ReferenceEquals(_stream, stream)) SkipAfterError(new PlayerError(error is StreamException s ? s.Kind : StreamErrorKind.Network, error.Message, track));
+                    if (ReferenceEquals(_stream, stream))
+                        SkipAfterError(error is StreamException s ? new PlayerError(s.Kind, s.Message, track, s.Country, s.OpenCountries) : new PlayerError(StreamErrorKind.Network, error.Message, track));
                 });
                 var source = MediaSource.CreateFromMediaStreamSource(stream.CreateMediaStreamSource());
                 var item = new MediaPlaybackItem(source);
@@ -384,7 +387,7 @@ public sealed class PlayerEngine : IDisposable
                     if (cts.IsCancellationRequested) return;
                     continue;
                 }
-                SkipAfterError(new PlayerError(e.Kind, e.Message, track));
+                SkipAfterError(new PlayerError(e.Kind, e.Message, track, e.Country, e.OpenCountries));
                 return;
             }
             catch (Exception e) when (e is IOException or HttpRequestException or TaskCanceledException)

@@ -79,6 +79,7 @@
                             Style="{StaticResource CaptionTextBlockStyle}"
                             Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                             Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                            ToolTipService.ToolTip="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
                             TextTrimming="CharacterEllipsis" />
                         <HyperlinkButton x:Uid="RetryLink" Padding="0" Content="Retry" FontSize="12" Command="{x:Bind ViewModel.RetryCommand}" />
                     </StackPanel>

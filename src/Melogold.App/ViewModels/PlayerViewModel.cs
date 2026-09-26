@@ -41,7 +41,7 @@ public sealed partial class PlayerViewModel : ObservableObject
             SaveQueue();
         };
         engine.QueueChanged += SaveQueue;
-        engine.Skipped += error => Notice = Loc.Format("SkippedFormat", error.Track.Title, ErrorText(error.Kind));
+        engine.Skipped += error => Notice = Loc.Format("SkippedFormat", error.Track.Title, ErrorText(error));
         library.Changed += change =>
         {
             if (change.HasFlag(LibraryChange.Likes)) DispatcherQueue.GetForCurrentThread()?.TryEnqueue(RefreshLike);
@@ -171,7 +171,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         if (resolving && !IsResolving) _resolvingSince = DateTime.UtcNow;
         IsResolving = resolving;
         ShowResolvingText = resolving && DateTime.UtcNow - _resolvingSince > TimeSpan.FromSeconds(3);
-        ErrorMessage = Engine.Status == PlayerStatus.Error && Engine.Error is { } error ? ErrorText(error.Kind) : null;
+        ErrorMessage = Engine.Status == PlayerStatus.Error && Engine.Error is { } error ? ErrorText(error) : null;
         Shuffle = Engine.Queue.Shuffled;
         OnPropertyChanged(nameof(Track));
         RefreshLike();
@@ -193,6 +193,19 @@ public sealed partial class PlayerViewModel : ObservableObject
             PositionText = Durations.Format(position);
         }
         if (IsPlaying && DateTime.UtcNow - _lastSave > TimeSpan.FromSeconds(10)) SaveQueue();
+    }
+
+    /// <summary>
+    /// Текст причины: трек закрыт в стране — со страной, где YouTube видит устройство, и числом стран, где трек открыт
+    /// (задание 0010); иначе по классу ошибки.
+    /// </summary>
+    public static string ErrorText(PlayerError error)
+    {
+        if (error.Kind != StreamErrorKind.Geo || error.Country is not { } code) return ErrorText(error.Kind);
+        var country = Melogold.Core.Domain.CountryNames.Of(code);
+        return error.OpenCountries is { } open
+            ? Loc.Format("PlayErrorGeoCountryOpenFormat", country, Loc.Plural("GeoOtherCountries", open))
+            : Loc.Format("PlayErrorGeoCountryFormat", country);
     }
 
     /// <summary>Текст причины по классу ошибки (REWRITE §3.10.9, глоссарий §2.9).</summary>

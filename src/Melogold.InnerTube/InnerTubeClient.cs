@@ -155,13 +155,17 @@ public sealed class InnerTubeClient : IDisposable
         await PostAsync(ClientProfile.WebRemix, "music/get_search_suggestions", new JsonObject { ["input"] = "" }, ct).ConfigureAwait(false);
     }
 
-    public JsonObject Context(ClientProfile client)
+    /// <param name="anonymous">
+    /// диагноз (задание 0010): без нашего visitorData — страну YouTube определяет заново, и по-английски — причину
+    /// сверяют с английскими фразами YouTube
+    /// </param>
+    public JsonObject Context(ClientProfile client, bool anonymous = false)
     {
         var c = new JsonObject
         {
             ["clientName"] = client.Name,
             ["clientVersion"] = client.Version,
-            ["hl"] = Language,
+            ["hl"] = anonymous ? "en" : Language,
             ["gl"] = Region,
             ["timeZone"] = "UTC",
             ["utcOffsetMinutes"] = 0,
@@ -172,27 +176,30 @@ public sealed class InnerTubeClient : IDisposable
         if (client.OsName is not null) c["osName"] = client.OsName;
         if (client.OsVersion is not null) c["osVersion"] = client.OsVersion;
         if (client.AndroidSdkVersion is { } sdk) c["androidSdkVersion"] = sdk;
-        if (_visitorData is not null) c["visitorData"] = _visitorData;
+        if (_visitorData is not null && !anonymous) c["visitorData"] = _visitorData;
         return new JsonObject { ["client"] = c, ["user"] = new JsonObject { ["lockedSafetyMode"] = false } };
     }
 
-    public async Task<JsonNode> PostAsync(ClientProfile client, string endpoint, JsonObject body, CancellationToken cancellationToken = default)
+    /// <param name="host">другой адрес API вместо <see cref="ClientProfile.Host"/></param>
+    /// <param name="anonymous">диагноз (задание 0010): без нашего <see cref="VisitorData"/> и по-английски, см. <see cref="Context"/></param>
+    public async Task<JsonNode> PostAsync(ClientProfile client, string endpoint, JsonObject body, CancellationToken cancellationToken = default,
+        string? host = null, bool anonymous = false)
     {
-        body["context"] = Context(client);
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"https://{client.Host}/youtubei/v1/{endpoint}?prettyPrint=false")
+        body["context"] = Context(client, anonymous);
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"https://{host ?? client.Host}/youtubei/v1/{endpoint}?prettyPrint=false")
         {
             Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"),
         };
         request.Headers.TryAddWithoutValidation("User-Agent", client.UserAgent);
         request.Headers.TryAddWithoutValidation("X-YouTube-Client-Name", client.Id.ToString(CultureInfo.InvariantCulture));
         request.Headers.TryAddWithoutValidation("X-YouTube-Client-Version", client.Version);
-        request.Headers.AcceptLanguage.Add(new StringWithQualityHeaderValue(Language));
+        request.Headers.AcceptLanguage.Add(new StringWithQualityHeaderValue(anonymous ? "en" : Language));
         if (client.Referer is not null)
         {
             request.Headers.TryAddWithoutValidation("Referer", client.Referer);
             request.Headers.TryAddWithoutValidation("Origin", client.Referer.TrimEnd('/'));
         }
-        if (_visitorData is not null) request.Headers.TryAddWithoutValidation("X-Goog-Visitor-Id", _visitorData);
+        if (_visitorData is not null && !anonymous) request.Headers.TryAddWithoutValidation("X-Goog-Visitor-Id", _visitorData);
 
         HttpResponseMessage response;
         try
@@ -227,7 +234,7 @@ public sealed class InnerTubeClient : IDisposable
                 throw new YouTubeException(YouTubeErrorKind.Parser, "Not JSON", e);
             }
             if (node is null) throw new YouTubeException(YouTubeErrorKind.Parser, "Empty response");
-            if (_visitorData is null && node.Str("responseContext", "visitorData") is { Length: > 0 } visitor) _visitorData = visitor;
+            if (_visitorData is null && !anonymous && node.Str("responseContext", "visitorData") is { Length: > 0 } visitor) _visitorData = visitor;
             return node;
         }
     }

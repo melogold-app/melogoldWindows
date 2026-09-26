@@ -45,14 +45,7 @@ public static class Loc
     /// <summary>«21 трек», «3 трека», «5 треков»: ключ <paramref name="key"/> с суффиксом формы, <c>{0}</c> — число.</summary>
     public static string Plural(string key, long count)
     {
-        string form;
-        if (IsRussian)
-        {
-            var n10 = count % 10;
-            var n100 = count % 100;
-            form = n10 == 1 && n100 != 11 ? "one" : n10 is >= 2 and <= 4 && n100 is < 12 or > 14 ? "few" : "many";
-        }
-        else form = count == 1 ? "one" : "other";
+        var form = Melogold.Core.Domain.Plurals.Form(count, IsRussian);
         return string.Format(CultureInfo.CurrentCulture, Get($"{key}_{form}"), count.ToString("N0", CultureInfo.CurrentCulture));
     }
 }

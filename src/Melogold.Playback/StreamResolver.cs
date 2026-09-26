@@ -56,6 +56,12 @@ public sealed class StreamException(StreamErrorKind kind, string message, Except
 
     /// <summary>Пропуск без повторов: причина в самом видео.</summary>
     public bool IsFinal => Kind is StreamErrorKind.Geo or StreamErrorKind.Unavailable or StreamErrorKind.Age;
+
+    /// <summary>Трек закрыт в стране: где YouTube видит устройство (<c>RU</c>); null — не сказал.</summary>
+    public string? Country { get; init; }
+
+    /// <summary>В скольких странах правообладатель открыл трек; null — неизвестно.</summary>
+    public int? OpenCountries { get; init; }
 }
 
 /// <summary>
@@ -65,7 +71,8 @@ public sealed class StreamException(StreamErrorKind kind, string message, Except
 /// <c>expire − 5 мин</c>; кэш сбрасывается при 403 и смене сети. Одновременно — не больше двух извлечений,
 /// у каждого сторож 20 с.
 /// </summary>
-public sealed class StreamResolver(InnerTubeClient client)
+/// <param name="log">строка в журнал на каждый отказ с диагнозом (задание 0010)</param>
+public sealed class StreamResolver(InnerTubeClient client, Action<string>? log = null)
 {
     private const int CacheSize = 64;
     private static readonly TimeSpan Watchdog = TimeSpan.FromSeconds(20);
@@ -102,14 +109,14 @@ public sealed class StreamResolver(InnerTubeClient client)
                 catch (StreamException e) when (e.IsFinal)
                 {
                     // Причина в самом видео: другой клиент ответит тем же
-                    throw;
+                    throw await ExplainAsync(videoId, e, cancellationToken).ConfigureAwait(false);
                 }
                 catch (StreamException e)
                 {
                     last = e;
                 }
             }
-            throw last ?? new StreamException(StreamErrorKind.Extractor, "No stream clients");
+            throw await ExplainAsync(videoId, last ?? new StreamException(StreamErrorKind.Extractor, "No stream clients"), cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -214,6 +221,54 @@ public sealed class StreamResolver(InnerTubeClient client)
         return long.TryParse(expire, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds)
             ? Math.Max(now + 60_000, seconds * 1000 - 5 * 60_000)
             : now + 5 * 3600_000;
+    }
+
+    /// <summary>
+    /// Поток не получен: один раз спросить YouTube клиентом WEB, почему (<see cref="PlayabilityRequest.PlayabilityAsync"/>),
+    /// и уточнить ошибку — трек закрыт в стране (со страной и числом стран), возраст, удалён. Сеть и таймаут не
+    /// уточняются: YouTube тогда не ответит и WEB. В журнал — одна строка на отказ.
+    /// </summary>
+    private async Task<StreamException> ExplainAsync(string videoId, StreamException failure, CancellationToken ct)
+    {
+        if (failure.Kind is StreamErrorKind.Network or StreamErrorKind.Timeout) return failure;
+        Playability? playability = null;
+        try
+        {
+            playability = await client.PlayabilityAsync(videoId, ct).ConfigureAwait(false);
+        }
+        catch (YouTubeException)
+        {
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+        }
+        var result = Diagnose(playability, failure) ?? failure;
+        log?.Invoke(FormattableString.Invariant(
+            $"Stream of {videoId} not played: {result.Kind}; YouTube {playability?.Status ?? "-"} \"{playability?.Reason}\", country {playability?.Country ?? "-"}, open in {playability?.AvailableCountries.Count.ToString(CultureInfo.InvariantCulture) ?? "-"}; client: {failure.Message}"));
+        return result;
+    }
+
+    private static readonly string[] GeoPhrases = ["available in your country", "not made this video available in your country", "blocked it in your country"];
+    private static readonly string[] AgePhrases = ["confirm your age", "age-restricted", "inappropriate for some users"];
+    private static readonly string[] GonePhrases = ["Private video", "has been removed", "account associated with this video has been terminated", "no longer available"];
+
+    /// <summary>
+    /// Итог диагноза (задание 0010 §2.3, Android <c>Unavailability.kt</c>), по порядку: страна вне списка открытых — закрыт
+    /// в стране (страна и число); фразы о стране — закрыт в стране; о возрасте — возраст; об удалении — удалён. null —
+    /// диагноз ничего не добавил, остаётся прежняя ошибка.
+    /// </summary>
+    public static StreamException? Diagnose(Playability? playability, StreamException failure)
+    {
+        var reason = playability?.Reason ?? "";
+        bool Says(string[] phrases) => phrases.Any(p => failure.Message.Contains(p, StringComparison.OrdinalIgnoreCase) || reason.Contains(p, StringComparison.OrdinalIgnoreCase));
+        var open = playability?.AvailableCountries.Count is > 0 and var count ? count : (int?)null;
+        if (playability is { IsBlockedHere: true })
+            return new StreamException(StreamErrorKind.Geo, $"Closed in {playability.Country}, open in {open} countries", failure) { Country = playability.Country, OpenCountries = open };
+        if (Says(GeoPhrases))
+            return new StreamException(StreamErrorKind.Geo, "Closed in the country: " + (reason.Length > 0 ? reason : failure.Message), failure) { Country = playability?.Country, OpenCountries = open };
+        if (Says(AgePhrases)) return new StreamException(StreamErrorKind.Age, "Age check: " + (reason.Length > 0 ? reason : failure.Message), failure);
+        if (Says(GonePhrases)) return new StreamException(StreamErrorKind.Unavailable, "Removed or private: " + (reason.Length > 0 ? reason : failure.Message), failure);
+        return null;
     }
 
     /// <summary>Класс ошибки по тексту YouTube (таблица REWRITE §4.10.3 Android).</summary>

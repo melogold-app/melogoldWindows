@@ -135,4 +135,39 @@ public class LiveYouTubeTests
         using var response = await http.SendAsync(request, Ct);
         Assert.Equal(System.Net.HttpStatusCode.PartialContent, response.StatusCode);
     }
+    /// <summary>
+    /// Задание 0010: WEB отвечает списком стран даже на закрытый трек — Saba «Photosynthesis» открыт в 122 странах без
+    /// России — и страной, где YouTube видит этот компьютер.
+    /// </summary>
+    [Fact]
+    public async Task PlayabilityTellsCountryAndOpenCountries()
+    {
+        Assert.SkipUnless(Live, "MELOGOLD_LIVE=1");
+        var answer = await Music().Client.PlayabilityAsync("cYKAr38pZcY", Ct);
+        TestContext.Current.TestOutputHelper?.WriteLine($"status {answer.Status}, reason {answer.Reason}, country {answer.Country}, open {answer.AvailableCountries.Count}");
+        Assert.NotNull(answer.Country);
+        Assert.True(answer.AvailableCountries.Count > 100);
+        Assert.DoesNotContain("RU", answer.AvailableCountries);
+        Assert.Equal(answer.Country == "RU", answer.IsBlockedHere);
+    }
+    /// <summary>Задание 0010 целиком: из России трек не играет, и ошибка несёт страну и число стран; из другой — играет.</summary>
+    [Fact]
+    public async Task ClosedTrackFailsWithCountry()
+    {
+        Assert.SkipUnless(Live, "MELOGOLD_LIVE=1");
+        var client = Music().Client;
+        var here = (await client.PlayabilityAsync("cYKAr38pZcY", Ct)).Country;
+        var lines = new List<string>();
+        var resolver = new StreamResolver(client, lines.Add);
+        if (here != "RU")
+        {
+            Assert.NotNull(await resolver.ResolveAsync("cYKAr38pZcY", Ct));
+            return;
+        }
+        var error = await Assert.ThrowsAsync<StreamException>(() => resolver.ResolveAsync("cYKAr38pZcY", Ct));
+        Assert.Equal(StreamErrorKind.Geo, error.Kind);
+        Assert.Equal("RU", error.Country);
+        Assert.True(error.OpenCountries > 100);
+        Assert.Contains(lines, l => l.Contains("cYKAr38pZcY", StringComparison.Ordinal) && l.Contains("country RU", StringComparison.Ordinal));
+    }
 }

@@ -75,7 +75,7 @@ public partial class App : Application
             return client;
         });
         services.AddSingleton<YouTubeMusic>();
-        services.AddSingleton<StreamResolver>();
+        services.AddSingleton(sp => new StreamResolver(sp.GetRequiredService<InnerTubeClient>(), Log.Info));
         services.AddSingleton(sp => new StreamClients(sp.GetRequiredService<StreamResolver>(), Path.Combine(AppPaths.DataDirectory, "stream-clients.json"),
             (message, error) => Log.Warn(message, error)));
         services.AddSingleton<CatalogCache>();

@@ -42,10 +42,14 @@ public static class ArtworkColors
         }
         try
         {
-            var bytes = await Http.GetByteArrayAsync(url, ct);
+            // Из кэша изображений: обложка уже там (строка, панель плеера), в сеть заново не ходим; у кадра видео — без
+            // чёрных полей, и цвет полей не мешает
+            var bytes = Images.Cache is { } cache && Uri.TryCreate(url, UriKind.Absolute, out var uri) && await cache.GetAsync(uri) is { } path
+                ? await File.ReadAllBytesAsync(path, ct)
+                : await Http.GetByteArrayAsync(url, ct);
             seed = await Task.Run(() => SeedAsync(bytes), ct);
         }
-        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or ArgumentException or System.Runtime.InteropServices.COMException)
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or ArgumentException or IOException or System.Runtime.InteropServices.COMException)
         {
             return null;
         }

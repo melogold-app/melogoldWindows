@@ -154,6 +154,7 @@ public sealed partial class NowPlayingView : Grid
             OpenChanged?.Invoke(true);
         }
         _lyrics.Active = true;
+        if (_palette is null) ApplyPalette(ThemePalette(ActualTheme == ElementTheme.Dark), animate: false);
         ShowTrack();
         ShowLyrics();
         _synced.Start();
@@ -219,7 +220,12 @@ public sealed partial class NowPlayingView : Grid
 
     private void OnTrackChanged() => DispatcherQueue.TryEnqueue(() =>
     {
-        if (!IsOpen) return;
+        if (!IsOpen)
+        {
+            // Цвет по обложке — заранее: к открытию «Сейчас играет» фон уже готов, а не появляется после текста
+            if (_engine.Current is not null) _ = LoadPaletteAsync(force: false);
+            return;
+        }
         if (_engine.Current is null)
         {
             Close();
@@ -253,12 +259,21 @@ public sealed partial class NowPlayingView : Grid
         Arrange();
     }
 
-    /// <summary>Фон и цвета текста по обложке; у серой обложки — цвета темы.</summary>
+    /// <summary>Цвета темы: пока цвет по обложке не посчитан и у серой обложки.</summary>
+    private static ArtworkPalette ThemePalette(bool dark) => dark
+        ? new ArtworkPalette(Color.FromArgb(255, 0x20, 0x20, 0x20), Colors.White, Color.FromArgb(255, 0xC5, 0xC5, 0xC5), Color.FromArgb(255, 0x3A, 0x3A, 0x3A))
+        : new ArtworkPalette(Color.FromArgb(255, 0xF3, 0xF3, 0xF3), Color.FromArgb(255, 0x1A, 0x1A, 0x1A), Color.FromArgb(255, 0x5C, 0x5C, 0x5C), Color.FromArgb(255, 0xE0, 0xE0, 0xE0));
+
+    /// <summary>
+    /// Фон и цвета текста по обложке; у серой обложки — цвета темы. Фон никогда не прозрачный: пока цвет считается, стоят
+    /// цвета темы, а готовый цвет наплывает за 0,3 с (пользователь: «фон появлялся дольше, чем наполнение»).
+    /// </summary>
     private async Task LoadPaletteAsync(bool force)
     {
         if (_engine.Current is not { } track) return;
         if (!force && _paletteKey == track.VideoId) return;
         _paletteKey = track.VideoId;
+        if (_palette is null) ApplyPalette(ThemePalette(ActualTheme == ElementTheme.Dark), animate: false);
         _paletteLoad?.Cancel();
         var cancel = _paletteLoad = new CancellationTokenSource();
         var dark = ActualTheme == ElementTheme.Dark;
@@ -268,10 +283,32 @@ public sealed partial class NowPlayingView : Grid
             ? new ArtworkPalette(SystemColor("SystemColorWindowColor"), SystemColor("SystemColorWindowTextColor"), SystemColor("SystemColorWindowTextColor"), SystemColor("SystemColorHighlightColor"))
             : await ArtworkColors.PaletteAsync(track.VideoId, url, dark, cancel.Token);
         if (cancel.IsCancellationRequested) return;
-        _palette = palette ?? (dark
-            ? new ArtworkPalette(Color.FromArgb(255, 0x20, 0x20, 0x20), Colors.White, Color.FromArgb(255, 0xC5, 0xC5, 0xC5), Color.FromArgb(255, 0x3A, 0x3A, 0x3A))
-            : new ArtworkPalette(Color.FromArgb(255, 0xF3, 0xF3, 0xF3), Color.FromArgb(255, 0x1A, 0x1A, 0x1A), Color.FromArgb(255, 0x5C, 0x5C, 0x5C), Color.FromArgb(255, 0xE0, 0xE0, 0xE0)));
-        _background.Color = _palette.Background;
+        // Открыто — цвет наплывает; закрыто — просто встаёт, к открытию он уже на месте
+        ApplyPalette(palette ?? ThemePalette(dark), animate: IsOpen && AnimationsEnabled);
+    }
+
+    private Microsoft.UI.Xaml.Media.Animation.Storyboard? _backgroundFade;
+
+    private void ApplyPalette(ArtworkPalette palette, bool animate)
+    {
+        _palette = palette;
+        _backgroundFade?.Stop();
+        if (animate)
+        {
+            var fade = new Microsoft.UI.Xaml.Media.Animation.ColorAnimation
+            {
+                To = palette.Background,
+                Duration = TimeSpan.FromMilliseconds(300),
+                EnableDependentAnimation = true,
+            };
+            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(fade, _background);
+            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fade, "Color");
+            _backgroundFade = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
+            _backgroundFade.Children.Add(fade);
+            _backgroundFade.Completed += (_, _) => _background.Color = palette.Background;
+            _backgroundFade.Begin();
+        }
+        else _background.Color = palette.Background;
         _title.Foreground = new SolidColorBrush(_palette.Text);
         _plain.Foreground = new SolidColorBrush(_palette.Text);
         foreach (var text in _secondaryTexts) text.Foreground = new SolidColorBrush(_palette.SecondaryText);

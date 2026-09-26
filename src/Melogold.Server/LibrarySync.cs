@@ -853,16 +853,21 @@ public sealed class LibrarySync : IDisposable
     /// </summary>
     private static void ApplyLyrics(SyncTx tx, MyLyrics item)
     {
+        var local = tx.Lyrics(item.VideoId);
         if (item.Deleted || item.Text is null)
         {
             var snapshot = tx.SyncedLyrics().GetValueOrDefault(item.VideoId);
-            if (LyricsSyncRules.DeleteOnTombstone(tx.Lyrics(item.VideoId), snapshot)) tx.DeleteLyrics(item.VideoId);
+            if (LyricsSyncRules.DeleteOnTombstone(local, snapshot))
+            {
+                // Выбранный текст остаётся здесь найденным, набранный — удаляется
+                if (LyricsSyncRules.IsChosenOnly(local!)) tx.SaveLyrics(item.VideoId, local! with { Chosen = false });
+                else tx.DeleteLyrics(item.VideoId);
+            }
             tx.ForgetSyncedLyrics(item.VideoId);
             return;
         }
         var stored = LyricsSyncRules.FromPayload(FromText(item.Text));
         // Тот же текст, найденный здесь автоматически, становится своим: дальше его правки уходят на сервер
-        var local = tx.Lyrics(item.VideoId);
         if (!LyricsSyncRules.SameContent(local, stored)) tx.SaveLyrics(item.VideoId, stored);
         else if (local is { Chosen: false }) tx.SaveLyrics(item.VideoId, local with { Chosen = true });
         tx.SetSyncedLyrics(item.VideoId, item.Rev, LyricsSyncRules.Hash(LyricsSyncRules.ToPayload(stored)));

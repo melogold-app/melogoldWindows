@@ -155,6 +155,18 @@ public class LyricsSyncTests
     }
 
     [Fact]
+    public void TombstoneKeepsChosenTextAsFetched()
+    {
+        // Выбранный lrclib: надгробие не удаляет, а делает найденным (Android и Apple пока удаляют такие с сервера)
+        var chosen = new StoredLyrics(Lrc, "", LyricsSources.LrcLib, null, Chosen: true);
+        Assert.True(LyricsSyncRules.IsChosenOnly(chosen));
+        Assert.False(LyricsSyncRules.IsOwn(chosen with { Chosen = false }));
+        // Набранный или импортированный — свой и без выбора: надгробие его удаляет
+        Assert.False(LyricsSyncRules.IsChosenOnly(FileLrc() with { Chosen = true }));
+        Assert.False(LyricsSyncRules.IsChosenOnly(FileLrc()));
+    }
+
+    [Fact]
     public void ServerResponsesParse()
     {
         var page = JsonSerializer.Deserialize<MyLyricsPage>("""

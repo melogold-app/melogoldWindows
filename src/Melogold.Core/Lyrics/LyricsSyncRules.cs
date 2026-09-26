@@ -151,4 +151,13 @@ public static class LyricsSyncRules
     /// </summary>
     public static bool DeleteOnTombstone(StoredLyrics? local, LyricsSnapshot? snapshot) =>
         local is not null && IsOwn(local) && snapshot is not null && Hash(ToPayload(local)) == snapshot.Hash;
+
+    /// <summary>
+    /// Свой только потому, что выбран (<see cref="StoredLyrics.Chosen"/>), а не набран и не импортирован. Надгробие такой
+    /// текст не удаляет, а делает найденным: Android и Apple до своих заданий не считают выбранный текст своим и
+    /// удаляют с сервера всё, что пришло с источником lrclib или youtube_music (2026-09-26). Выбор тогда остаётся хотя
+    /// бы на этом устройстве, как было до синка выбранных текстов, и обратно на сервер не уходит — без перекидывания.
+    /// </summary>
+    public static bool IsChosenOnly(StoredLyrics lyrics) =>
+        lyrics.Chosen && !(IsOwnSource(lyrics.SyncedSource) && Text(lyrics.Synced) is not null) && !(IsOwnSource(lyrics.PlainSource) && Text(lyrics.Plain) is not null);
 }

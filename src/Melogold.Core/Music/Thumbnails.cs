@@ -35,6 +35,23 @@ public static partial class Thumbnails
     public static string ForVideo(string videoId, int px = 544) =>
         px <= 320 ? $"https://i.ytimg.com/vi/{videoId}/mqdefault.jpg" : $"https://i.ytimg.com/vi/{videoId}/hqdefault.jpg";
 
+    /// <summary>
+    /// Запасной кадр, когда большого нет: у старых видео (2005–2012) <c>hq720.jpg</c>, <c>sddefault.jpg</c> и
+    /// <c>maxresdefault.jpg</c> отвечают 404, есть только <c>hqdefault.jpg</c> 480×360 — без запаса «Сейчас играет»
+    /// оставалось пустым. null — запасного нет.
+    /// </summary>
+    public static string? Fallback(string url)
+    {
+        var match = YtImg().Match(url);
+        if (!match.Success) return null;
+        var file = url[match.Length..];
+        var query = file.IndexOf('?');
+        if (query >= 0) file = file[..query];
+        return file is "hq720.jpg" or "sddefault.jpg" or "maxresdefault.jpg" or "hq720.webp" or "maxresdefault.webp"
+            ? $"https://i.ytimg.com/vi/{match.Groups[2].Value}/hqdefault.jpg"
+            : null;
+    }
+
     /// <summary>Обложка видео 16:9 (её нужно обрезать до квадрата при показе).</summary>
     public static bool IsWide(string? url) => url is not null && YtImg().IsMatch(url);
 }

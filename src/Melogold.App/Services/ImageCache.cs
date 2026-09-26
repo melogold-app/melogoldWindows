@@ -62,7 +62,16 @@ public sealed class ImageCache
                 File.SetLastWriteTimeUtc(path, DateTime.UtcNow);
                 return path;
             }
-            var bytes = await _http.GetByteArrayAsync(uri).ConfigureAwait(false);
+            byte[] bytes;
+            try
+            {
+                bytes = await _http.GetByteArrayAsync(uri).ConfigureAwait(false);
+            }
+            catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound && Thumbnails.Fallback(uri.AbsoluteUri) is { } smaller)
+            {
+                // Старое видео: большого кадра нет, есть hqdefault (в файле — под ключом большого, чтобы не спрашивать снова)
+                bytes = await _http.GetByteArrayAsync(smaller).ConfigureAwait(false);
+            }
             if (frame) bytes = await VideoFrames.TrimBarsAsync(bytes).ConfigureAwait(false);
             System.IO.Directory.CreateDirectory(Directory);
             var temp = path + "." + Environment.CurrentManagedThreadId + ".tmp";

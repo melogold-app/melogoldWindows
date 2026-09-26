@@ -75,4 +75,12 @@ public class FrameBarsTests
         var bgra = Frame(320, 180, (x, y) => x is >= 70 and < 250 ? Picture(x, y) : (byte)(x == 10 && y == 50 ? 200 : 8));
         Assert.Equal(new PixelRect(70, 0, 180, 180), FrameBars.Content(bgra, 320, 180));
     }
+    [Fact]
+    public void OldVideosFallBackToHqDefault()
+    {
+        Assert.Equal("https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg", Thumbnails.Fallback("https://i.ytimg.com/vi/jNQXAC9IVRw/hq720.jpg"));
+        Assert.Equal("https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg", Thumbnails.Fallback("https://i.ytimg.com/vi/jNQXAC9IVRw/maxresdefault.jpg?sqp=abc"));
+        Assert.Null(Thumbnails.Fallback("https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg"));
+        Assert.Null(Thumbnails.Fallback("https://lh3.googleusercontent.com/abc=w544-h544-l90-rj"));
+    }
 }

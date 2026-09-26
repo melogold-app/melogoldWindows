@@ -100,6 +100,14 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     [ObservableProperty]
     public partial string? UpdateAnnouncedVersion { get; set; }
 
+    /// <summary>Место и размер главного окна при закрытии (<see cref="Services.WindowPlacement"/>).</summary>
+    [ObservableProperty]
+    public partial string? WindowPlacement { get; set; }
+
+    /// <summary>Где стоял мини-плеер: «x,y» в пикселях экрана.</summary>
+    [ObservableProperty]
+    public partial string? MiniPlayerPosition { get; set; }
+
     /// <summary>Сортировки списков по ключу экрана.</summary>
     [ObservableProperty]
     public partial Dictionary<string, string> Sorts { get; set; } = [];
@@ -129,6 +137,8 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             Sorts = data.Sorts ?? [];
             ImageCacheMaxMb = Math.Max(1, data.ImageCacheMaxMb);
             UpdateAnnouncedVersion = data.UpdateAnnouncedVersion;
+            WindowPlacement = data.WindowPlacement;
+            MiniPlayerPosition = data.MiniPlayerPosition;
             SongCacheSizeChosen = data.SongCacheSizeChosen;
             SongCacheMaxMb = data.SongCacheSizeChosen ? Math.Max(0, data.SongCacheMaxMb) : 4096;
         }
@@ -153,6 +163,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
                 Repeat = Repeat, Shuffle = Shuffle, Autoplay = Autoplay, PauseHistory = PauseHistory, ServerUrl = ServerUrl,
                 LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, PauseSearchHistory = PauseSearchHistory, Sorts = Sorts,
                 ImageCacheMaxMb = ImageCacheMaxMb, SongCacheMaxMb = SongCacheMaxMb, SongCacheSizeChosen = SongCacheSizeChosen, UpdateAnnouncedVersion = UpdateAnnouncedVersion,
+                WindowPlacement = WindowPlacement, MiniPlayerPosition = MiniPlayerPosition,
             };
             var temp = _path + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(data, Json));
@@ -190,5 +201,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         public long SongCacheMaxMb { get; set; } = 4096;
         public bool SongCacheSizeChosen { get; set; }
         public string? UpdateAnnouncedVersion { get; set; }
+        public string? WindowPlacement { get; set; }
+        public string? MiniPlayerPosition { get; set; }
     }
 }

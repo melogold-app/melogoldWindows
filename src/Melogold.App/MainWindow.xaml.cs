@@ -177,15 +177,43 @@ public sealed partial class MainWindow : Window
             _taskbar.Add();
         };
 
-        // Размер в эффективных пикселях: при масштабе 150 % окно не должно выйти маленьким
-        var scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
-        AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(1280 * scale), (int)(820 * scale)));
+        // Окно — там и такого размера, каким его закрыли, развёрнутое — развёрнутым. Впервые или если того монитора
+        // больше нет — 1280×820 эффективных пикселей (при масштабе 150 % окно не выходит маленьким)
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        if (!WindowPlacement.Restore(hwnd, _settings.WindowPlacement))
+        {
+            var scale = GetDpiForWindow(hwnd) / 96.0;
+            AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(1280 * scale), (int)(820 * scale)));
+        }
+        // Запоминается и по ходу — через полсекунды после того, как окно подвинули, изменили или развернули: процесс
+        // могут и снять (выключение, сбой), и тогда закрытия не будет
+        var placementTimer = DispatcherQueue.CreateTimer();
+        placementTimer.Interval = TimeSpan.FromMilliseconds(500);
+        placementTimer.IsRepeating = false;
+        placementTimer.Tick += (_, _) => SavePlacement(hwnd);
+        AppWindow.Changed += (_, e) =>
+        {
+            if (!e.DidPositionChange && !e.DidSizeChange && !e.DidPresenterChange) return;
+            placementTimer.Stop();
+            placementTimer.Start();
+        };
         Closed += (_, _) =>
         {
+            SavePlacement(hwnd);
             _settings.LastSection = _navigator.Current;
             player.SaveQueue();
             Snackbar.Dismiss(commit: true);
         };
+    }
+
+    /// <summary>
+    /// Место окна — в настройки. Во весь экран (F11) и скрытое (открыт мини-плеер) — не сохраняется: следующий запуск
+    /// откроет окно, каким оно было до этого.
+    /// </summary>
+    private void SavePlacement(IntPtr hwnd)
+    {
+        if (_fullScreen || !AppWindow.IsVisible) return;
+        if (WindowPlacement.Capture(hwnd) is { } placement && placement != _settings.WindowPlacement) _settings.WindowPlacement = placement;
     }
 
     public Snackbar Snackbar { get; }

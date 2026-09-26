@@ -73,7 +73,18 @@ public sealed partial class MiniPlayerWindow : Window
 
         AppWindow.SetPresenter(AppWindowPresenterKind.CompactOverlay);
         var scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
-        AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(360 * scale), (int)(128 * scale)));
+        var size = new Windows.Graphics.SizeInt32((int)(360 * scale), (int)(128 * scale));
+        AppWindow.Resize(size);
+        // Мини-плеер открывается там, где его оставили (если тот монитор на месте)
+        var settings = App.Services.GetRequiredService<SettingsStore>();
+        if (settings.MiniPlayerPosition?.Split(',') is [var sx, var sy]
+            && int.TryParse(sx, System.Globalization.CultureInfo.InvariantCulture, out var x) && int.TryParse(sy, System.Globalization.CultureInfo.InvariantCulture, out var y)
+            && WindowPlacement.OnScreen(x, y, size.Width, size.Height))
+            AppWindow.Move(new Windows.Graphics.PointInt32(x, y));
+        AppWindow.Changed += (_, e) =>
+        {
+            if (e.DidPositionChange && AppWindow.IsVisible) settings.MiniPlayerPosition = FormattableString.Invariant($"{AppWindow.Position.X},{AppWindow.Position.Y}");
+        };
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "melogold.ico"));
         AppWindow.Title = "Melogold";
 

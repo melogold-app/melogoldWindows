@@ -65,6 +65,24 @@ public sealed class HistorySyncTests : IDisposable
     }
 
     [Fact]
+    public void ForgetWithTotalBeforeResetsTheTotalUnlessFreshStatsCame()
+    {
+        var play = $$"""{"eventId":"b71e2c3d-4e5f-4a6b-9c7d-8e9f0a1b2c3d","videoId":"a1B2c3D4e5F","playedAt":"2026-09-23T09:58:10.000Z","playTimeMs":212000,"deviceId":"{{Phone}}"}""";
+        Apply(Response(play, """{"videoId":"a1B2c3D4e5F","totalPlayTimeMs":1484000,"lastPlayedAt":"2026-09-23T09:58:10.000Z"}"""));
+        Assert.Equal(1_484_000, _library.MostPlayed(null)[0].PlayTimeMs);
+
+        // Трек убрали на Android с resetTotal: true — пропадает и из «Чаще всего» (tasks/0008)
+        var forget = """{"videoId":"a1B2c3D4e5F","eventsBefore":"2026-09-24T10:00:00.000Z","totalBefore":"2026-09-24T10:00:00.000Z"}""";
+        Apply(Response("", "", forget));
+        Assert.Equal(0, _library.PlayCount());
+        Assert.Empty(_library.MostPlayed(null));
+
+        // Тот же забытый трек, но в ответе уже его новое общее время (слушали после) — оно и остаётся
+        Apply(Response("", """{"videoId":"a1B2c3D4e5F","totalPlayTimeMs":90000,"lastPlayedAt":"2026-09-25T09:00:00.000Z"}""", forget));
+        Assert.Equal(90_000, _library.MostPlayed(null).Single().PlayTimeMs);
+    }
+
+    [Fact]
     public void OwnPlayComingBackIsNotDoubled()
     {
         _library.RecordPlay(T("dQw4w9WgXcQ", "Never Gonna Give You Up"), 60_000, 1_790_000_000_000);
@@ -109,14 +127,17 @@ public sealed class HistorySyncTests : IDisposable
     }
 
     [Fact]
-    public void RemoveAndClearGoToTheServerAndKeepTheTotal()
+    public void RemoveResetsTheTotalAndClearKeepsIt()
     {
         _library.RecordPlay(T("dQw4w9WgXcQ", "Here"), 120_000, IsoTimeNow() - 1000);
+        _library.RecordPlay(T("kJQP7kiw5Fk", "Stays"), 60_000, IsoTimeNow() - 1000);
         _library.RemoveFromHistory("dQw4w9WgXcQ");
-        Assert.Equal(0, _library.PlayCount());
-        // resetTotal: false — общее время остаётся, как на Android
-        Assert.Equal(120_000, _library.MostPlayed(null).Single().PlayTimeMs);
+        Assert.Equal(1, _library.PlayCount());
+        // resetTotal: true — трек пропадает и из «Чаще всего», как на Android и Apple (tasks/0008)
+        Assert.Equal(["kJQP7kiw5Fk"], _library.MostPlayed(null).Select(m => m.Track.VideoId));
         _library.ClearHistory();
+        // «Очистить историю» общее время не трогает
+        Assert.Equal(60_000, _library.MostPlayed(null).Single().PlayTimeMs);
         var ops = _store.Run(tx => tx.HistoryOps());
         Assert.Equal(["history.forget", "history.clear"], ops.Select(o => o.Kind));
         Assert.Equal("dQw4w9WgXcQ", ops[0].VideoId);

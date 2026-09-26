@@ -441,7 +441,8 @@ public sealed class LibrarySync : IDisposable
                 if (op.Kind == "history.forget")
                 {
                     o["videoId"] = op.VideoId;
-                    o["resetTotal"] = false;
+                    // Общее время трека обнуляется на всех устройствах, как у Android и Apple (tasks/0008)
+                    o["resetTotal"] = true;
                 }
                 o["eventsBefore"] = IsoTime.Format(op.EventsBefore);
             }, opId: op.OpId));
@@ -660,10 +661,13 @@ public sealed class LibrarySync : IDisposable
 
     /// <summary>
     /// История с сервера (tasks/0002 §3.3), в порядке API §4.8: общее время трека (уже по всем устройствам),
-    /// прослушивания любого устройства (своё вернувшееся не задваивается), забытые события.
+    /// прослушивания любого устройства (своё вернувшееся не задваивается), забытые события. Забытое с
+    /// <c>totalBefore</c> (другой клиент убрал трек с <c>resetTotal: true</c>) обнуляет общее время трека, если в том же
+    /// ответе нет его свежего <c>playStats</c> (tasks/0008).
     /// </summary>
     internal static void ApplyHistoryRows(SyncTx tx, SyncResponse response)
     {
+        var withStats = response.PlayStats.Select(r => r.VideoId).ToHashSet(StringComparer.Ordinal);
         foreach (var row in response.PlayStats)
         {
             tx.EnsureTrack(row.VideoId, null);
@@ -678,6 +682,7 @@ public sealed class LibrarySync : IDisposable
         foreach (var row in response.PlayForgets)
         {
             if (IsoTime.TryParse(row.EventsBefore) is { } before) tx.ForgetPlays(row.VideoId, before);
+            if (row.TotalBefore is not null && row.VideoId != "*" && !withStats.Contains(row.VideoId)) tx.SetPlayTotal(row.VideoId, 0);
         }
     }
 

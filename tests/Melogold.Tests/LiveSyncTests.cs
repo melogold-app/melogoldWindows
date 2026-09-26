@@ -325,9 +325,12 @@ public class LiveSyncTests(ITestOutputHelper output)
             Assert.Equal([A2.VideoId], b.Library.RecentHistory(device: HistoryDevice.This(bDevice)).Select(h => h.Track.VideoId));
             Assert.Equal([A1.VideoId], b.Library.RecentHistory(device: HistoryDevice.Other(aDevice)).Select(h => h.Track.VideoId));
 
-            // «Убрать из истории» на B — на A тоже
+            // «Убрать из истории» на B — на A тоже, и из «Чаще всего · Всё время» (resetTotal: true, tasks/0008)
             b.Library.RemoveFromHistory(A1.VideoId);
-            await WaitFor("A убрал трек из истории", () => a.Library.RecentHistory().Select(h => h.Track.VideoId).SequenceEqual([A2.VideoId]));
+            Assert.DoesNotContain(A1.VideoId, b.Library.MostPlayed(null).Select(m => m.Track.VideoId));
+            await WaitFor("A убрал трек из истории и из «Чаще всего»", () =>
+                a.Library.RecentHistory().Select(h => h.Track.VideoId).SequenceEqual([A2.VideoId])
+                && !a.Library.MostPlayed(null).Any(m => m.Track.VideoId == A1.VideoId));
 
             // «Очистить историю» на A — на B тоже
             a.Library.ClearHistory();

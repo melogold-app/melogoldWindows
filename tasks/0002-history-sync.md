@@ -21,7 +21,7 @@
 | kind | Поля | Когда |
 |---|---|---|
 | `play.add` | `opId` = eventId (UUID события), `at` = `playedAt`, `videoId`, `playedAt`, `playTimeMs` (1..86 400 000), `history: true`, `playtime: true`, `tracks` (метаданные трека) | каждое прослушивание |
-| `history.forget` | `videoId`, `eventsBefore` = сейчас, `resetTotal: false` | «Убрать из истории» |
+| `history.forget` | `videoId`, `eventsBefore` = сейчас, `resetTotal: true` (исправлено заданием 0008) | «Убрать из истории» |
 | `history.clear` | `eventsBefore` = сейчас | «Очистить историю» |
 | `play.baseline` | `mode: "atLeast"`, `entries` (до 500 `{videoId, totalMs}`) | один раз, если есть накопленное время прослушивания до синка (импорт) |
 

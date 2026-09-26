@@ -1,6 +1,6 @@
 # «Убрать из истории» обнуляет общее время трека, как на Android и Apple
 
-Статус: открыто
+Статус: сделано
 
 Сейчас клиенты расходятся. Android и Apple на «Убрать из истории» шлют `history.forget` с `resetTotal: true`, и трек пропадает и из Истории, и из «Чаще всего» (GLOSSARY Android №87: «трек пропадает из Истории и «Чаще всего»»). Windows шлёт `resetTotal: false` (`LibrarySync.cs`, `Library.RemoveFromHistory`), поэтому трек остаётся в «Чаще всего · Всё время» со старым временем. А когда трек убрали на Android или Apple, сервер присылает на Windows `playForgets` с `totalBefore`.
 

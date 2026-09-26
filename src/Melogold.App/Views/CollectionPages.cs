@@ -427,13 +427,15 @@ public sealed partial class HistoryPage : CatalogPage
         var index = _list.Entries.IndexOf(row);
         _list.Entries.Remove(row);
         _pendingRemoval.Add(track.VideoId);
+        // Граница — момент нажатия, а не конец отсрочки: прослушивания за эти секунды не сотрутся (tasks/0008 §4)
+        var before = Melogold.Core.Domain.IsoTime.NowMs();
         // С аккаунтом трек уходит из Истории на всех устройствах — так и сказать
         var text = CurrentDeviceId is null ? Loc.Format("RemovedFromHistoryFormat", track.Title) : Loc.Format("RemovedFromHistoryEverywhereFormat", track.Title);
         App.Services.GetRequiredService<Snackbar>().ShowUndoable(text,
             commit: () =>
             {
                 _pendingRemoval.Remove(track.VideoId);
-                _ = Task.Run(() => _library.RemoveFromHistory(track.VideoId));
+                _ = Task.Run(() => _library.RemoveFromHistory(track.VideoId, before));
             },
             undo: () =>
             {

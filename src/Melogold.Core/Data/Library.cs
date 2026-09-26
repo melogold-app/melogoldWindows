@@ -534,15 +534,18 @@ public sealed class Library(LibraryDatabase db)
     }
 
     /// <summary>
-    /// «Убрать из истории» на всех устройствах: события трека удаляются, общее время остаётся (<c>resetTotal: false</c>,
-    /// как на Android); синхронизация отправит <c>history.forget</c>.
+    /// «Убрать из истории» на всех устройствах (tasks/0008): события трека удаляются и общее время обнуляется — трек
+    /// пропадает и из Истории, и из «Чаще всего», как на Android и Apple; синхронизация отправит <c>history.forget</c> с
+    /// <c>resetTotal: true</c>. <paramref name="before"/> — когда нажали: у действия есть «Отменить», и прослушивания,
+    /// записанные за эти секунды, не должны стереться на всех устройствах.
     /// </summary>
-    public void RemoveFromHistory(string videoId)
+    public void RemoveFromHistory(string videoId, long? before = null)
     {
-        var now = IsoTime.NowMs();
+        var now = before ?? IsoTime.NowMs();
         Database.Write((c, t) =>
         {
             LibraryDatabase.Exec(c, t, "DELETE FROM play_events WHERE video_id = $v AND played_at <= $now", ("$v", videoId), ("$now", now));
+            LibraryDatabase.Exec(c, t, "UPDATE tracks SET total_play_ms = 0 WHERE video_id = $v", ("$v", videoId));
             LibraryDatabase.Exec(c, t, "INSERT INTO history_ops (op_id, kind, video_id, events_before) VALUES ($id, 'history.forget', $v, $now)",
                 ("$id", Guid.NewGuid().ToString()), ("$v", videoId), ("$now", now));
         });

@@ -2,7 +2,7 @@
   <!-- Общие настройки всех проектов решения. Версия приложения — одна, здесь: её читают сборка,
        User-Agent (`melogold-windows/<версия>`, API §1.2), установщик и update.json (scripts/release.ps1). -->
   <PropertyGroup>
-    <MelogoldVersion>0.1.8</MelogoldVersion>
+    <MelogoldVersion>0.1.9</MelogoldVersion>
     <Version>$(MelogoldVersion)</Version>
     <AssemblyVersion>$(MelogoldVersion).0</AssemblyVersion>
     <FileVersion>$(MelogoldVersion).0</FileVersion>

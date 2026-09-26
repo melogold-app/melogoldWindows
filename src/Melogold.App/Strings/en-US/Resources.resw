@@ -633,4 +633,21 @@
   <data name="DownloadsDownloadedFormat" xml:space="preserve"><value>Downloaded · {0} · {1}</value></data>
   <data name="DownloadsCountFormat" xml:space="preserve"><value>Downloaded: {0} · cached: {1}</value></data>
   <data name="DownloadsEmpty" xml:space="preserve"><value>Download tracks to play them without a network. ⋯ › Download</value></data>
+  <data name="SelectionCountFormat" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="SelectionPlay" xml:space="preserve"><value>Play</value></data>
+  <data name="SelectionQueue" xml:space="preserve"><value>Add to queue</value></data>
+  <data name="SelectionLike" xml:space="preserve"><value>Add to Favorites</value></data>
+  <data name="SelectionAddToPlaylist" xml:space="preserve"><value>Add to playlist…</value></data>
+  <data name="SelectionNewPlaylist" xml:space="preserve"><value>New playlist…</value></data>
+  <data name="SelectionDownload" xml:space="preserve"><value>Download</value></data>
+  <data name="SelectionSelectAll" xml:space="preserve"><value>Select all</value></data>
+  <data name="SelectionClear" xml:space="preserve"><value>Clear selection</value></data>
+  <data name="QueuedCountFormat" xml:space="preserve"><value>Added to queue: {0}</value></data>
+  <data name="LikedCountFormat" xml:space="preserve"><value>Added to Favorites: {0}</value></data>
+  <data name="PlaylistCreatedFormat" xml:space="preserve"><value>Playlist “{0}”: {1}</value></data>
+  <data name="OpenAction" xml:space="preserve"><value>Open</value></data>
+  <data name="DownloadingCountFormat" xml:space="preserve"><value>Downloading: {0}</value></data>
+  <data name="NothingToDownload" xml:space="preserve"><value>The selection is already downloaded</value></data>
+  <data name="ShortcutSelectAll" xml:space="preserve"><value>Select all tracks; several — Ctrl+click and Shift+click</value></data>
+  <data name="ShortcutClearSelection" xml:space="preserve"><value>Clear selection</value></data>
 </root>

@@ -41,6 +41,8 @@ public static class ShortcutsDialog
         ("ShortcutsGroupLists",
         [
             ("Enter", "ShortcutRowPlay"),
+            ("Ctrl+A", "ShortcutSelectAll"),
+            ("Esc", "ShortcutClearSelection"),
             ("Menu | Shift+F10", "ShortcutRowMenu"),
             ("Delete", "ShortcutRowRemove"),
             ("Alt+↑ / Alt+↓", "ShortcutRowMove"),

@@ -633,4 +633,21 @@
   <data name="DownloadsDownloadedFormat" xml:space="preserve"><value>Скачано · {0} · {1}</value></data>
   <data name="DownloadsCountFormat" xml:space="preserve"><value>Скачано: {0} · в кэше: {1}</value></data>
   <data name="DownloadsEmpty" xml:space="preserve"><value>Скачайте треки — они будут играть без сети. ⋯ › Скачать</value></data>
+  <data name="SelectionCountFormat" xml:space="preserve"><value>Выбрано: {0}</value></data>
+  <data name="SelectionPlay" xml:space="preserve"><value>Слушать</value></data>
+  <data name="SelectionQueue" xml:space="preserve"><value>В конец очереди</value></data>
+  <data name="SelectionLike" xml:space="preserve"><value>В Избранное</value></data>
+  <data name="SelectionAddToPlaylist" xml:space="preserve"><value>Добавить в плейлист…</value></data>
+  <data name="SelectionNewPlaylist" xml:space="preserve"><value>Новый плейлист…</value></data>
+  <data name="SelectionDownload" xml:space="preserve"><value>Скачать</value></data>
+  <data name="SelectionSelectAll" xml:space="preserve"><value>Выбрать все</value></data>
+  <data name="SelectionClear" xml:space="preserve"><value>Снять выделение</value></data>
+  <data name="QueuedCountFormat" xml:space="preserve"><value>В конец очереди: {0}</value></data>
+  <data name="LikedCountFormat" xml:space="preserve"><value>В Избранное: {0}</value></data>
+  <data name="PlaylistCreatedFormat" xml:space="preserve"><value>Плейлист «{0}»: {1}</value></data>
+  <data name="OpenAction" xml:space="preserve"><value>Открыть</value></data>
+  <data name="DownloadingCountFormat" xml:space="preserve"><value>Скачивается: {0}</value></data>
+  <data name="NothingToDownload" xml:space="preserve"><value>Выделенное уже скачано</value></data>
+  <data name="ShortcutSelectAll" xml:space="preserve"><value>Выделить все треки; несколько — Ctrl+щелчок и Shift+щелчок</value></data>
+  <data name="ShortcutClearSelection" xml:space="preserve"><value>Снять выделение</value></data>
 </root>

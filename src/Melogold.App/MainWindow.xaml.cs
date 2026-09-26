@@ -47,6 +47,12 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         SearchBox.Loaded += (_, _) => AttachSearchLayout();
         AnimateSnackbar();
+        // Панель выделения — поверх содержимого над плеером; плашка «Отменить» тогда поднимается над ней
+        Grid.SetRow(Selection, 1);
+        Canvas.SetZIndex(Selection, 9);
+        Root.Children.Add(Selection);
+        Selection.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, (_, _) =>
+            SnackbarHost.Margin = new Thickness(12, 0, 12, Selection.IsShown ? 80 : 12));
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -125,7 +131,8 @@ public sealed partial class MainWindow : Window
             Root.KeyboardAccelerators.Add(Accelerator(key, modifiers, action, inText ? null : FocusInTextInput));
         Key(VirtualKey.F, ctrl, FocusSearch);
         Key(VirtualKey.Left, VirtualKeyModifiers.Menu, () => _navigator.GoBack(), inText: false);
-        Key(VirtualKey.Escape, VirtualKeyModifiers.None, GoBack);
+        // Esc сначала снимает выделение в списке, потом — назад
+        Key(VirtualKey.Escape, VirtualKeyModifiers.None, () => { if (!Selection.TryClear()) GoBack(); });
         Key(VirtualKey.F11, VirtualKeyModifiers.None, ToggleFullScreen);
         Key(VirtualKey.F1, VirtualKeyModifiers.None, ShowShortcuts);
         Key((VirtualKey)191, ctrl, ShowShortcuts); // Ctrl+/
@@ -217,6 +224,9 @@ public sealed partial class MainWindow : Window
     }
 
     public Snackbar Snackbar { get; }
+
+    /// <summary>Действия с выделенными треками текущего списка.</summary>
+    public SelectionBar Selection { get; } = new();
 
     /// <summary>Очередь — панель справа около 320 px (§5.2).</summary>
     public QueuePanel Queue { get; } = new();

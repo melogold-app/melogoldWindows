@@ -17,7 +17,8 @@ namespace Melogold.App.Controls;
 /// <summary>
 /// Список строк (§5.3): одиночный клик выделяет, двойной клик или Enter играет — как принято в Windows; альбом,
 /// исполнитель и плейлист открываются одним кликом, как ссылки. Правый клик, Shift+F10 и «…» — меню трека.
-/// Отмечает ♡ и текущий трек по ходу изменений.
+/// Несколько треков выделяются, как везде в Windows (Ctrl+щелчок, Shift+щелчок, Ctrl+A) — тогда внизу панель действий
+/// (<see cref="SelectionBar"/>), а правый клик по выделенному — те же действия. Отмечает ♡ и текущий трек по ходу изменений.
 /// </summary>
 public sealed partial class MusicListView : ListView
 {
@@ -67,14 +68,19 @@ public sealed partial class MusicListView : ListView
                 container.HorizontalContentAlignment = HorizontalAlignment.Stretch;
             }
         };
-        SelectionMode = ListViewSelectionMode.Single;
+        SelectionMode = ListViewSelectionMode.Extended;
+        SelectionChanged += (_, _) => App.Current?.Window?.Selection.Update(this, SelectedTracks());
         IsItemClickEnabled = true;
         ItemClick += OnItemClick;
         DoubleTapped += OnDoubleTapped;
         KeyDown += OnKeyDown;
         ContextRequested += OnContextRequested;
         Loaded += (_, _) => Subscribe();
-        Unloaded += (_, _) => Unsubscribe();
+        Unloaded += (_, _) =>
+        {
+            Unsubscribe();
+            App.Current?.Window?.Selection.Forget(this);
+        };
     }
 
     /// <summary>Строки и заголовки секций по порядку.</summary>
@@ -83,6 +89,21 @@ public sealed partial class MusicListView : ListView
     public IEnumerable<RowVm> Rows => Entries.OfType<RowVm>();
 
     private static TrackActions Actions => App.Services.GetRequiredService<TrackActions>();
+
+    /// <summary>Выделенные треки в порядке списка (заголовки секций и коллекции не в счёт).</summary>
+    public List<Track> SelectedTracks()
+    {
+        var selected = SelectedItems.OfType<RowVm>().ToHashSet();
+        return Rows.Where(selected.Contains).Select(r => r.Track).OfType<Track>().ToList();
+    }
+
+    /// <summary>«Выбрать все» — все треки списка.</summary>
+    public void SelectAllTracks()
+    {
+        foreach (var row in Rows.Where(r => r.IsTrack && !SelectedItems.Contains(r)).ToList()) SelectedItems.Add(row);
+    }
+
+    public void ClearSelection() => SelectedItems.Clear();
 
     /// <summary>Уже этого окно узкое: поля по бокам меньше.</summary>
     public const double NarrowWidth = 600;
@@ -206,6 +227,15 @@ public sealed partial class MusicListView : ListView
         var element = args.OriginalSource as FrameworkElement;
         var row = element?.DataContext as RowVm ?? SelectedItem as RowVm;
         if (row is null || element is null) return;
+        // Щелчок по выделенному, когда выделено несколько, — действия со всем выделенным
+        if (SelectedItems.Count > 1 && SelectedItems.Contains(row) && SelectedTracks() is { Count: > 1 } tracks)
+        {
+            var menu = Actions.BuildSelectionMenu(tracks, XamlRoot);
+            if (args.TryGetPosition(element, out var at)) menu.ShowAt(element, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions { Position = at });
+            else menu.ShowAt(element);
+            args.Handled = true;
+            return;
+        }
         ShowMenu(row, element, args.TryGetPosition(element, out var point) ? point : null);
         args.Handled = true;
     }

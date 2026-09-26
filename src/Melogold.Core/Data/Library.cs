@@ -223,6 +223,24 @@ public sealed class Library(LibraryDatabase db)
         Notify(LibraryChange.Likes);
     }
 
+    /// <summary>♡ сразу у нескольких треков (действия с выделенным): одна запись, одно уведомление.</summary>
+    public void SetLiked(IReadOnlyList<Track> tracks, bool liked)
+    {
+        if (tracks.Count == 0) return;
+        var now = IsoTime.NowMs();
+        Database.Write((c, t) =>
+        {
+            foreach (var track in tracks)
+            {
+                UpsertTrack(c, t, track);
+                LibraryDatabase.Exec(c, t,
+                    liked ? "UPDATE tracks SET liked_at = COALESCE(liked_at, $now) WHERE video_id = $id" : "UPDATE tracks SET liked_at = NULL WHERE video_id = $id",
+                    ("$id", track.VideoId), ("$now", now));
+            }
+        });
+        Notify(LibraryChange.Likes);
+    }
+
     // ---------- Альбомы и исполнители ----------
 
     public bool IsAlbumSaved(string browseId) => Database.Read(c =>

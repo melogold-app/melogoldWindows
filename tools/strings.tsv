@@ -642,3 +642,20 @@ DownloadFailed	Не удалось скачать	Couldn't download
 DownloadsDownloadedFormat	Скачано · {0} · {1}	Downloaded · {0} · {1}
 DownloadsCountFormat	Скачано: {0} · в кэше: {1}	Downloaded: {0} · cached: {1}
 DownloadsEmpty	Скачайте треки — они будут играть без сети. ⋯ › Скачать	Download tracks to play them without a network. ⋯ › Download
+SelectionCountFormat	Выбрано: {0}	{0} selected
+SelectionPlay	Слушать	Play
+SelectionQueue	В конец очереди	Add to queue
+SelectionLike	В Избранное	Add to Favorites
+SelectionAddToPlaylist	Добавить в плейлист…	Add to playlist…
+SelectionNewPlaylist	Новый плейлист…	New playlist…
+SelectionDownload	Скачать	Download
+SelectionSelectAll	Выбрать все	Select all
+SelectionClear	Снять выделение	Clear selection
+QueuedCountFormat	В конец очереди: {0}	Added to queue: {0}
+LikedCountFormat	В Избранное: {0}	Added to Favorites: {0}
+PlaylistCreatedFormat	Плейлист «{0}»: {1}	Playlist “{0}”: {1}
+OpenAction	Открыть	Open
+DownloadingCountFormat	Скачивается: {0}	Downloading: {0}
+NothingToDownload	Выделенное уже скачано	The selection is already downloaded
+ShortcutSelectAll	Выделить все треки; несколько — Ctrl+щелчок и Shift+щелчок	Select all tracks; several — Ctrl+click and Shift+click
+ShortcutClearSelection	Снять выделение	Clear selection

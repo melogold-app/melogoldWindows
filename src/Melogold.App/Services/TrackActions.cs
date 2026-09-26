@@ -286,6 +286,70 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
         add("MenuSaveFile", "\uE74E", () => _ = export.SaveAsync(track));
     }
 
+    // ---------- Выделенное (SelectionBar) ----------
+
+    /// <summary>«Слушать»: выделенные по порядку списка — новой очередью.</summary>
+    public void PlayAll(IReadOnlyList<Track> tracks)
+    {
+        if (tracks.Count > 0) Play(tracks, 0, new TrackContext.List());
+    }
+
+    public void QueueAll(IReadOnlyList<Track> tracks)
+    {
+        engine.AddToEnd(tracks);
+        snackbar.Show(Loc.Format("QueuedCountFormat", Loc.Plural("Tracks", tracks.Count)));
+    }
+
+    public void LikeAll(IReadOnlyList<Track> tracks)
+    {
+        library.SetLiked(tracks, true);
+        snackbar.Show(Loc.Format("LikedCountFormat", Loc.Plural("Tracks", tracks.Count)));
+    }
+
+    public void AddAllToPlaylist(IReadOnlyList<Track> tracks) => _ = PlaylistPicker.ShowAsync(tracks, library, snackbar);
+
+    /// <summary>
+    /// «Новый плейлист…» из выделенного — так собирается альбом, который после цензуры лежит на YouTube разными видео.
+    /// Название по умолчанию — общий альбом выделенного, если он у всех один.
+    /// </summary>
+    public async Task NewPlaylistAsync(IReadOnlyList<Track> tracks, XamlRoot root)
+    {
+        var albums = tracks.Select(t => t.AlbumTitle).Where(a => !string.IsNullOrWhiteSpace(a)).Distinct().ToList();
+        var name = await PlaylistDialogs.AskNameAsync(root, Loc.Get("NewPlaylist"), albums.Count == 1 ? albums[0]! : "");
+        if (name is null) return;
+        var id = library.CreatePlaylist(name, tracks);
+        snackbar.Show(Loc.Format("PlaylistCreatedFormat", name, Loc.Plural("Tracks", tracks.Count)), Loc.Get("OpenAction"),
+            () => navigator.Open(typeof(LocalPlaylistPage), id.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+    }
+
+    /// <summary>«Скачать» выделенное: что уже скачано или скачивается и трансляции — пропускаются.</summary>
+    public void DownloadAll(IReadOnlyList<Track> tracks)
+    {
+        var fresh = tracks.Where(t => t.VideoType != "live" && downloads.State(t.VideoId) is null or { Status: DownloadStatus.Failed }).ToList();
+        foreach (var track in fresh) downloads.Download(track);
+        snackbar.Show(fresh.Count == 0 ? Loc.Get("NothingToDownload") : Loc.Format("DownloadingCountFormat", Loc.Plural("Tracks", fresh.Count)));
+    }
+
+    /// <summary>Правый щелчок по выделенному (два трека и больше): те же действия, что на панели выделения.</summary>
+    public MenuFlyout BuildSelectionMenu(IReadOnlyList<Track> tracks, XamlRoot root)
+    {
+        var menu = new MenuFlyout();
+        void Add(string key, string glyph, Action action)
+        {
+            var item = new MenuFlyoutItem { Text = Loc.Get(key), Icon = new FontIcon { Glyph = glyph } };
+            item.Click += (_, _) => action();
+            menu.Items.Add(item);
+        }
+        Add("SelectionPlay", "\uE768", () => PlayAll(tracks));
+        Add("SelectionQueue", "\uE90B", () => QueueAll(tracks));
+        menu.Items.Add(new MenuFlyoutSeparator());
+        Add("SelectionLike", "\uEB51", () => LikeAll(tracks));
+        Add("SelectionAddToPlaylist", "\uE710", () => AddAllToPlaylist(tracks));
+        Add("SelectionNewPlaylist", "\uE8F4", () => _ = NewPlaylistAsync(tracks, root));
+        Add("SelectionDownload", "\uE896", () => DownloadAll(tracks));
+        return menu;
+    }
+
     public void ShowMenu(Track track, TrackContext context, FrameworkElement target, Windows.Foundation.Point? at = null, Action? onRemove = null)
     {
         var menu = BuildMenu(track, context, onRemove);

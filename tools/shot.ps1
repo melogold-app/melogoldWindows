@@ -9,7 +9,8 @@
   -Steps — шаги через «|» по UI Automation, без мыши и фокуса:
     «имя» нажимает элемент (точное имя, иначе начало имени), «имя=текст» вводит текст в поле,
     «@файл.png» снимает окно посреди сценария, «@mini:файл.png» — мини-плеер, «!max» и «!restore» разворачивают и
-    восстанавливают окно, «!size:500x700» — окно такого размера (эффективные пиксели, как в XAML), «!wait:5» ждёт 5 с,
+    восстанавливают окно, «!size:500x700» — окно такого размера (эффективные пиксели, как в XAML), «+имя» добавляет строку
+    списка к выделению (как Ctrl+щелчок), «!wait:5» ждёт 5 с,
     «!show:имя» прокручивает до элемента. В конце окно снимается в -Out.
 #>
 param(
@@ -119,6 +120,14 @@ if ($Steps) {
             continue
         }
         if ($step.StartsWith("!wait:")) { Start-Sleep -Seconds ([int]$step.Substring(6)); continue }
+        if ($step.StartsWith("+")) {
+            # Добавить строку списка к выделению (SelectionItemPattern.AddToSelection) — как Ctrl+щелчок
+            $pattern = $null
+            $target = Find-Element $root $step.Substring(1)
+            if ($target.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$pattern)) { $pattern.AddToSelection() }
+            Start-Sleep -Milliseconds 500
+            continue
+        }
         if ($step -eq "!max") { [Win]::ShowWindow($h, 3) | Out-Null; Start-Sleep -Seconds 2; continue }   # SW_MAXIMIZE
         if ($step -eq "!restore") { [Win]::ShowWindow($h, 9) | Out-Null; Start-Sleep -Seconds 2; continue }   # SW_RESTORE
         if ($step.StartsWith("!size:")) {

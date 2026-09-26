@@ -394,6 +394,11 @@ public class LiveSyncTests(ITestOutputHelper output)
             await WaitFor("A удалил текст по надгробию", () => a.Library.GetLyrics(video) is null);
             Assert.Null(await c.Sync.LookupLyricsAsync(video, CancellationToken.None));
             Assert.Equal(LyricsSources.LrcLib, b.Library.GetLyrics(video)?.SyncedSource);
+
+            // Текст, выбранный в «Найти другой текст», — свой: приходит на A с источником lrclib, искать его там не нужно
+            const string Chosen = "[00:03.00]Выбран в LRCLIB\n";
+            b.Library.SaveLyrics(video, new StoredLyrics(Chosen, "", LyricsSources.LrcLib, null, Chosen: true));
+            await WaitFor("A получил выбранный на B текст", () => a.Library.GetLyrics(video) is { Synced: Chosen, SyncedSource: LyricsSources.LrcLib, Chosen: true });
         }
         finally
         {

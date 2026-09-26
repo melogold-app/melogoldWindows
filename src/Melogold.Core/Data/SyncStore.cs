@@ -275,10 +275,14 @@ public sealed class SyncTx
 
     // ---------- Тексты (docs/LYRICS-SYNC.md) ----------
 
-    /// <summary>Свои тексты: хотя бы одна сторона из источника <c>user</c> или <c>file</c>.</summary>
+    /// <summary>
+    /// Свои тексты: хотя бы одна сторона из источника <c>user</c> или <c>file</c>, или текст выбран пользователем вместо
+    /// найденного (<see cref="StoredLyrics.Chosen"/>, как <see cref="Lyrics.LyricsSyncRules.IsOwn"/>).
+    /// </summary>
     public Dictionary<string, StoredLyrics> OwnLyrics() => Query($"""
             SELECT video_id, {Library.LyricsColumns} FROM lyrics
             WHERE (source IN ('user', 'file') AND COALESCE(synced, '') <> '') OR (plain_source IN ('user', 'file') AND COALESCE(plain, '') <> '')
+               OR (chosen = 1 AND (COALESCE(synced, '') <> '' OR COALESCE(plain, '') <> ''))
             """, r => (Id: r.GetString(0), Lyrics: Library.ReadLyrics(r, 1))).ToDictionary(p => p.Id, p => p.Lyrics, StringComparer.Ordinal);
 
     public StoredLyrics? Lyrics(string videoId) =>

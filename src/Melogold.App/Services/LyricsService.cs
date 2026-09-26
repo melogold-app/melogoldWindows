@@ -120,7 +120,7 @@ public sealed class LyricsService
             }
             if (ct.IsCancellationRequested) return;
             var fetched = new StoredLyrics(result.Synced, result.Plain, result.SyncedSource, result.PlainSource,
-                result.OffsetMs ?? stored?.OffsetMs ?? 0, result.Language ?? stored?.Language);
+                result.OffsetMs ?? stored?.OffsetMs ?? 0, result.Language ?? stored?.Language, stored?.Chosen == true || result.Mine);
             // Недостающая сторона, которую не удалось получить из-за сети, не кэшируется как «нет текста»: она остаётся
             // «ещё не искали» (null), а найденная сохраняется — иначе при каждом открытии всё ищется заново
             if (result.AnyFailure && (fetched.Plain is null || fetched.Synced is null))
@@ -177,7 +177,10 @@ public sealed class LyricsService
 
     public void ResetShift() => Update(Stored! with { OffsetMs = 0 });
 
-    /// <summary>Текст, выбранный в LRCLIB.</summary>
+    /// <summary>
+    /// Текст, выбранный в LRCLIB: свой (<see cref="StoredLyrics.Chosen"/>) — через 2 с уходит на сервер, и на других
+    /// устройствах искать его заново не нужно.
+    /// </summary>
     public void UseLrcLib(LrcLibTrack found)
     {
         var current = Stored ?? new StoredLyrics(null, null, null, null);
@@ -186,7 +189,9 @@ public sealed class LyricsService
             string.IsNullOrWhiteSpace(found.PlainLyrics) ? current.Plain : found.PlainLyrics,
             string.IsNullOrWhiteSpace(found.SyncedLyrics) ? current.SyncedSource : LyricsSources.LrcLib,
             string.IsNullOrWhiteSpace(found.PlainLyrics) ? current.PlainSource : LyricsSources.LrcLib,
-            string.IsNullOrWhiteSpace(found.SyncedLyrics) ? current.OffsetMs : 0));
+            string.IsNullOrWhiteSpace(found.SyncedLyrics) ? current.OffsetMs : 0,
+            current.Language,
+            Chosen: true));
         _settings.PreferSyncedLyrics = !string.IsNullOrWhiteSpace(found.SyncedLyrics);
         Set(Content(Stored));
     }
@@ -235,7 +240,8 @@ public sealed class LyricsService
             plain is not null ? LyricsSources.User : current?.PlainSource,
             // Редактор пишет время трека: сдвига больше нет
             synced is not null ? 0 : current?.OffsetMs ?? 0,
-            draft.Language ?? current?.Language);
+            draft.Language ?? current?.Language,
+            current?.Chosen == true);
         _ = Task.Run(() => _library.SaveLyrics(videoId, saved));
         if (synced is not null) _settings.PreferSyncedLyrics = true;
         if (Track?.VideoId != videoId) return;

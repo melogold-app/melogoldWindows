@@ -861,7 +861,10 @@ public sealed class LibrarySync : IDisposable
             return;
         }
         var stored = LyricsSyncRules.FromPayload(FromText(item.Text));
-        if (!LyricsSyncRules.SameContent(tx.Lyrics(item.VideoId), stored)) tx.SaveLyrics(item.VideoId, stored);
+        // Тот же текст, найденный здесь автоматически, становится своим: дальше его правки уходят на сервер
+        var local = tx.Lyrics(item.VideoId);
+        if (!LyricsSyncRules.SameContent(local, stored)) tx.SaveLyrics(item.VideoId, stored);
+        else if (local is { Chosen: false }) tx.SaveLyrics(item.VideoId, local with { Chosen = true });
         tx.SetSyncedLyrics(item.VideoId, item.Rev, LyricsSyncRules.Hash(LyricsSyncRules.ToPayload(stored)));
     }
 

@@ -55,8 +55,13 @@ public static class LyricsSyncRules
 
     private static string? Text(string? value) => string.IsNullOrEmpty(value) ? null : value;
 
+    /// <summary>
+    /// Свой текст — набранный, импортированный или выбранный вместо найденного (<see cref="StoredLyrics.Chosen"/>): он
+    /// уходит на сервер. Найденный автоматически — нет: его найдёт и другое устройство.
+    /// </summary>
     public static bool IsOwn(StoredLyrics lyrics) =>
-        (IsOwnSource(lyrics.SyncedSource) && Text(lyrics.Synced) is not null) || (IsOwnSource(lyrics.PlainSource) && Text(lyrics.Plain) is not null);
+        (lyrics.Chosen && (Text(lyrics.Synced) is not null || Text(lyrics.Plain) is not null))
+        || (IsOwnSource(lyrics.SyncedSource) && Text(lyrics.Synced) is not null) || (IsOwnSource(lyrics.PlainSource) && Text(lyrics.Plain) is not null);
 
     /// <summary>
     /// Содержимое для <c>PUT</c>: пустые стороны не отправляются, источник — только вместе со своей стороной, формат — по
@@ -102,7 +107,9 @@ public static class LyricsSyncRules
         payload.Synced is null ? null : payload.SyncedSource,
         payload.Plain is null ? null : payload.PlainSource,
         -(payload.StartTimeMs ?? 0),
-        payload.Language);
+        payload.Language,
+        // Своя версия с сервера — своя и здесь, из какого бы источника она ни была
+        Chosen: true);
 
     /// <summary>SHA-256 полей <see cref="LyricsPayload"/> в постоянном порядке.</summary>
     public static string Hash(LyricsPayload payload)

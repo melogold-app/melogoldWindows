@@ -27,6 +27,38 @@ public class LyricsSyncTests
     }
 
     [Fact]
+    public void ChosenTextIsOwnAndKeepsItsSource()
+    {
+        // Выбран в «Найти другой текст» — свой: уходит на сервер с источником lrclib (API §4.10)
+        var chosen = new StoredLyrics(Lrc, "", LyricsSources.LrcLib, null, Chosen: true);
+        Assert.True(LyricsSyncRules.IsOwn(chosen));
+        Assert.Equal(LyricsSources.LrcLib, LyricsSyncRules.ToPayload(chosen).SyncedSource);
+        // Тот же текст, найденный автоматически, — не свой: его найдёт и другое устройство
+        Assert.False(LyricsSyncRules.IsOwn(chosen with { Chosen = false }));
+        // Своя версия с сервера — своя и здесь
+        Assert.True(LyricsSyncRules.FromPayload(LyricsSyncRules.ToPayload(chosen)).Chosen);
+
+        var path = Path.Combine(Path.GetTempPath(), $"melogold-chosen-{Guid.NewGuid():N}.db");
+        try
+        {
+            var library = new Library(new LibraryDatabase(path));
+            library.SaveLyrics("aaaaaaaaaaa", chosen);
+            library.SaveLyrics("bbbbbbbbbbb", chosen with { Chosen = false });
+            Assert.True(library.GetLyrics("aaaaaaaaaaa")!.Chosen);
+            Assert.Equal(["aaaaaaaaaaa"], new SyncStore(library).Run(tx => tx.OwnLyrics()).Keys);
+            // «Очистить кэш» выбранный текст не трогает
+            library.ClearFetchedLyrics();
+            Assert.NotNull(library.GetLyrics("aaaaaaaaaaa"));
+            Assert.Null(library.GetLyrics("bbbbbbbbbbb"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            foreach (var file in new[] { path, path + "-wal", path + "-shm" }) File.Delete(file);
+        }
+    }
+
+    [Fact]
     public void PayloadSendsSidesWithTextFormatAndStart()
     {
         // Сдвиг «позже» — начало текста в треке
@@ -172,6 +204,7 @@ public class LyricsSyncTests
                     DROP TABLE downloads;
                     ALTER TABLE play_events DROP COLUMN device_id;
                     ALTER TABLE lyrics DROP COLUMN language;
+                    ALTER TABLE lyrics DROP COLUMN chosen;
                     INSERT INTO lyrics (video_id, synced, plain, source, plain_source, offset_ms, fetched_at) VALUES
                       ('aaaaaaaaaaa', '[00:01.00]Hi', 'Hi', 'File', 'YouTubeMusic', 0, 0),
                       ('bbbbbbbbbbb', '[00:01.00]Yo', '', 'LrcLib', NULL, 0, 0);

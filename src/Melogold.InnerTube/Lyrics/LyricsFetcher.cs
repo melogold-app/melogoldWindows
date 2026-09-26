@@ -9,7 +9,9 @@ namespace Melogold.InnerTube.Lyrics;
 /// Итог поиска текста: <paramref name="AnyFailure"/> — хоть один источник не ответил из-за сети (такой пустой итог
 /// не кэшируется как «текста нет»).
 /// </summary>
-public sealed record LyricsFetchResult(string? Plain, string? Synced, bool AnyFailure, string? PlainSource, string? SyncedSource, long? OffsetMs = null, string? Language = null);
+/// <summary>Что нашла цепочка; <paramref name="Mine"/> — это своя версия с сервера (своя и здесь).</summary>
+public sealed record LyricsFetchResult(string? Plain, string? Synced, bool AnyFailure, string? PlainSource, string? SyncedSource, long? OffsetMs = null,
+    string? Language = null, bool Mine = false);
 
 /// <summary>
 /// Цепочка источников текста (docs/PROMPT.md §8.2, Android <c>LyricsFetcher.kt</c>). Название сначала проходит
@@ -109,6 +111,7 @@ public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou
         }
         long? offset = null;
         string? language = null;
+        var mine = false;
         if (synced is null && Community is { } community)
         {
             try
@@ -125,6 +128,7 @@ public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou
                     }
                     offset = -(found.Payload.StartTimeMs ?? 0);
                     language = found.Payload.Language;
+                    mine = found.Mine;
                 }
             }
             catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
@@ -133,6 +137,6 @@ public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou
                 anyFailure = true;
             }
         }
-        return new LyricsFetchResult(plain, synced, anyFailure, plainSource, syncedSource, offset, language);
+        return new LyricsFetchResult(plain, synced, anyFailure, plainSource, syncedSource, offset, language, mine);
     }
 }

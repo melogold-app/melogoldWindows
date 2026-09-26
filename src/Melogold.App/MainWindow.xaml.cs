@@ -255,6 +255,9 @@ public sealed partial class MainWindow : Window
         AppWindow.IsShownInSwitchers = false;
         AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(WindowPlacement.OffScreenX(), 0, (int)(1280 * scale), (int)(820 * scale)));
         AppWindow.Show(activateWindow: false);
+        // x:Bind окна включается по Activated, а тихое окно не активируется: без этого плашка «Отменить» стояла
+        // пустой, а привязки окна не работали
+        Bindings.Update();
     }
 
     /// <summary>Показать окно: обычно — с фокусом, в тихом режиме — без.</summary>

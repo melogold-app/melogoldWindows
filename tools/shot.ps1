@@ -9,8 +9,8 @@
   (PrintWindow, с Mica и кнопками заголовка).
     powershell -File tools/shot.ps1 -Out shot.png [-AppArgs "текст или ссылка"] [-Wait 6] [-Keep] [-Lang ru-RU]
       [-Steps "История|Чаще всего|@history.png|Логин=value"]
-  -Steps — шаги через «|» по UI Automation, без мыши и фокуса:
-    «имя» нажимает элемент (точное имя, иначе начало имени), «имя=текст» вводит текст в поле,
+  -Steps — шаги через «|» по UI Automation, без мыши:
+    «имя» нажимает элемент (точное имя, иначе начало имени; «имя#2» — второй одноимённый), «имя=текст» вводит текст в поле,
     «@файл.png» снимает окно посреди сценария, «@mini:файл.png» — мини-плеер, «!max» и «!restore» — окно размером с
     рабочую область основного монитора и обычное 1280×820 (не сдвигая с места за экраном и не активируя), «!size:500x700» — окно такого размера (эффективные пиксели, как в XAML), «+имя» добавляет строку
     списка к выделению (как Ctrl+щелчок), «!wait:5» ждёт 5 с,
@@ -25,7 +25,8 @@ param(
     [string]$DataDir = "$env:TEMP\melogold-dev",
     [string]$Lang = "",
     [string]$Steps = "",
-    [switch]$Window
+    [switch]$Window,
+    [switch]$Visible
 )
 
 Add-Type -AssemblyName System.Drawing
@@ -86,6 +87,9 @@ function Search-Roots($root) {
 }
 
 function Find-Element($root, [string]$name, [switch]$Offscreen) {
+    # «Текст#2» — второй из одноимённых нажимаемых элементов (кнопка плеера «Текст» и вкладка редактора «Текст»)
+    $nth = 1
+    if ($name -match '^(.+)#(\d+)$') { $name = $Matches[1]; $nth = [int]$Matches[2] }
     $until = (Get-Date).AddSeconds(15)
     while ((Get-Date) -lt $until) {
         $all = foreach ($r in Search-Roots $root) {
@@ -94,7 +98,8 @@ function Find-Element($root, [string]$name, [switch]$Offscreen) {
         }
         # Среди одноимённых — сначала то, что нажимается (кнопка «Текст», а не подпись с тем же словом)
         $exact = @($all | Where-Object { $_.Current.Name -eq $name })
-        $found = $exact | Where-Object { Test-Actionable $_ } | Select-Object -First 1
+        $found = $exact | Where-Object { Test-Actionable $_ } | Select-Object -Skip ($nth - 1) -First 1
+        if ($nth -gt 1) { if ($found) { return $found } else { Start-Sleep -Milliseconds 300; continue } }
         # Кнопка с именем «Все треки, 195 треков» важнее подписи «Все треки» внутри неё
         if (-not $found) { $found = $all | Where-Object { $_.Current.Name -like "$name*" -and (Test-Actionable $_) } | Select-Object -First 1 }
         if (-not $found) { $found = $exact | Select-Object -First 1 }
@@ -102,13 +107,18 @@ function Find-Element($root, [string]$name, [switch]$Offscreen) {
         if ($found) { return $found }
         Start-Sleep -Milliseconds 300
     }
+    # Что есть похожего: опечатка, другое имя или элемент ещё не появился
+    $word = $name.Split(" ")[0]
+    $similar = foreach ($r in Search-Roots $root) { $r.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) }
+    $similar | Where-Object { $_.Current.Name -like "*$word*" } | Select-Object -First 10 |
+        ForEach-Object { "  seen: $($_.Current.ControlType.ProgrammaticName) '$($_.Current.Name)' offscreen=$($_.Current.IsOffscreen)" } | Write-Host
     throw "element '$name' not found"
 }
 
 [Win]::SetProcessDPIAware() | Out-Null  # размеры окна — в физических пикселях, иначе снимок обрезан
 $env:MELOGOLD_DATA_DIR = $DataDir
 $env:MELOGOLD_LANG = $Lang
-$env:MELOGOLD_QUIET = "1"
+$env:MELOGOLD_QUIET = if ($Visible) { "0" } else { "1" }   # -Visible: обычное окно на экране — только когда пользователь разрешил
 $exePath = (Resolve-Path $Exe).Path
 Get-Process Melogold -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $exePath } | ForEach-Object { $_.Kill(); $_.WaitForExit(5000) | Out-Null }
 $p = if ($AppArgs) { Start-Process $Exe -ArgumentList "`"$AppArgs`"" -PassThru } else { Start-Process $Exe -PassThru }

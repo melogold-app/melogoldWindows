@@ -6,6 +6,7 @@ using Melogold.Core.Data;
 using Melogold.Core.Domain;
 using Melogold.Core.Music;
 using Melogold.Playback;
+using Melogold.Server;
 using Microsoft.UI.Dispatching;
 
 namespace Melogold.App.ViewModels;
@@ -13,6 +14,8 @@ namespace Melogold.App.ViewModels;
 /// <summary>
 /// Состояние панели воспроизведения (§5.2): трек, кнопки, ползунок, громкость, «Получаем поток…» через 3 с ожидания,
 /// причина ошибки и «Повторить». Сохраняет очередь и позицию, чтобы после перезапуска вернуть их без автостарта.
+/// Пульт (tasks/0017): пока выбрано другое устройство, панель показывает, что играет там, а кнопки и громкость шлют
+/// ему команды.
 /// </summary>
 public sealed partial class PlayerViewModel : ObservableObject
 {
@@ -22,14 +25,25 @@ public sealed partial class PlayerViewModel : ObservableObject
     private readonly DispatcherQueueTimer _timer;
     private DateTime _resolvingSince;
     private DateTime _lastSave;
+    private readonly RemotePlayback _remote;
+    private readonly DispatcherQueue _ui;
     private bool _seeking;
     private bool _initializing = true;
+    private bool _applyingRemote;
+    private Track? _remoteTrack;
+    private CancellationTokenSource? _remoteVolume;
+    private DateTime _volumeTouchedAt;
+    private int _unmutedRemoteVolume = 50;
+    private long _remoteSeekMs = -1;
+    private DateTime _remoteSeekAt;
 
-    public PlayerViewModel(PlayerEngine engine, Library library, SettingsStore settings)
+    public PlayerViewModel(PlayerEngine engine, Library library, SettingsStore settings, RemotePlayback remote, AccountService account)
     {
         Engine = engine;
         _library = library;
         _settings = settings;
+        _remote = remote;
+        _ui = DispatcherQueue.GetForCurrentThread();
         _timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
         _timer.Interval = TimeSpan.FromMilliseconds(250);
         _timer.Tick += (_, _) => Tick();
@@ -51,7 +65,13 @@ public sealed partial class PlayerViewModel : ObservableObject
         {
             if (e.PropertyName is nameof(SettingsStore.Volume) or nameof(SettingsStore.Muted) or nameof(SettingsStore.Speed) or nameof(SettingsStore.NormalizeVolume))
                 engine.ApplyVolume();
+            // Громкость поменял пульт с другого устройства — ползунок следом
+            if (e.PropertyName is nameof(SettingsStore.Volume) && !IsRemote && Math.Abs(Volume - _settings.Volume * 100) > 0.5) SetVolumeQuietly(_settings.Volume * 100);
+            if (e.PropertyName is nameof(SettingsStore.Muted)) OnPropertyChanged(nameof(VolumeGlyph));
         };
+        remote.Remote.Changed += () => _ui.TryEnqueue(OnRemoteChanged);
+        account.StateChanged += state => _ui.TryEnqueue(() => _ = CheckRemoteAsync(account));
+        _ = CheckRemoteAsync(account);
         Volume = _settings.Volume * 100;
         Repeat = (RepeatMode)_settings.Repeat;
         engine.Queue.SetRepeat(Repeat);
@@ -119,7 +139,62 @@ public sealed partial class PlayerViewModel : ObservableObject
     [ObservableProperty]
     public partial double Volume { get; set; }
 
-    public Track? Track => Engine.Current;
+    /// <summary>Трек панели: здесь или, у пульта, на выбранном устройстве.</summary>
+    public Track? Track => IsRemote ? _remoteTrack : Engine.Current;
+
+    /// <summary>Сервер аккаунта умеет пульт: в панели есть кнопка «Устройство».</summary>
+    [ObservableProperty]
+    public partial bool RemoteAvailable { get; set; }
+
+    /// <summary>Плеер — пульт другого устройства.</summary>
+    [ObservableProperty]
+    public partial bool IsRemote { get; set; }
+
+    /// <summary>«Играет на «MacBook Air»».</summary>
+    [ObservableProperty]
+    public partial string RemoteText { get; set; } = "";
+
+    /// <summary>Значок выбранного устройства — на кнопке «Устройство» и в плашке пульта.</summary>
+    [ObservableProperty]
+    public partial string DeviceGlyph { get; set; } = "\uE772";
+
+    /// <summary>Перемешать и повтор — только у своего плеера.</summary>
+    public bool IsLocal => !IsRemote;
+
+    public RemotePlayback Remote => _remote;
+
+    partial void OnIsRemoteChanged(bool value) => OnPropertyChanged(nameof(IsLocal));
+
+    private async Task CheckRemoteAsync(AccountService account)
+    {
+        RemoteAvailable = await account.RemoteAvailableAsync();
+        if (!RemoteAvailable) _remote.Remote.Disconnect();
+    }
+
+    private void OnRemoteChanged()
+    {
+        var target = _remote.Remote.Target;
+        IsRemote = target is not null;
+        RemoteText = target is null ? "" : Loc.Format("RemotePlayingOnFormat", target.Name);
+        DeviceGlyph = target is null ? "\uE772" : DeviceSymbols.Glyph(target.Platform);
+        // Громкость — цели; не перебивать ползунок, который только что двигали
+        if (DateTime.UtcNow - _volumeTouchedAt > TimeSpan.FromSeconds(1))
+            SetVolumeQuietly(target is null ? _settings.Volume * 100 : _remote.Remote.State?.Volume ?? target.Volume ?? Volume);
+        Refresh();
+    }
+
+    private void SetVolumeQuietly(double value)
+    {
+        _applyingRemote = true;
+        try
+        {
+            Volume = value;
+        }
+        finally
+        {
+            _applyingRemote = false;
+        }
+    }
 
     /// <summary>Строка исполнителя уступает место «Получаем поток…» и причине ошибки.</summary>
     public bool ShowSubtitle => !ShowResolvingText && ErrorMessage is null;
@@ -132,7 +207,7 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     public string RepeatGlyph => Repeat == RepeatMode.One ? "" : "";
 
-    public string VolumeGlyph => _settings.Muted || Volume == 0 ? "" : Volume < 34 ? "" : Volume < 67 ? "" : "";
+    public string VolumeGlyph => (!IsRemote && _settings.Muted) || Volume == 0 ? "" : Volume < 34 ? "" : Volume < 67 ? "" : "";
 
     /// <summary>Громкость числом рядом с ползунком в панели громкости.</summary>
     public string VolumeText => Math.Round(Volume).ToString(System.Globalization.CultureInfo.CurrentCulture);
@@ -157,6 +232,20 @@ public sealed partial class PlayerViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(VolumeGlyph));
         OnPropertyChanged(nameof(VolumeText));
+        if (_applyingRemote) return;
+        if (IsRemote)
+        {
+            // Пульт: команда volume через 150 мс после остановки ползунка
+            _volumeTouchedAt = DateTime.UtcNow;
+            if (value > 0) _unmutedRemoteVolume = (int)Math.Round(value);
+            _remoteVolume?.Cancel();
+            var debounce = _remoteVolume = new CancellationTokenSource();
+            _ = Task.Delay(150, debounce.Token).ContinueWith(t =>
+            {
+                if (!t.IsCanceled) _ui.TryEnqueue(() => _ = _remote.Remote.SetVolumeAsync((int)Math.Round(Volume)));
+            }, TaskScheduler.Default);
+            return;
+        }
         // Начальное значение и повторная запись того же значения ползунком — не действие человека: «Без звука» не снимаем
         var volume = Math.Clamp(value / 100, 0, 1);
         if (_initializing || Math.Abs(volume - _settings.Volume) < 0.005) return;
@@ -166,6 +255,11 @@ public sealed partial class PlayerViewModel : ObservableObject
 
     private void Refresh()
     {
+        if (IsRemote)
+        {
+            RefreshRemote();
+            return;
+        }
         var track = Engine.Current;
         HasTrack = track is not null;
         var shown = track is null ? null : _library.Display(track);
@@ -186,10 +280,41 @@ public sealed partial class PlayerViewModel : ObservableObject
         Tick();
     }
 
-    private void RefreshLike() => IsLiked = Engine.Current is { } track && _library.IsLiked(track.VideoId);
+    /// <summary>Пульт: трек, пауза и позиция выбранного устройства; там ничего не играет — «Ничего не играет».</summary>
+    private void RefreshRemote()
+    {
+        var state = _remote.Remote.State;
+        _remoteTrack = state?.Track is { } dto ? Melogold.Server.TrackDtos.ToTrackOrStub(dto) : null;
+        var shown = _remoteTrack is null ? null : _library.Display(_remoteTrack);
+        HasTrack = true;
+        Title = shown?.Title ?? Loc.Get("RemoteNothingPlaying");
+        Subtitle = shown?.Subtitle ?? "";
+        ArtworkUrl = _remoteTrack is null ? null : Thumbnails.Sized(_remoteTrack.ThumbnailUrl ?? Thumbnails.ForVideo(_remoteTrack.VideoId), 112);
+        IsPlaying = state?.Playing == true;
+        IsResolving = false;
+        ShowResolvingText = false;
+        ErrorDetails = null;
+        ErrorMessage = null;
+        OnPropertyChanged(nameof(Track));
+        RefreshLike();
+        Tick();
+    }
+
+    private void RefreshLike() => IsLiked = Track is { } track && _library.IsLiked(track.VideoId);
 
     private void Tick()
     {
+        if (IsRemote)
+        {
+            var remoteDuration = TimeSpan.FromMilliseconds(_remote.Remote.State?.DurationMs ?? 0);
+            Duration = Math.Max(1, remoteDuration.TotalSeconds);
+            DurationText = Durations.Format(remoteDuration);
+            if (_seeking) return;
+            var remotePosition = TimeSpan.FromMilliseconds(_remote.Remote.Position);
+            Position = Math.Min(remotePosition.TotalSeconds, Duration);
+            PositionText = Durations.Format(remotePosition);
+            return;
+        }
         if (IsResolving) ShowResolvingText = DateTime.UtcNow - _resolvingSince > TimeSpan.FromSeconds(3);
         var duration = Engine.Duration;
         Duration = Math.Max(1, duration.TotalSeconds);
@@ -242,13 +367,33 @@ public sealed partial class PlayerViewModel : ObservableObject
     // ---------- Команды ----------
 
     [RelayCommand]
-    private void PlayPause() => Engine.TogglePlayPause();
+    private void PlayPause()
+    {
+        if (IsRemote) _ = _remote.Remote.ToggleAsync();
+        else Engine.TogglePlayPause();
+    }
 
     [RelayCommand]
-    private void Next() => Engine.Next();
+    private void Next()
+    {
+        if (IsRemote) _ = _remote.Remote.NextAsync();
+        else Engine.Next();
+    }
 
     [RelayCommand]
-    private void Previous() => Engine.Previous();
+    private void Previous()
+    {
+        if (IsRemote) _ = _remote.Remote.PreviousAsync();
+        else Engine.Previous();
+    }
+
+    /// <summary>«Слушать здесь»: забрать воспроизведение с выбранного устройства себе.</summary>
+    [RelayCommand]
+    private async Task ListenHere() => await _remote.ListenHereAsync();
+
+    /// <summary>«Отключиться»: плеер снова управляет этим устройством, выбранное играет дальше.</summary>
+    [RelayCommand]
+    private void DisconnectRemote() => _remote.Remote.Disconnect();
 
     [RelayCommand]
     private void Retry() => Engine.Retry();
@@ -256,6 +401,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     [RelayCommand]
     private void ToggleShuffle()
     {
+        if (IsRemote) return;
         Engine.SetShuffle(!Engine.Queue.Shuffled);
         Shuffle = Engine.Queue.Shuffled;
         _settings.Shuffle = Shuffle;
@@ -264,6 +410,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     [RelayCommand]
     private void CycleRepeat()
     {
+        if (IsRemote) return;
         Repeat = Repeat switch { RepeatMode.Off => RepeatMode.All, RepeatMode.All => RepeatMode.One, _ => RepeatMode.Off };
         Engine.SetRepeat(Repeat);
         _settings.Repeat = (int)Repeat;
@@ -272,7 +419,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     [RelayCommand]
     private void ToggleLike()
     {
-        if (Engine.Current is not { } track) return;
+        if (Track is not { } track) return;
         _library.SetLiked(track, !IsLiked);
         RefreshLike();
     }
@@ -280,6 +427,11 @@ public sealed partial class PlayerViewModel : ObservableObject
     [RelayCommand]
     private void ToggleMute()
     {
+        if (IsRemote)
+        {
+            Volume = Volume > 0 ? 0 : _unmutedRemoteVolume;
+            return;
+        }
         _settings.Muted = !_settings.Muted;
         OnPropertyChanged(nameof(VolumeGlyph));
     }
@@ -292,7 +444,15 @@ public sealed partial class PlayerViewModel : ObservableObject
     public void EndSeek(double seconds)
     {
         _seeking = false;
-        Engine.Seek(TimeSpan.FromSeconds(seconds));
+        if (IsRemote)
+        {
+            // Отпускание и потеря захвата приходят обе — одна команда seek
+            var ms = (long)(seconds * 1000);
+            if (ms == _remoteSeekMs && DateTime.UtcNow - _remoteSeekAt < TimeSpan.FromMilliseconds(500)) return;
+            (_remoteSeekMs, _remoteSeekAt) = (ms, DateTime.UtcNow);
+            _ = _remote.Remote.SeekAsync(ms);
+        }
+        else Engine.Seek(TimeSpan.FromSeconds(seconds));
         Position = seconds;
         PositionText = Durations.Format(TimeSpan.FromSeconds(seconds));
     }

@@ -271,6 +271,13 @@ public sealed class MelogoldApi : IDisposable
     public Task<PlaybackPutResult> PutPlaybackStateAsync(string token, PlaybackPut request, CancellationToken ct = default) =>
         SendAsync<PlaybackPutResult>(HttpMethod.Put, "/playback/state", request, token, true, ct);
 
+    /// <summary>Свои устройства, кроме этого: в сети ли, можно ли управлять, что играет, громкость (tasks/0017).</summary>
+    public Task<RemoteDeviceList> PlaybackDevicesAsync(string token, CancellationToken ct = default) =>
+        SendAsync<RemoteDeviceList>(HttpMethod.Get, "/playback/devices", null, token, true, ct);
+
+    public Task<RemoteCommandResult> SendPlaybackCommandAsync(string token, RemoteCommand command, CancellationToken ct = default) =>
+        SendAsync<RemoteCommandResult>(HttpMethod.Post, "/playback/commands", command, token, true, ct);
+
     public Task ClearPlaybackStateAsync(string token, CancellationToken ct = default) =>
         SendNoContentAsync(HttpMethod.Delete, "/playback/state", null, token, true, ct);
 
@@ -280,9 +287,10 @@ public sealed class MelogoldApi : IDisposable
     /// Живые события: кадры <c>id:</c> + <c>data:</c> без <c>event:</c>, heartbeat — комментарий. Поток заканчивается,
     /// когда сервер его закрывает (истёк токен, отзыв) — вызывающий переоткрывает с backoff.
     /// </summary>
-    public async IAsyncEnumerable<LiveEvent> EventsAsync(string token, [EnumeratorCancellation] CancellationToken ct = default)
+    /// <param name="remote">разрешить управлять этим устройством с других (<c>remote=1</c>, tasks/0017): придут <c>playback.command</c></param>
+    public async IAsyncEnumerable<LiveEvent> EventsAsync(string token, bool remote = false, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, BaseUrl + "/auth/me/events");
+        using var request = new HttpRequestMessage(HttpMethod.Get, BaseUrl + "/auth/me/events" + (remote ? "?remote=1" : ""));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
         HttpResponseMessage response;

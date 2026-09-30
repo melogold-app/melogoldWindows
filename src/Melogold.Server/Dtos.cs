@@ -245,7 +245,8 @@ public sealed record PlaybackState(
     string At,
     string UpdatedAt,
     IReadOnlyList<TrackDto> Queue,
-    PlaybackHandoff? HandoffFrom);
+    PlaybackHandoff? HandoffFrom,
+    int? Volume = null);
 
 public sealed record PlaybackStateResponse(PlaybackState? State, string ServerTime);
 
@@ -260,9 +261,67 @@ public sealed record PlaybackPut
     public required bool Playing { get; init; }
     public IReadOnlyList<TrackInput>? Queue { get; init; }
     public PlaybackHandoffInput? HandoffFrom { get; init; }
+
+    /// <summary>Громкость этого устройства 0..100 (пульт, tasks/0017).</summary>
+    public int? Volume { get; init; }
 }
 
 public sealed record PlaybackPutResult(bool Applied, long? Rev, string? Reason, PlaybackState? State, string ServerTime);
+
+/// <summary>Кратко о текущем воспроизведении (API §6): в <c>playback.updated</c> и в списке устройств пульта.</summary>
+public sealed record PlaybackSummary(
+    long Rev,
+    string DeviceId,
+    string? DeviceName,
+    string SessionId,
+    int QueueVersion,
+    int Index,
+    int QueueLength,
+    TrackDto? Track,
+    long PositionMs,
+    long? DurationMs,
+    bool Playing,
+    string At,
+    string UpdatedAt,
+    PlaybackHandoff? HandoffFrom,
+    int? Volume);
+
+public sealed record PlaybackUpdatedPayload(long Rev, bool Cleared, PlaybackSummary? State);
+
+// ---------- Пульт: управление другим устройством (API §4.9, tasks/0017) ----------
+
+/// <param name="Online">у устройства открыт поток событий прямо сейчас</param>
+/// <param name="Controllable">хотя бы один его поток открыт с <c>remote=1</c></param>
+public sealed record RemoteDevice(string DeviceId, string Name, string Platform, bool Online, bool Controllable, PlaybackSummary? Playing, int? Volume);
+
+public sealed record RemoteDeviceList(IReadOnlyList<RemoteDevice> Devices, string ServerTime);
+
+public sealed record RemoteCommand
+{
+    public required string CommandId { get; init; }
+    public required string TargetDeviceId { get; init; }
+
+    /// <summary><c>play|pause|toggle|next|previous|seek|volume|play_queue|stop</c>.</summary>
+    public required string Action { get; init; }
+
+    public long? PositionMs { get; init; }
+    public int? Volume { get; init; }
+    public IReadOnlyList<TrackInput>? Queue { get; init; }
+    public int? Index { get; init; }
+}
+
+public sealed record RemoteCommandResult(bool Delivered);
+
+/// <summary>Команда пульта этому устройству (SSE <c>playback.command</c>); поля, которых у действия нет, — null.</summary>
+public sealed record PlaybackCommandPayload(
+    string CommandId,
+    string FromDeviceId,
+    string? FromDeviceName,
+    string Action,
+    long? PositionMs,
+    int? Volume,
+    IReadOnlyList<TrackDto>? Queue,
+    int? Index);
 
 // ---------- SSE (API §6) ----------
 

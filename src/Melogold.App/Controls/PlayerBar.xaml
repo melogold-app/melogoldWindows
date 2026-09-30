@@ -117,6 +117,7 @@
             <StackPanel x:Name="Transport" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Spacing="8">
                 <ToggleButton
                     x:Name="ShuffleButton"
+                    IsEnabled="{x:Bind ViewModel.IsLocal, Mode=OneWay}"
                     x:Uid="PlayerShuffle"
                     Style="{StaticResource PlayerIconToggleStyle}"
                     IsChecked="{x:Bind ViewModel.Shuffle, Mode=OneWay}"
@@ -150,6 +151,7 @@
                 </Button>
                 <ToggleButton
                     x:Name="RepeatButton"
+                    IsEnabled="{x:Bind ViewModel.IsLocal, Mode=OneWay}"
                     Style="{StaticResource PlayerIconToggleStyle}"
                     IsChecked="{x:Bind local:PlayerBar.IsRepeat(ViewModel.Repeat), Mode=OneWay}"
                     AutomationProperties.Name="{x:Bind ViewModel.RepeatLabel, Mode=OneWay}"
@@ -190,8 +192,17 @@
                     Text="{x:Bind ViewModel.DurationText, Mode=OneWay}" />
             </Grid>
 
-        <!-- Справа: «Текст», «Очередь», громкость, мини-плеер и «…» -->
+        <!-- Справа: «Устройство», «Текст», «Очередь», громкость, мини-плеер и «…» -->
         <StackPanel x:Name="RightPanel" Grid.Column="2" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal" Spacing="4">
+            <!-- Пульт (tasks/0017): это устройство или другое своё — только если сервер умеет -->
+            <Button
+                x:Name="DeviceButton"
+                x:Uid="PlayerDeviceButton"
+                Style="{StaticResource PlayerIconButtonStyle}"
+                Visibility="{x:Bind ViewModel.RemoteAvailable, Mode=OneWay}"
+                Click="OnDeviceClick">
+                <FontIcon Glyph="{x:Bind ViewModel.DeviceGlyph, Mode=OneWay}" />
+            </Button>
             <ToggleButton
                 x:Name="LyricsButton"
                 x:Uid="PlayerLyricsButton"
@@ -306,6 +317,7 @@
                         <Setter Target="VolumePanel.Visibility" Value="Collapsed" />
                         <Setter Target="VolumeButton.Visibility" Value="Visible" />
                         <Setter Target="MiniButton.Visibility" Value="Collapsed" />
+                        <Setter Target="DeviceButton.Visibility" Value="Collapsed" />
                         <Setter Target="LeftColumn.MinWidth" Value="200" />
                         <Setter Target="RightColumn.MinWidth" Value="200" />
                     </VisualState.Setters>
@@ -321,6 +333,7 @@
                         <Setter Target="VolumeButton.Visibility" Value="Visible" />
                         <Setter Target="MiniButton.Visibility" Value="Collapsed" />
                         <Setter Target="LikeButton.Visibility" Value="Collapsed" />
+                        <Setter Target="DeviceButton.Visibility" Value="Collapsed" />
                         <Setter Target="ShuffleButton.Visibility" Value="Collapsed" />
                         <Setter Target="RepeatButton.Visibility" Value="Collapsed" />
                         <Setter Target="SeekRow.(Grid.Row)" Value="0" />

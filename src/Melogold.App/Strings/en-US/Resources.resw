@@ -783,4 +783,26 @@
   <data name="ServiceYandexMusic" xml:space="preserve"><value>Yandex Music</value></data>
   <data name="LinkLookingFormat" xml:space="preserve"><value>Looking for the {0} link on YouTube Music…</value></data>
   <data name="ClipboardLink" xml:space="preserve"><value>Link from the clipboard</value></data>
+  <data name="PlayerDeviceButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Device</value></data>
+  <data name="PlayerDeviceButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Device</value></data>
+  <data name="RemoteListenHere.Content" xml:space="preserve"><value>Listen here</value></data>
+  <data name="RemoteDisconnect.Content" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="SettingsRemoteControl.Header" xml:space="preserve"><value>Control from other devices</value></data>
+  <data name="SettingsRemoteControl.Description" xml:space="preserve"><value>Pause, skip and change the volume from your phone or another computer</value></data>
+  <data name="RemoteDevice" xml:space="preserve"><value>Device</value></data>
+  <data name="RemoteThisDevice" xml:space="preserve"><value>This device</value></data>
+  <data name="RemoteSystemSound" xml:space="preserve"><value>Windows sound output</value></data>
+  <data name="RemoteOtherDevices" xml:space="preserve"><value>Other devices</value></data>
+  <data name="RemoteNoOtherDevices" xml:space="preserve"><value>No other devices in the account</value></data>
+  <data name="RemoteOnline" xml:space="preserve"><value>Online</value></data>
+  <data name="RemoteOffline" xml:space="preserve"><value>Offline</value></data>
+  <data name="RemoteNotControllable" xml:space="preserve"><value>Control is off</value></data>
+  <data name="RemoteVolumeFormat" xml:space="preserve"><value>volume {0}</value></data>
+  <data name="RemoteChosen" xml:space="preserve"><value>Selected</value></data>
+  <data name="RemotePlayingOnFormat" xml:space="preserve"><value>Playing on “{0}”</value></data>
+  <data name="RemoteNothingPlaying" xml:space="preserve"><value>Nothing is playing</value></data>
+  <data name="RemoteNothingFormat" xml:space="preserve"><value>Nothing is playing on “{0}”</value></data>
+  <data name="RemoteControlledByFormat" xml:space="preserve"><value>“{0}” is in control</value></data>
+  <data name="RemoteOfflineFormat" xml:space="preserve"><value>“{0}” is offline</value></data>
+  <data name="RemoteDisabledFormat" xml:space="preserve"><value>Control is off on “{0}”</value></data>
 </root>

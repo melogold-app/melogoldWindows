@@ -182,13 +182,14 @@ public sealed class PlayerEngine : IDisposable
     // ---------- Команды ----------
 
     /// <summary>Играть список с выбранного трека (REWRITE §2.3: тап в альбоме, плейлисте, Избранном…).</summary>
-    public void PlayList(IReadOnlyList<Track> tracks, int startIndex, bool shuffle = false)
+    /// <param name="startMs">с какого места — «Слушать здесь» с другого устройства (tasks/0017)</param>
+    public void PlayList(IReadOnlyList<Track> tracks, int startIndex, bool shuffle = false, long startMs = 0)
     {
         if (tracks.Count == 0) return;
         FinishListening();
         ResetAutoplay();
         Queue.SetList(tracks, startIndex, shuffle);
-        _ = LoadCurrentAsync(play: true);
+        _ = LoadCurrentAsync(play: true, startMs);
     }
 
     /// <summary>Одиночный трек и дальше автовоспроизведение похожих (поиск, «Недавние», ссылка).</summary>

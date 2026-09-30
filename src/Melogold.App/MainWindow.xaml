@@ -128,6 +128,28 @@
                 Click="OnSnackbarAction" />
         </Grid>
 
+        <!-- Пульт (tasks/0017): «Играет на «MacBook Air»», «Слушать здесь», «Отключиться» -->
+        <Grid
+            x:Name="RemoteBanner"
+            Grid.Row="2"
+            Padding="16,6,12,6"
+            ColumnSpacing="12"
+            Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="0,1,0,0"
+            Visibility="{x:Bind Player.ViewModel.IsRemote, Mode=OneWay}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <FontIcon VerticalAlignment="Center" FontSize="16" Glyph="{x:Bind Player.ViewModel.DeviceGlyph, Mode=OneWay}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" Text="{x:Bind Player.ViewModel.RemoteText, Mode=OneWay}" />
+            <Button x:Uid="RemoteListenHere" Grid.Column="2" Content="Listen here" Command="{x:Bind Player.ViewModel.ListenHereCommand}" />
+            <Button x:Uid="RemoteDisconnect" Grid.Column="3" Content="Disconnect" Command="{x:Bind Player.ViewModel.DisconnectRemoteCommand}" />
+        </Grid>
+
         <!-- Панель воспроизведения во всю ширину окна (§5.2) -->
         <controls:PlayerBar x:Name="Player" Grid.Row="3" />
     </Grid>

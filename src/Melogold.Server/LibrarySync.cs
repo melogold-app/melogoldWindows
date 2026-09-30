@@ -92,6 +92,50 @@ public sealed class LibrarySync : IDisposable
     /// <summary>Живое событие <c>link.updated</c>: привязка с этим id изменилась.</summary>
     public event Action<string>? LinkUpdated;
 
+    /// <summary>Поток событий (пере)открылся: пульту и отчёту о воспроизведении — перечитать состояние (API §6).</summary>
+    public event Action? LiveConnected;
+
+    /// <summary>Воспроизведение изменилось на другом устройстве (<c>playback.updated</c>).</summary>
+    public event Action<PlaybackUpdatedPayload>? PlaybackUpdated;
+
+    /// <summary>Команда пульта этому устройству (<c>playback.command</c>, только с <c>remote=1</c>).</summary>
+    public event Action<PlaybackCommandPayload>? PlaybackCommand;
+
+    private bool _remoteAllowed = true;
+    private CancellationTokenSource? _live;
+
+    /// <summary>
+    /// «Управление с других устройств» (Настройки › Плеер, tasks/0017): поток событий открывается с <c>remote=1</c>;
+    /// смена переоткрывает его.
+    /// </summary>
+    public bool RemoteAllowed
+    {
+        get => _remoteAllowed;
+        set
+        {
+            if (_remoteAllowed == value) return;
+            _remoteAllowed = value;
+            CancellationToken session;
+            lock (_lock)
+            {
+                if (_session is null) return;
+                session = _session.Token;
+            }
+            StartLiveEvents(session);
+        }
+    }
+
+    private void StartLiveEvents(CancellationToken session)
+    {
+        CancellationTokenSource live;
+        lock (_lock)
+        {
+            _live?.Cancel();
+            _live = live = CancellationTokenSource.CreateLinkedTokenSource(session);
+        }
+        _ = FollowLiveEventsAsync(live.Token, session);
+    }
+
     /// <summary>Свой текст сервер не принял как слишком большой (413): он остаётся только на этом устройстве.</summary>
     public event Action<string>? LyricsRejected;
 
@@ -125,7 +169,7 @@ public sealed class LibrarySync : IDisposable
         }
         SetStatus(new SyncStatus.Idle(LastSyncAt()));
         _ = SyncAsync(true, token);
-        _ = FollowLiveEventsAsync(token);
+        StartLiveEvents(token);
     }
 
     private void OnNetworkChanged(object? sender, NetworkAvailabilityEventArgs e)
@@ -728,7 +772,8 @@ public sealed class LibrarySync : IDisposable
     private static Track? ToTrack(TrackDto dto) => TrackDtos.ToTrack(dto);
 
     /// <summary>Живые события (API §6): синхронизация на <c>sync.changed</c>, выход на <c>session.invalidated</c>.</summary>
-    private async Task FollowLiveEventsAsync(CancellationToken ct)
+    /// <param name="session">синхронизации по событиям живут, пока жив вход, а не этот поток</param>
+    private async Task FollowLiveEventsAsync(CancellationToken ct, CancellationToken session)
     {
         var backoff = TimeSpan.Zero;
         while (!ct.IsCancellationRequested && _account.Session is not null)
@@ -738,7 +783,7 @@ public sealed class LibrarySync : IDisposable
             {
                 await _account.AuthorizedAsync(async (api, token) =>
                 {
-                    await foreach (var e in api.EventsAsync(token, ct).ConfigureAwait(false)) OnLiveEvent(e, ct);
+                    await foreach (var e in api.EventsAsync(token, _remoteAllowed, ct).ConfigureAwait(false)) OnLiveEvent(e, session);
                 }, ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -767,8 +812,18 @@ public sealed class LibrarySync : IDisposable
     {
         switch (e.Type)
         {
-            case "system.connected" or "sync.changed":
+            case "system.connected":
                 _ = SyncAsync(true, ct);
+                LiveConnected?.Invoke();
+                break;
+            case "sync.changed":
+                _ = SyncAsync(true, ct);
+                break;
+            case "playback.updated" when Payload<PlaybackUpdatedPayload>(e) is { } updated:
+                PlaybackUpdated?.Invoke(updated);
+                break;
+            case "playback.command" when Payload<PlaybackCommandPayload>(e) is { } command:
+                PlaybackCommand?.Invoke(command);
                 break;
             case "devices.updated":
                 DevicesChanged?.Invoke();
@@ -783,6 +838,19 @@ public sealed class LibrarySync : IDisposable
                 // Приглашение забрали или решили (tasks/0014): окно «Показать код» читает его сразу, не ждёт опроса
                 if (e.Payload?["linkId"]?.GetValue<string>() is { } linkId) LinkUpdated?.Invoke(linkId);
                 break;
+        }
+    }
+
+    private T? Payload<T>(LiveEvent e) where T : class
+    {
+        try
+        {
+            return e.Payload?.Deserialize<T>(MelogoldApi.Json);
+        }
+        catch (JsonException error)
+        {
+            _log($"Bad {e.Type} payload", error);
+            return null;
         }
     }
 

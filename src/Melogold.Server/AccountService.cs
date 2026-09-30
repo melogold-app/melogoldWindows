@@ -315,6 +315,35 @@ public sealed class AccountService : IDisposable
     public Task<DeviceListResponse> DevicesAsync(CancellationToken ct = default) =>
         AuthorizedAsync((api, token) => api.DevicesAsync(token, ct), ct);
 
+    // ---------- Воспроизведение и пульт (API §4.9, tasks/0017) ----------
+
+    /// <summary>Сервер аккаунта умеет пульт (<c>features.remote</c>).</summary>
+    public async Task<bool> RemoteAvailableAsync(CancellationToken ct = default)
+    {
+        if (_session is null) return false;
+        try
+        {
+            var info = ServerInfo ?? await CheckAsync(ServerUrl, ct).ConfigureAwait(false);
+            return info.Features?.Remote is not null;
+        }
+        catch (ApiException)
+        {
+            return false;
+        }
+    }
+
+    public Task<PlaybackStateResponse> PlaybackStateAsync(CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.PlaybackStateAsync(token, ct), ct);
+
+    public Task<PlaybackPutResult> PutPlaybackStateAsync(PlaybackPut put, CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.PutPlaybackStateAsync(token, put, ct), ct);
+
+    public Task<RemoteDeviceList> PlaybackDevicesAsync(CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.PlaybackDevicesAsync(token, ct), ct);
+
+    public Task<RemoteCommandResult> SendPlaybackCommandAsync(RemoteCommand command, CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.SendPlaybackCommandAsync(token, command, ct), ct);
+
     /// <summary>Код с нового устройства (часы, телевизор): его данные и три числа на выбор.</summary>
     public Task<LinkDetails> ResolveLinkAsync(string userCode, CancellationToken ct = default) =>
         AuthorizedAsync((api, token) => api.ResolveLinkAsync(token, userCode, ct), ct);

@@ -65,6 +65,10 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     [ObservableProperty]
     public partial bool Autoplay { get; set; } = true;
 
+    /// <summary>«Управление с других устройств» (tasks/0017): пульт на телефоне может ставить паузу, листать и менять громкость.</summary>
+    [ObservableProperty]
+    public partial bool RemoteControl { get; set; } = true;
+
     /// <summary>«Не сохранять историю» (DESIGN §3.11.2).</summary>
     [ObservableProperty]
     public partial bool PauseHistory { get; set; }

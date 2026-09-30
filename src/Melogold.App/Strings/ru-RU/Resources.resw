@@ -783,4 +783,26 @@
   <data name="ServiceYandexMusic" xml:space="preserve"><value>Яндекс Музыка</value></data>
   <data name="LinkLookingFormat" xml:space="preserve"><value>Ищем ссылку {0} на YouTube Music…</value></data>
   <data name="ClipboardLink" xml:space="preserve"><value>Ссылка из буфера обмена</value></data>
+  <data name="PlayerDeviceButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Устройство</value></data>
+  <data name="PlayerDeviceButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Устройство</value></data>
+  <data name="RemoteListenHere.Content" xml:space="preserve"><value>Слушать здесь</value></data>
+  <data name="RemoteDisconnect.Content" xml:space="preserve"><value>Отключиться</value></data>
+  <data name="SettingsRemoteControl.Header" xml:space="preserve"><value>Управление с других устройств</value></data>
+  <data name="SettingsRemoteControl.Description" xml:space="preserve"><value>Пауза, следующий трек и громкость — с телефона или другого компьютера</value></data>
+  <data name="RemoteDevice" xml:space="preserve"><value>Устройство</value></data>
+  <data name="RemoteThisDevice" xml:space="preserve"><value>Это устройство</value></data>
+  <data name="RemoteSystemSound" xml:space="preserve"><value>Вывод звука в Windows</value></data>
+  <data name="RemoteOtherDevices" xml:space="preserve"><value>Другие устройства</value></data>
+  <data name="RemoteNoOtherDevices" xml:space="preserve"><value>Других устройств в аккаунте нет</value></data>
+  <data name="RemoteOnline" xml:space="preserve"><value>В сети</value></data>
+  <data name="RemoteOffline" xml:space="preserve"><value>Не в сети</value></data>
+  <data name="RemoteNotControllable" xml:space="preserve"><value>Управление выключено</value></data>
+  <data name="RemoteVolumeFormat" xml:space="preserve"><value>громкость {0}</value></data>
+  <data name="RemoteChosen" xml:space="preserve"><value>Выбрано</value></data>
+  <data name="RemotePlayingOnFormat" xml:space="preserve"><value>Играет на «{0}»</value></data>
+  <data name="RemoteNothingPlaying" xml:space="preserve"><value>Ничего не играет</value></data>
+  <data name="RemoteNothingFormat" xml:space="preserve"><value>На «{0}» ничего не играет</value></data>
+  <data name="RemoteControlledByFormat" xml:space="preserve"><value>Управляет «{0}»</value></data>
+  <data name="RemoteOfflineFormat" xml:space="preserve"><value>„{0}“ не в сети</value></data>
+  <data name="RemoteDisabledFormat" xml:space="preserve"><value>На „{0}“ управление выключено</value></data>
 </root>

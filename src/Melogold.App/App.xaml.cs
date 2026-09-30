@@ -106,6 +106,11 @@ public partial class App : Application
             Downloads = sp.GetRequiredService<TrackDownloads>().Store,
         });
         services.AddSingleton<FileExport>();
+        // Пульт и отчёт о воспроизведении (tasks/0017)
+        services.AddSingleton(_ => new ServerClock());
+        services.AddSingleton<IPlaybackServer>(sp => new AccountPlaybackServer(sp.GetRequiredService<AccountService>()));
+        services.AddSingleton(sp => new RemoteController(sp.GetRequiredService<IPlaybackServer>(), sp.GetRequiredService<ServerClock>(), (message, error) => Log.Warn(message, error)));
+        services.AddSingleton<RemotePlayback>();
         services.AddSingleton<PlayerViewModel>();
         services.AddSingleton<TrackActions>();
         services.AddSingleton<CollectionMenu>();

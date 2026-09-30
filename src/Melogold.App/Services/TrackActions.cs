@@ -45,7 +45,7 @@ public abstract record TrackContext
 /// переходы к альбому и исполнителю. Всё, что показывает меню, известно до его открытия — меню не дёргается (§8.7).
 /// </summary>
 public sealed class TrackActions(PlayerEngine engine, Library library, Navigator navigator, Snackbar snackbar, YouTubeMusic music,
-    TrackDownloads downloads, FileExport export)
+    TrackDownloads downloads, FileExport export, RemotePlayback remote)
 {
     // ---------- Воспроизведение ----------
 
@@ -56,6 +56,12 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
     public void Play(IReadOnlyList<Track> tracks, int index, TrackContext context)
     {
         if (index < 0 || index >= tracks.Count) return;
+        // Пульт (tasks/0017): трек включается на выбранном устройстве — очередь этого списка с этого трека
+        if (remote.Remote.Target is not null)
+        {
+            _ = context.PlaysSingle ? remote.Remote.PlayQueueAsync([tracks[index]], 0) : remote.Remote.PlayQueueAsync(tracks, index);
+            return;
+        }
         // Без сети играет только то, что целиком в кэше (tasks/0003 §4)
         if (ViewModels.RowVm.IsOnline?.Invoke() == false && !engine.IsOffline(tracks[index].VideoId))
         {
@@ -78,6 +84,11 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
 
     public void PlayShuffled(IReadOnlyList<Track> tracks)
     {
+        if (remote.Remote.Target is not null && tracks.Count > 0)
+        {
+            _ = remote.Remote.PlayQueueAsync(tracks.OrderBy(_ => Random.Shared.Next()).ToList(), 0);
+            return;
+        }
         if (tracks.Count == 0) return;
         engine.PlayList(tracks, Random.Shared.Next(tracks.Count), shuffle: true);
     }

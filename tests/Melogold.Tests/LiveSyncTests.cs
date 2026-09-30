@@ -630,4 +630,119 @@ public class LiveSyncTests(ITestOutputHelper output)
             if (laptop.Account.Session is not null) await laptop.Account.DeleteAccountAsync(password);
         }
     }
+
+    private sealed class RecordingPlayer : IRemotePlayer
+    {
+        public System.Collections.Concurrent.ConcurrentQueue<string> Done { get; } = new();
+
+        public void Play() => Done.Enqueue("play");
+
+        public void Pause() => Done.Enqueue("pause");
+
+        public void Toggle() => Done.Enqueue("toggle");
+
+        public void Next() => Done.Enqueue("next");
+
+        public void Previous() => Done.Enqueue("previous");
+
+        public void Seek(long positionMs) => Done.Enqueue($"seek {positionMs}");
+
+        public void SetVolume(int volume) => Done.Enqueue($"volume {volume}");
+
+        public void PlayQueue(IReadOnlyList<Track> tracks, int index) => Done.Enqueue($"play_queue {tracks[index].VideoId}");
+
+        public void Stop() => Done.Enqueue("stop");
+    }
+
+    /// <summary>
+    /// tasks/0017 против ЛОКАЛЬНОГО сервера: компьютер сообщает, что играет, телефон видит его в списке устройств и
+    /// управляет им — пауза, громкость, трек из списка; выключенное управление; «Слушать здесь» на телефоне ставит
+    /// компьютер на паузу.
+    /// </summary>
+    [Fact]
+    public async Task RemoteControlBetweenTwoDevices()
+    {
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_LOCAL_SERVER");
+        Assert.SkipUnless(server is not null, "MELOGOLD_LOCAL_SERVER");
+        var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        using var pc = new Device("Windows PC", server, output);
+        using var phone = new Device("Pixel 7 Pro", server, output);
+        await pc.Account.RegisterAsync(login, password);
+        try
+        {
+            await phone.Account.SignInAsync(login, password);
+            Assert.True(await pc.Account.RemoteAvailableAsync());
+            var queue = new List<Track>
+            {
+                new() { VideoId = "dQw4w9WgXcQ", Title = "Never Gonna Give You Up", ArtistsText = "Rick Astley", DurationMs = 213_000 },
+                new() { VideoId = "fJ9rUzIMcZQ", Title = "Bohemian Rhapsody", ArtistsText = "Queen", DurationMs = 354_000 },
+            };
+            var playing = new LocalPlayback(queue, 0, 30_000, 213_000, true, 70);
+            var pcClock = new ServerClock();
+            var reporter = new PlaybackReporter(new AccountPlaybackServer(pc.Account), () => playing, pcClock);
+            var player = new RecordingPlayer();
+            var notices = new List<string>();
+            var handler = new RemoteCommandHandler(player, notices.Add);
+            pc.Sync.PlaybackCommand += command => handler.Execute(command);
+            PlaybackUpdatedPayload? pcSaw = null;
+            pc.Sync.PlaybackUpdated += update => pcSaw = update;
+            pc.Sync.Start();
+            phone.Sync.Start();
+            await reporter.SendAsync();
+
+            var remote = new RemoteController(new AccountPlaybackServer(phone.Account), new ServerClock());
+            phone.Sync.PlaybackUpdated += remote.OnUpdated;
+            RemoteDevice? target = null;
+            await WaitFor("компьютер в сети и управляем", () =>
+            {
+                target = remote.DevicesAsync().GetAwaiter().GetResult().FirstOrDefault(d => d.Name == "Windows PC" && d.Online && d.Controllable);
+                return target is not null;
+            });
+            Assert.Equal(("dQw4w9WgXcQ", 70), (target!.Playing?.Track?.VideoId, target.Volume));
+            await remote.ConnectAsync(target);
+            Assert.True(remote.State?.Playing);
+            Assert.InRange(remote.Position, 30_000, 40_000);
+            output.WriteLine("✓ телефон видит, что играет на компьютере");
+
+            var started = Stopwatch.StartNew();
+            Assert.True(await remote.PauseAsync());
+            await WaitFor("пауза дошла", () => player.Done.Contains("pause"));
+            output.WriteLine($"✓ пауза за {started.ElapsedMilliseconds} мс");
+            Assert.Equal(["Pixel 7 Pro"], notices);
+            Assert.True(await remote.SetVolumeAsync(30));
+            Assert.True(await remote.SeekAsync(60_000));
+            Assert.True(await remote.PlayQueueAsync(queue, 1));
+            await WaitFor("громкость, перемотка, трек", () => player.Done.Contains("volume 30") && player.Done.Contains("seek 60000") && player.Done.Contains("play_queue fJ9rUzIMcZQ"));
+
+            // Компьютер сообщил итог — телефон видит паузу и громкость
+            playing = playing with { Playing = false, Volume = 30, PositionMs = 60_000 };
+            await reporter.SendAsync();
+            await WaitFor("телефон увидел итог", () => remote.State is { Playing: false, Volume: 30 });
+            output.WriteLine("✓ команды выполнены, итог виден пульту");
+
+            // Управление выключено: поток без remote=1
+            pc.Sync.RemoteAllowed = false;
+            await WaitFor("управление выключено", () => remote.DevicesAsync().GetAwaiter().GetResult().Any(d => d.Name == "Windows PC" && d.Online && !d.Controllable));
+            RemoteFailure? failure = null;
+            remote.Failed += (why, _) => failure = why;
+            Assert.False(await remote.NextAsync());
+            Assert.Equal(RemoteFailure.Disabled, failure);
+            Assert.Null(remote.Target);
+            output.WriteLine("✓ выключенное управление");
+
+            // «Слушать здесь» на телефоне: компьютер видит handoffFrom на себя и ставит паузу
+            pc.Sync.RemoteAllowed = true;
+            playing = playing with { Playing = true };
+            await reporter.SendAsync();
+            var phoneReporter = new PlaybackReporter(new AccountPlaybackServer(phone.Account), () => new LocalPlayback(queue, 0, 5000, 213_000, true, 50), new ServerClock());
+            phoneReporter.TakeOverFrom(pc.Account.Session!.DeviceId, reporter.SessionId);
+            await WaitFor("компьютер узнал, что воспроизведение забрали", () => reporter.IsTakenFromHere(pcSaw?.State, pc.Account.Session!.DeviceId));
+            output.WriteLine("✓ «Слушать здесь»");
+        }
+        finally
+        {
+            if (pc.Account.Session is not null) await pc.Account.DeleteAccountAsync(password);
+        }
+    }
 }

@@ -210,6 +210,24 @@ public sealed class RemoteTests
         Assert.Equal(200_000, RemoteController.PositionAt(Summary("mac", true, 199_000, Start), Start + 60_000));
     }
 
+    [Fact]
+    public void RemoteDurationFallsBackToTheTrack()
+    {
+        var bare = Summary("phone", true, 10_000, Start, durationMs: null);
+        // Телефон длительность не сообщил, а трек её знает — из трека; на него же опирается и позиция
+        var withTrack = bare with { Track = bare.Track! with { DurationMs = 261_000 } };
+        Assert.Equal(261_000, RemoteController.DurationOf(withTrack));
+        Assert.Equal(261_000, RemoteController.PositionAt(withTrack with { PositionMs = 259_000 }, Start + 60_000));
+        // Только «4:21» — из текста
+        Assert.Equal(261_000, RemoteController.DurationOf(bare with { DurationMs = 0, Track = bare.Track! with { DurationText = "4:21" } }));
+        // Нигде нет — неизвестна: позиция не обрезается
+        Assert.Null(RemoteController.DurationOf(bare));
+        Assert.Null(RemoteController.DurationOf(null));
+        Assert.Equal(70_000, RemoteController.PositionAt(bare, Start + 60_000));
+        // Сообщённая длительность важнее
+        Assert.Equal(200_000, RemoteController.DurationOf(Summary("phone", true, 0, Start)));
+    }
+
     private static RemoteDevice Mac(PlaybackSummary? playing = null) => new("mac", "MacBook Air", "macos", true, true, playing, 50);
 
     [Fact]

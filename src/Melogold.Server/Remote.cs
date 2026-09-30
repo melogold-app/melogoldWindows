@@ -327,7 +327,19 @@ public sealed class RemoteController(IPlaybackServer server, ServerClock clock, 
     {
         var position = state.PositionMs;
         if (state.Playing && IsoTime.TryParse(state.At) is { } at) position += Math.Max(0, serverNow - at);
-        return state.DurationMs is { } duration ? Math.Min(position, duration) : position;
+        return DurationOf(state) is { } duration ? Math.Min(position, duration) : position;
+    }
+
+    /// <summary>
+    /// Длительность трека на цели: из состояния, а если устройство её не сообщило (<c>durationMs</c> пуст или 0) — из
+    /// самого трека (<c>durationMs</c>, затем «3:45»); null — неизвестна, ползунок не показывает конец.
+    /// </summary>
+    public static long? DurationOf(PlaybackSummary? state)
+    {
+        if (state is null) return null;
+        if (state.DurationMs is > 0 and var reported) return reported;
+        if (state.Track?.DurationMs is > 0 and var known) return known;
+        return Durations.ParseText(state.Track?.DurationText) is > 0 and var parsed ? parsed : null;
     }
 
     public Task<bool> PlayAsync() => SendAsync("play");

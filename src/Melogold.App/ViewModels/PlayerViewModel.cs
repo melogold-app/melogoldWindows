@@ -306,12 +306,13 @@ public sealed partial class PlayerViewModel : ObservableObject
     {
         if (IsRemote)
         {
-            var remoteDuration = TimeSpan.FromMilliseconds(_remote.Remote.State?.DurationMs ?? 0);
-            Duration = Math.Max(1, remoteDuration.TotalSeconds);
-            DurationText = Durations.Format(remoteDuration);
+            // Устройство не сказало длительность — берём у трека; нет и её: конец не показываем, а не «0:00» с ползунком в конце
+            var known = RemoteController.DurationOf(_remote.Remote.State);
+            Duration = Math.Max(1, (known ?? 0) / 1000.0);
+            DurationText = known is { } total ? Durations.Format(total) : "";
             if (_seeking) return;
             var remotePosition = TimeSpan.FromMilliseconds(_remote.Remote.Position);
-            Position = Math.Min(remotePosition.TotalSeconds, Duration);
+            Position = known is null ? 0 : Math.Min(remotePosition.TotalSeconds, Duration);
             PositionText = Durations.Format(remotePosition);
             return;
         }

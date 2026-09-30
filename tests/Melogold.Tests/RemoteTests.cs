@@ -158,8 +158,15 @@ public sealed class RemoteTests
         Assert.Null(setup.Server.Puts[^1].HandoffFrom);
     }
 
+    /// <summary>Повторы после сбоя идут цепочкой асинхронных вызовов: ждём, пока цепочка дойдёт до нужного числа отчётов.</summary>
+    private static async Task WaitForPuts(Setup setup, int count)
+    {
+        for (var i = 0; i < 400 && setup.Server.Puts.Count < count; i++) await Task.Delay(10, TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+    }
+
     [Fact]
-    public void ServerFailuresBackOffTwoFourEightSeconds()
+    public async Task ServerFailuresBackOffTwoFourEightSeconds()
     {
         var setup = new Setup { Playing = new LocalPlayback(Tracks(2), 0, 0, 200_000, true, 70) };
         var failures = 3;
@@ -167,6 +174,7 @@ public sealed class RemoteTests
             ? throw new ApiException(503, "server_busy", null)
             : new PlaybackPutResult(true, 1, null, null, IsoTime.Format(setup.Server.Now));
         setup.Reporter.Changed();
+        await WaitForPuts(setup, 4);
         // Первая попытка сразу, повторы — через 2, 4 и 8 с, четвёртая прошла
         Assert.Equal([2000.0, 4000.0, 8000.0], setup.Waits.Select(w => w.TotalMilliseconds));
         Assert.Equal(4, setup.Server.Puts.Count);
@@ -174,6 +182,7 @@ public sealed class RemoteTests
         setup.Playing = setup.Playing with { Playing = false };
         setup.Server.Now += 100;
         setup.Reporter.Changed();
+        await WaitForPuts(setup, 5);
         Assert.Equal(900, setup.Waits[^1].TotalMilliseconds);
     }
 

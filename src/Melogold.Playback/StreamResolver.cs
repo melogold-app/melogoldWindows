@@ -46,11 +46,14 @@ public sealed class StreamException(StreamErrorKind kind, string message, Except
 {
     public StreamErrorKind Kind { get; } = kind;
 
-    /// <summary>Сколько раз повторить, прежде чем пропустить трек (сеть — 2, таймаут, бот и прочее — 1, гео/возраст/недоступно — 0).</summary>
+    /// <summary>
+    /// Сколько раз повторить, прежде чем пропустить трек: сеть — 2, таймаут и прочее — 1, гео/возраст/недоступно — 0.
+    /// Проверка на бота — 0 и без пропуска (tasks/0019): закрытому адресу повтор не поможет, а приблизит блокировку.
+    /// </summary>
     public int Retries => Kind switch
     {
         StreamErrorKind.Network => 2,
-        StreamErrorKind.Timeout or StreamErrorKind.BotCheck or StreamErrorKind.Extractor => 1,
+        StreamErrorKind.Timeout or StreamErrorKind.Extractor => 1,
         _ => 0,
     };
 
@@ -65,11 +68,18 @@ public sealed class StreamException(StreamErrorKind kind, string message, Except
 }
 
 /// <summary>
-/// Получает поток трека на чистом C# (решение пользователя, вместо yt-dlp): запрос InnerTube <c>player</c> клиентами,
+/// Получает поток трека на чистом C# (решение пользователя, вместо yt-dlp): один запрос InnerTube <c>player</c> на трек,
+/// клиентами,
 /// которые отдают прямые ссылки без PO-токена (сейчас VISIONOS), по очереди из <see cref="Clients"/> — встроенный список можно заменить свежим из
 /// репозитория, не дожидаясь релиза. Формат — itag 140 (AAC в m4a). Адреса кэшируются (LRU 64) до
 /// <c>expire − 5 мин</c>; кэш сбрасывается при 403 и смене сети. Одновременно — не больше двух извлечений,
 /// у каждого сторож 20 с.
+/// <para>
+/// Проверка «вы не бот» (tasks/0019): YouTube считает гостевые запросы по адресу, и за одним сервером VPN сидит много
+/// людей — каждый лишний запрос приближает блокировку для всех. Поэтому на неё — ни следующего клиента, ни диагноза, ни
+/// повтора, а адрес помнится закрытым 10 минут: заготовка, загрузки и обновление адреса в YouTube не ходят, действие
+/// человека пробует один запрос. Удача, смена сети и истечение 10 минут снимают отметку.
+/// </para>
 /// </summary>
 /// <param name="log">строка в журнал на каждый отказ с диагнозом (задание 0010)</param>
 public sealed class StreamResolver(InnerTubeClient client, Action<string>? log = null)
@@ -91,14 +101,48 @@ public sealed class StreamResolver(InnerTubeClient client, Action<string>? log =
     /// <summary>Порядок клиентов; <see cref="StreamClients"/> подменяет его свежим списком.</summary>
     public IReadOnlyList<ClientProfile> Clients { get; set; } = StreamClients.BuiltIn;
 
-    public async Task<StreamInfo> ResolveAsync(string videoId, CancellationToken cancellationToken = default)
+    /// <summary>Сколько помнить, что YouTube не пускает адрес.</summary>
+    public static readonly TimeSpan BlockMemory = TimeSpan.FromMinutes(10);
+
+    private long _blockedUntil;
+
+    /// <summary>Часы для отметки «адрес закрыт» (тестам — свои).</summary>
+    public Func<long> Clock { get; set; } = IsoTime.NowMs;
+
+    /// <summary>YouTube недавно спросил «вы не бот» с этого адреса.</summary>
+    public bool IsBlocked => Volatile.Read(ref _blockedUntil) > Clock();
+
+    /// <summary>Отметка снята удачей или сменой сети: ждавшие загрузки идут дальше.</summary>
+    public event Action? Unblocked;
+
+    /// <summary>Адрес закрыт: и по ответу <c>player</c>, и по 429 от googlevideo.</summary>
+    public void MarkBlocked()
+    {
+        if (Interlocked.Exchange(ref _blockedUntil, Clock() + (long)BlockMemory.TotalMilliseconds) <= Clock())
+            log?.Invoke("YouTube asks to confirm we are not a bot: no stream requests but the user's for 10 minutes");
+    }
+
+    private void ClearBlock()
+    {
+        if (Interlocked.Exchange(ref _blockedUntil, 0) != 0) Unblocked?.Invoke();
+    }
+
+    private StreamException Blocked(string videoId) => new(StreamErrorKind.BotCheck, $"{videoId}: this address is blocked by YouTube (remembered), not asked");
+
+    /// <param name="probe">
+    /// действие человека (нажатие на трек, «Повторить», «Далее»): при закрытом адресе — один пробный запрос; без него
+    /// (заготовка, загрузки, обновление адреса) при закрытом адресе запроса нет
+    /// </param>
+    public async Task<StreamInfo> ResolveAsync(string videoId, CancellationToken cancellationToken = default, bool probe = false)
     {
         if (FromCache(videoId) is { } cached) return cached;
+        if (!probe && IsBlocked) throw Blocked(videoId);
 
         await _slots.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (FromCache(videoId) is { } again) return again;
+            if (!probe && IsBlocked) throw Blocked(videoId);
             StreamException? last = null;
             foreach (var profile in Clients)
             {
@@ -108,11 +152,19 @@ public sealed class StreamResolver(InnerTubeClient client, Action<string>? log =
                 {
                     var info = await FromClientAsync(profile, videoId, watchdog.Token).ConfigureAwait(false);
                     Remember(info);
+                    ClearBlock();
                     return info;
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
                     last = new StreamException(StreamErrorKind.Timeout, $"{profile.Name}: timeout");
+                }
+                catch (StreamException e) when (e.Kind == StreamErrorKind.BotCheck)
+                {
+                    // Закрытому адресу не помогут ни другой клиент, ни диагноз: каждый запрос — ещё шаг к блокировке
+                    MarkBlocked();
+                    log?.Invoke($"Stream of {videoId} not played: BotCheck; nothing more asked; client: {e.Message}");
+                    throw;
                 }
                 catch (StreamException e) when (e.IsFinal)
                 {
@@ -146,10 +198,11 @@ public sealed class StreamResolver(InnerTubeClient client, Action<string>? log =
         }
     }
 
-    /// <summary>Сеть сменилась: адреса привязаны к IP, сбрасываются все.</summary>
+    /// <summary>Сеть сменилась: адреса привязаны к IP, сбрасываются все; новый адрес может быть и не закрыт.</summary>
     public void InvalidateAll()
     {
         lock (_lock) _cache.Clear();
+        ClearBlock();
     }
 
     private StreamInfo? FromCache(string videoId)

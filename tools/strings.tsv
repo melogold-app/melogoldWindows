@@ -76,7 +76,8 @@ StreamBitrate	Битрейт	Bitrate
 StreamSource	Клиент	Client
 Close	Закрыть	Close
 PlayErrorNetwork	Нет соединения. Проверьте сеть или VPN	No connection. Check your network or VPN
-PlayErrorBot	YouTube просит подтвердить, что вы не робот. Попробуйте позже или смените сеть	YouTube wants to check you're not a robot. Try again later or switch networks
+PlayErrorBot	YouTube просит подтвердить, что вы не бот: он временно не пускает адрес, с которого вы выходите в сеть. С VPN выберите другой сервер, без VPN — подождите несколько часов.	YouTube asks to confirm you're not a bot: it is temporarily blocking the address you go online from. With a VPN, pick another server; without one, wait a few hours.
+PlayErrorBotShort	YouTube не пускает этот адрес — смените сервер VPN	YouTube is blocking this address — switch VPN server
 PlayErrorGeo	Недоступно в вашей стране	Unavailable in your country
 PlayErrorUnavailable	Видео удалено или закрыто	The video was removed or made private
 PlayErrorAge	Нужна проверка возраста — пока не поддерживается	Age verification is required — not supported yet
@@ -636,6 +637,11 @@ DownloadQueued	В очереди на загрузку	Queued for download
 DownloadStarting	Скачивается	Downloading
 DownloadingFormat	Скачивается · {0} %	Downloading · {0}%
 DownloadFailed	Не удалось скачать	Couldn't download
+DownloadWaiting	Ждёт: YouTube не пускает этот адрес	Waiting: YouTube is blocking this address
+DownloadsWaitingTitle	Загрузки ждут	Downloads are waiting
+DownloadsResume	Возобновить	Resume
+MenuDownloadResume	Возобновить загрузки	Resume downloads
+MenuDownloadCancelWaiting	Отменить загрузку	Cancel download
 DownloadsDownloadedFormat	Скачано · {0} · {1}	Downloaded · {0} · {1}
 DownloadsCountFormat	Скачано: {0} · в кэше: {1}	Downloaded: {0} · cached: {1}
 DownloadsEmpty	Скачайте треки — они будут играть без сети. ⋯ › Скачать	Download tracks to play them without a network. ⋯ › Download

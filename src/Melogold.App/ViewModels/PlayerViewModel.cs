@@ -336,7 +336,7 @@ public sealed partial class PlayerViewModel : ObservableObject
     public static string ErrorTitle(PlayerError error) =>
         error.Kind == StreamErrorKind.Geo && error.Country is { } code
             ? Loc.Format("PlayErrorGeoCountryShortFormat", Melogold.Core.Domain.CountryNames.Of(code))
-            : ErrorText(error.Kind);
+            : error.Kind == StreamErrorKind.BotCheck ? Loc.Get("PlayErrorBotShort") : ErrorText(error.Kind);
 
     /// <summary>Причина в плашке «Пропущен „…“» (4 секунды — абзац не прочитать): «Недоступно в стране «Россия»».</summary>
     public static string NoticeText(PlayerError error) =>

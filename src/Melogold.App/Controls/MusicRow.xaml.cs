@@ -69,6 +69,7 @@ public sealed partial class MusicRow : UserControl, INotifyPropertyChanged
         OfflineMark.Cached => "\uE930",
         OfflineMark.Queued => "\uE896",
         OfflineMark.Failed => "\uE783",
+        OfflineMark.Waiting => "\uE769",
         _ => "",
     };
 
@@ -76,6 +77,7 @@ public sealed partial class MusicRow : UserControl, INotifyPropertyChanged
     {
         OfflineMark.Downloaded => "AccentTextFillColorPrimaryBrush",
         OfflineMark.Failed => "SystemFillColorCriticalBrush",
+        OfflineMark.Waiting => "SystemFillColorCautionBrush",
         _ => "TextFillColorSecondaryBrush",
     }];
 
@@ -97,6 +99,7 @@ public sealed partial class MusicRow : UserControl, INotifyPropertyChanged
         OfflineMark.Queued => Loc.Get("DownloadQueued"),
         OfflineMark.Downloading => progress is { } value ? Loc.Format("DownloadingFormat", (int)value) : Loc.Get("DownloadStarting"),
         OfflineMark.Failed => Loc.Get("DownloadFailed"),
+        OfflineMark.Waiting => Loc.Get("DownloadWaiting"),
         _ => "",
     };
 

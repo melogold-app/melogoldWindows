@@ -165,12 +165,22 @@ public sealed partial class DownloadsPage : CatalogPage
     private readonly Library _library = App.Services.GetRequiredService<Library>();
     private readonly Melogold.Playback.SongCache _cache = App.Services.GetRequiredService<Melogold.Playback.SongCache>();
     private readonly Melogold.Playback.TrackDownloads _downloads = App.Services.GetRequiredService<Melogold.Playback.TrackDownloads>();
+
+    /// <summary>Очередь ждёт: YouTube не пускает адрес (tasks/0019) — причина и «Возобновить».</summary>
+    private readonly InfoBar _waiting = new() { Severity = InfoBarSeverity.Warning, IsClosable = false, Margin = new Thickness(0, 0, 0, 12) };
     private bool _loadQueued;
 
     public DownloadsPage()
     {
         InitializeComponent();
         var top = new StackPanel();
+        _waiting.Title = Loc.Get("DownloadsWaitingTitle");
+        _waiting.Message = Loc.Get("PlayErrorBotShort");
+        var resume = new Button { Content = Loc.Get("DownloadsResume") };
+        resume.Click += (_, _) => _downloads.ResumeWaiting();
+        _waiting.ActionButton = resume;
+        _downloads.WaitingChanged += () => DispatcherQueue.TryEnqueue(ShowWaiting);
+        ShowWaiting();
         top.Children.Add(new TextBlock { Text = Loc.Get("Downloads"), Style = (Style)Application.Current.Resources["PageTitleStyle"] });
         top.Children.Add(new TextBlock
         {
@@ -180,6 +190,7 @@ public sealed partial class DownloadsPage : CatalogPage
             Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
             Margin = new Thickness(0, 0, 0, 12),
         });
+        top.Children.Add(_waiting);
         top.Children.Add(_state);
         _list.Header = top;
         Content = _list;
@@ -197,6 +208,8 @@ public sealed partial class DownloadsPage : CatalogPage
     }
 
     public override void ScrollToTop() => SearchPage.FindScrollViewer(_list)?.ChangeView(null, 0, null);
+
+    private void ShowWaiting() => _waiting.IsOpen = _downloads.IsWaiting;
 
     private void QueueLoad()
     {

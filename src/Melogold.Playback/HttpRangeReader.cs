@@ -64,6 +64,8 @@ public sealed class HttpRangeReader(HttpClient http, StreamInfo info, Func<Cance
                     continue;
                 }
                 if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable) return [];
+                // googlevideo тоже считает запросы по адресу: 429 — адрес закрыт, как проверка на бота (tasks/0019)
+                if (response.StatusCode == HttpStatusCode.TooManyRequests) throw new StreamException(StreamErrorKind.BotCheck, "googlevideo 429");
                 response.EnsureSuccessStatusCode();
                 // Свежий адрес работает: следующий 403 (адрес истёк через часы) снова может его обновить
                 if (ReferenceEquals(Info, current)) Volatile.Write(ref _refreshes, 0);

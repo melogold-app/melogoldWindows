@@ -17,6 +17,9 @@ public enum OfflineMark
     Downloading,
     Downloaded,
     Failed,
+
+    /// <summary>Загрузка ждёт: YouTube не пускает адрес (tasks/0019).</summary>
+    Waiting,
 }
 
 /// <summary>Список, к которому относится строка: что играет двойной клик и что значит «Убрать из…».</summary>
@@ -75,6 +78,7 @@ public sealed partial class RowVm : ObservableObject
             Melogold.Playback.DownloadStatus.Downloading => OfflineMark.Downloading,
             Melogold.Playback.DownloadStatus.Queued => OfflineMark.Queued,
             Melogold.Playback.DownloadStatus.Failed => OfflineMark.Failed,
+            Melogold.Playback.DownloadStatus.Waiting => OfflineMark.Waiting,
             _ => IsCached?.Invoke(track.VideoId) == true ? OfflineMark.Cached : OfflineMark.None,
         };
     }

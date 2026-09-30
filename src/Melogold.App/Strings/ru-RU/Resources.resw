@@ -75,7 +75,8 @@
   <data name="StreamSource" xml:space="preserve"><value>Клиент</value></data>
   <data name="Close" xml:space="preserve"><value>Закрыть</value></data>
   <data name="PlayErrorNetwork" xml:space="preserve"><value>Нет соединения. Проверьте сеть или VPN</value></data>
-  <data name="PlayErrorBot" xml:space="preserve"><value>YouTube просит подтвердить, что вы не робот. Попробуйте позже или смените сеть</value></data>
+  <data name="PlayErrorBot" xml:space="preserve"><value>YouTube просит подтвердить, что вы не бот: он временно не пускает адрес, с которого вы выходите в сеть. С VPN выберите другой сервер, без VPN — подождите несколько часов.</value></data>
+  <data name="PlayErrorBotShort" xml:space="preserve"><value>YouTube не пускает этот адрес — смените сервер VPN</value></data>
   <data name="PlayErrorGeo" xml:space="preserve"><value>Недоступно в вашей стране</value></data>
   <data name="PlayErrorUnavailable" xml:space="preserve"><value>Видео удалено или закрыто</value></data>
   <data name="PlayErrorAge" xml:space="preserve"><value>Нужна проверка возраста — пока не поддерживается</value></data>
@@ -627,6 +628,11 @@
   <data name="DownloadStarting" xml:space="preserve"><value>Скачивается</value></data>
   <data name="DownloadingFormat" xml:space="preserve"><value>Скачивается · {0} %</value></data>
   <data name="DownloadFailed" xml:space="preserve"><value>Не удалось скачать</value></data>
+  <data name="DownloadWaiting" xml:space="preserve"><value>Ждёт: YouTube не пускает этот адрес</value></data>
+  <data name="DownloadsWaitingTitle" xml:space="preserve"><value>Загрузки ждут</value></data>
+  <data name="DownloadsResume" xml:space="preserve"><value>Возобновить</value></data>
+  <data name="MenuDownloadResume" xml:space="preserve"><value>Возобновить загрузки</value></data>
+  <data name="MenuDownloadCancelWaiting" xml:space="preserve"><value>Отменить загрузку</value></data>
   <data name="DownloadsDownloadedFormat" xml:space="preserve"><value>Скачано · {0} · {1}</value></data>
   <data name="DownloadsCountFormat" xml:space="preserve"><value>Скачано: {0} · в кэше: {1}</value></data>
   <data name="DownloadsEmpty" xml:space="preserve"><value>Скачайте треки — они будут играть без сети. ⋯ › Скачать</value></data>

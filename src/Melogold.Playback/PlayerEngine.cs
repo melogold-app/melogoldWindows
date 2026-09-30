@@ -353,7 +353,7 @@ public sealed class PlayerEngine : IDisposable
         {
             try
             {
-                var stream = await TakePreloaded(track.VideoId) ?? await OpenSourceAsync(track.VideoId, cts.Token);
+                var stream = await TakePreloaded(track.VideoId) ?? await OpenSourceAsync(track.VideoId, cts.Token, probe: true);
                 if (cts.IsCancellationRequested)
                 {
                     stream.Dispose();
@@ -414,10 +414,21 @@ public sealed class PlayerEngine : IDisposable
         }
     }
 
-    /// <summary>Пропуск включён всегда; после трёх пропусков подряд — остановка с причиной (REWRITE §3.10.9).</summary>
+    /// <summary>
+    /// Пропуск включён всегда; после трёх пропусков подряд — остановка с причиной (REWRITE §3.10.9). Проверка на бота —
+    /// сразу остановка на карточке, без пропуска и без плашки «Пропущен…» (tasks/0019): следующий трек упадёт так же.
+    /// </summary>
     private void SkipAfterError(PlayerError error)
     {
         Error = error;
+        if (error.Kind == StreamErrorKind.BotCheck)
+        {
+            _resolver.MarkBlocked();
+            _playWhenReady = false;
+            SetStatus(PlayerStatus.Error);
+            StateChanged?.Invoke();
+            return;
+        }
         _skipsInRow++;
         if (_skipsInRow >= 3 || Queue.PeekNext(true) is null)
         {
@@ -564,11 +575,12 @@ public sealed class PlayerEngine : IDisposable
     /// <summary>Трек есть без сети: скачан или целиком в кэше.</summary>
     public bool IsOffline(string videoId) => Downloads?.IsComplete(videoId) == true || Songs?.IsComplete(videoId) == true;
 
-    private Task<AacStreamSource> OpenSourceAsync(string videoId, CancellationToken ct) => Task.Run(async () =>
+    /// <param name="probe">трек включил человек: при закрытом адресе — один пробный запрос (tasks/0019)</param>
+    private Task<AacStreamSource> OpenSourceAsync(string videoId, CancellationToken ct, bool probe = false) => Task.Run(async () =>
     {
         // Скачанный или целиком закэшированный трек играет без запросов: ни player, ни адреса
         var downloaded = Downloads?.Complete(videoId);
-        var info = downloaded ?? Songs?.Complete(videoId) ?? await _resolver.ResolveAsync(videoId, ct).ConfigureAwait(false);
+        var info = downloaded ?? Songs?.Complete(videoId) ?? await _resolver.ResolveAsync(videoId, ct, probe).ConfigureAwait(false);
         var cache = downloaded is not null ? Downloads!.Entry(info) : Songs?.Entry(info);
         try
         {
@@ -609,6 +621,8 @@ public sealed class PlayerEngine : IDisposable
     /// </summary>
     private void PrefetchUpcoming()
     {
+        // YouTube не пускает адрес: заготовка не спрашивает его зря (tasks/0019)
+        if (_resolver.IsBlocked) return;
         var upcoming = Queue.Upcoming(2).Select(i => Queue.Items[i].Track.VideoId).ToList();
         foreach (var stale in _preloaded.Keys.Where(k => !upcoming.Contains(k)).ToList())
         {

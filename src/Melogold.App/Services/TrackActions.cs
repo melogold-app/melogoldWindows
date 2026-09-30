@@ -280,6 +280,11 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
             case DownloadStatus.Failed:
                 add("MenuDownloadRetry", "\uE72C", () => downloads.Retry(track.VideoId));
                 break;
+            case DownloadStatus.Waiting:
+                // YouTube не пускал адрес (tasks/0019): «Возобновить» — один пробный запрос, потом вся очередь
+                add("MenuDownloadResume", "\uE768", downloads.ResumeWaiting);
+                add("MenuDownloadCancelWaiting", "\uE711", () => downloads.Remove(track.VideoId));
+                break;
             default:
                 var cancel = new MenuFlyoutItem
                 {

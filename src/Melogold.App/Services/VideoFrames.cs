@@ -5,13 +5,17 @@ using Windows.Storage.Streams;
 namespace Melogold.App.Services;
 
 /// <summary>
-/// Кадр видео YouTube без чёрных полей (<see cref="FrameBars"/>): обложка сингла в кадре 16:9 становится квадратом,
-/// превью 4:3 — кадром без полос сверху и снизу. Делается один раз, когда картинка попадает в кэш изображений.
+/// Обложка без полей и обводки (<see cref="FrameBars"/>, tasks/0020): обложка сингла в кадре 16:9 становится квадратом,
+/// превью 4:3 — кадром без полос сверху и снизу, скан в рамке — без рамки. Делается один раз, когда картинка попадает
+/// в кэш изображений.
 /// </summary>
 public static class VideoFrames
 {
-    /// <summary>Картинка без полей; без полей или не разобрана — те же байты.</summary>
-    public static async Task<byte[]> TrimBarsAsync(byte[] bytes)
+    /// <summary>
+    /// Картинка без полей (<paramref name="bars"/> — у кадра видео) и обводки; срезать нечего или не разобрана — те же
+    /// байты. <paramref name="square"/> — ещё и центральный квадрат (обложка в медиапанели Windows).
+    /// </summary>
+    public static async Task<byte[]> TrimBarsAsync(byte[] bytes, bool bars = true, bool square = false)
     {
         try
         {
@@ -23,7 +27,13 @@ public static class VideoFrames
             var data = await decoder.GetPixelDataAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, new BitmapTransform(),
                 ExifOrientationMode.IgnoreExifOrientation, ColorManagementMode.DoNotColorManage);
             var pixels = data.DetachPixelData();
-            if (FrameBars.Content(pixels, width, height) is not { } content) return bytes;
+            var content = FrameBars.Content(pixels, width, height, bars) ?? new PixelRect(0, 0, width, height);
+            if (square && content.Width != content.Height)
+            {
+                var side = Math.Min(content.Width, content.Height);
+                content = new PixelRect(content.X + (content.Width - side) / 2, content.Y + (content.Height - side) / 2, side, side);
+            }
+            if (content == new PixelRect(0, 0, width, height)) return bytes;
 
             var cropped = new byte[content.Width * content.Height * 4];
             for (var y = 0; y < content.Height; y++)
@@ -44,5 +54,21 @@ public static class VideoFrames
             Log.Warn("Video frame not trimmed", e);
             return bytes;
         }
+    }
+
+    /// <summary>
+    /// Обложка для медиапанели Windows (tasks/0020): из кэша изображений (уже без полей и обводки) — центральный квадрат,
+    /// файлом рядом. null — картинки нет.
+    /// </summary>
+    public static async Task<RandomAccessStreamReference?> SquareForSystemAsync(string url)
+    {
+        if (Images.Cache is not { } cache || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || await cache.GetAsync(uri) is not { } path) return null;
+        var square = path + ".square.jpg";
+        if (!File.Exists(square))
+        {
+            var bytes = await TrimBarsAsync(await File.ReadAllBytesAsync(path), bars: false, square: true);
+            await File.WriteAllBytesAsync(square, bytes);
+        }
+        return RandomAccessStreamReference.CreateFromFile(await Windows.Storage.StorageFile.GetFileFromPathAsync(square));
     }
 }

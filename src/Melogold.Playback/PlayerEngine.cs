@@ -550,8 +550,36 @@ public sealed class PlayerEngine : IDisposable
         props.MusicProperties.Artist = track.ArtistsText ?? "";
         props.MusicProperties.AlbumTitle = track.AlbumTitle ?? "";
         if (Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 544) is { } art)
+        {
             props.Thumbnail = RandomAccessStreamReference.CreateFromUri(new Uri(art));
+            if (SystemArtwork is { } square) _ = ApplySquareArtworkAsync(item, art, square);
+        }
         item.ApplyDisplayProperties(props);
+    }
+
+    /// <summary>
+    /// Обложка для медиапанели Windows: без полей и обводки, центральный квадрат (tasks/0020); null — нет, остаётся
+    /// ссылка. Задаёт приложение: кэш изображений — у него.
+    /// </summary>
+    public Func<string, Task<RandomAccessStreamReference?>>? SystemArtwork { get; set; }
+
+    private async Task ApplySquareArtworkAsync(MediaPlaybackItem item, string url, Func<string, Task<RandomAccessStreamReference?>> square)
+    {
+        try
+        {
+            if (await square(url).ConfigureAwait(false) is not { } artwork) return;
+            Post(() =>
+            {
+                var props = item.GetDisplayProperties();
+                props.Thumbnail = artwork;
+                item.ApplyDisplayProperties(props);
+            });
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+        {
+            // Остаётся обложка по ссылке
+            System.Diagnostics.Debug.WriteLine($"Square artwork for the media panel failed: {e.Message}");
+        }
     }
 
     private void UpdateSmtcPlaceholder(Track original)

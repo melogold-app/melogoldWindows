@@ -36,9 +36,10 @@ public sealed class ImageCache
     /// <summary>Файл изображения: из кэша или скачанный сейчас; null — не удалось (тогда картинку грузит сама WinUI).</summary>
     public Task<string?> GetAsync(Uri uri)
     {
-        // Кадр видео лежит без чёрных полей (VideoFrames); «#frame» — чтобы не взять файл, сохранённый до обрезки
+        // Обложки лежат без обводки скана, кадры видео — ещё и без полей любого цвета (VideoFrames, tasks/0020); метка в
+        // ключе — чтобы не взять файл, сохранённый до этой обрезки
         var frame = Thumbnails.IsWide(uri.AbsoluteUri);
-        var key = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(frame ? uri.AbsoluteUri + "#frame" : uri.AbsoluteUri)))[..32];
+        var key = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(uri.AbsoluteUri + (frame ? "#frame2" : "#ring"))))[..32];
         return _loading.GetOrAdd(key, k => Task.Run(async () =>
         {
             try
@@ -72,7 +73,7 @@ public sealed class ImageCache
                 // Старое видео: большого кадра нет, есть hqdefault (в файле — под ключом большого, чтобы не спрашивать снова)
                 bytes = await _http.GetByteArrayAsync(smaller).ConfigureAwait(false);
             }
-            if (frame) bytes = await VideoFrames.TrimBarsAsync(bytes).ConfigureAwait(false);
+            bytes = await VideoFrames.TrimBarsAsync(bytes, bars: frame).ConfigureAwait(false);
             System.IO.Directory.CreateDirectory(Directory);
             var temp = path + "." + Environment.CurrentManagedThreadId + ".tmp";
             await File.WriteAllBytesAsync(temp, bytes).ConfigureAwait(false);

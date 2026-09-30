@@ -105,6 +105,7 @@ public partial class App : Application
         {
             Songs = sp.GetRequiredService<SongCache>(),
             Downloads = sp.GetRequiredService<TrackDownloads>().Store,
+            SystemArtwork = VideoFrames.SquareForSystemAsync,
         });
         services.AddSingleton<FileExport>();
         // Пульт и отчёт о воспроизведении (tasks/0017)

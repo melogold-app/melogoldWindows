@@ -91,6 +91,7 @@ public sealed class SyncTx
     {
         Exec("DELETE FROM synced_likes");
         Exec("DELETE FROM synced_overrides");
+        Exec("DELETE FROM synced_lyrics_pins");
         Exec("DELETE FROM synced_playlists");
         Exec("DELETE FROM synced_bookmarks");
         Exec("UPDATE playlists SET sync_id = NULL");
@@ -335,6 +336,32 @@ public sealed class SyncTx
         if (value.IsEmpty) Exec("DELETE FROM track_overrides WHERE video_id = $id", ("$id", videoId));
         else Library.WriteOverride(_c, _t, videoId, value, updatedAt);
         Changes |= LibraryChange.Overrides;
+    }
+
+    /// <summary>Закрепления текстов здесь со временем.</summary>
+    public Dictionary<string, (Lyrics.LyricsPin Pin, long UpdatedAt)> LyricsPins() => Query(
+        "SELECT video_id, source, ref, start_time_ms, updated_at FROM lyrics_pins",
+        r => (Id: r.GetString(0), Pin: global::Melogold.Core.Lyrics.LyricsPins.Of(Str(r, 1), Str(r, 2), r.IsDBNull(3) ? null : r.GetInt64(3)), At: r.GetInt64(4)))
+        .Where(p => p.Pin is not null)
+        .ToDictionary(p => p.Id, p => (p.Pin!, p.At), StringComparer.Ordinal);
+
+    /// <summary>Снимок закреплений на сервере.</summary>
+    public Dictionary<string, Lyrics.LyricsPin> SyncedLyricsPins() => Query(
+        "SELECT video_id, source, ref, start_time_ms FROM synced_lyrics_pins",
+        r => (Id: r.GetString(0), Pin: global::Melogold.Core.Lyrics.LyricsPins.Of(Str(r, 1), Str(r, 2), r.IsDBNull(3) ? null : r.GetInt64(3))))
+        .Where(p => p.Pin is not null)
+        .ToDictionary(p => p.Id, p => p.Pin!, StringComparer.Ordinal);
+
+    /// <summary>Закрепление с сервера (строка <c>lyricsPins</c>); null — снято. Здесь — если здесь не закрепляли позже.</summary>
+    public void ApplyLyricsPin(string videoId, Lyrics.LyricsPin? pin, long updatedAt)
+    {
+        if (pin is null) Exec("DELETE FROM synced_lyrics_pins WHERE video_id = $v", ("$v", videoId));
+        else Exec("INSERT OR REPLACE INTO synced_lyrics_pins (video_id, source, ref, start_time_ms) VALUES ($v, $s, $r, $st)",
+            ("$v", videoId), ("$s", pin.Source), ("$r", pin.Ref), ("$st", pin.StartTimeMs));
+        if (Scalar("SELECT updated_at FROM lyrics_pins WHERE video_id = $v", ("$v", videoId)) is long local && local > updatedAt) return;
+        if (pin is null) Exec("DELETE FROM lyrics_pins WHERE video_id = $v", ("$v", videoId));
+        else Library.WritePin(_c, _t, videoId, pin, updatedAt);
+        Changes |= LibraryChange.Lyrics;
     }
 
     /// <summary>Лайк с сервера: время лайка — серверное, снятый лайк — снятие.</summary>

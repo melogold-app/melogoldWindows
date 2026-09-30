@@ -52,6 +52,24 @@ public sealed class LyricsService
         _fetcher = fetcher;
         _settings = settings;
         _engine.TrackChanged += () => _dispatcher.TryEnqueue(Reload);
+        // Прослушан 30 с с найденным автоматически текстом — текст закрепляется для всех устройств (tasks/0012)
+        _engine.ListenedEnough += track => _ = Task.Run(() => _library.PinPlayedLyrics(track.VideoId));
+        // Закрепление пришло с другого устройства — текущий трек показывает закреплённый текст
+        _library.Changed += change =>
+        {
+            if (change.HasFlag(LibraryChange.Lyrics)) _dispatcher.TryEnqueue(ReloadIfPinned);
+        };
+    }
+
+    /// <summary>Закрепление, которое уже пробовали достать для этого трека: не удалось — не повторять по каждому изменению.</summary>
+    private (string VideoId, LyricsPin Pin)? _pinTried;
+
+    private void ReloadIfPinned()
+    {
+        if (Track is not { } track || !_active) return;
+        var pin = _library.LyricsPinOf(track.VideoId);
+        if (pin is null || _pinTried == (track.VideoId, pin)) return;
+        if (LyricsPins.NeedsPinned(Stored, pin)) Reload();
     }
 
     public LyricsState State { get; private set; } = new LyricsState.Unknown();
@@ -102,6 +120,29 @@ public sealed class LyricsService
     {
         var stored = await Task.Run(() => _library.GetLyrics(track.VideoId), ct);
         if (ct.IsCancellationRequested) return;
+        // Закреплённый текст (tasks/0012) важнее найденного здесь; свой — важнее закреплённого. Поставщик не ответил —
+        // обычный поиск, закрепление остаётся
+        if (_active && await Task.Run(() => _library.LyricsPinOf(track.VideoId), ct) is { } pin && LyricsPins.NeedsPinned(stored, pin))
+        {
+            Set(new LyricsState.Loading());
+            _pinTried = (track.VideoId, pin);
+            StoredLyrics? pinned;
+            try
+            {
+                pinned = await Task.Run(() => _fetcher.FetchPinnedAsync(pin, ct), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            if (ct.IsCancellationRequested) return;
+            if (pinned is not null)
+            {
+                stored = LyricsPins.FromPinned(pinned, pin, stored);
+                var save = stored;
+                _ = Task.Run(() => _library.SaveLyrics(track.VideoId, save), CancellationToken.None);
+            }
+        }
         Stored = stored;
         if (_active && (stored?.Plain is null || stored.Synced is null))
         {
@@ -121,7 +162,8 @@ public sealed class LyricsService
             }
             if (ct.IsCancellationRequested) return;
             var fetched = new StoredLyrics(result.Synced, result.Plain, result.SyncedSource, result.PlainSource,
-                result.OffsetMs ?? stored?.OffsetMs ?? 0, result.Language ?? stored?.Language, stored?.Chosen == true || result.Mine);
+                result.OffsetMs ?? stored?.OffsetMs ?? 0, result.Language ?? stored?.Language, stored?.Chosen == true || result.Mine,
+                result.SyncedRef, result.PlainRef);
             // Недостающая сторона, которую не удалось получить из-за сети, не кэшируется как «нет текста»: она остаётся
             // «ещё не искали» (null), а найденная сохраняется — иначе при каждом открытии всё ищется заново
             if (result.AnyFailure && (fetched.Plain is null || fetched.Synced is null))
@@ -174,9 +216,28 @@ public sealed class LyricsService
     }
 
     /// <summary>Сдвиг синхронного текста этого трека: положительный — раньше.</summary>
-    public void Shift(long deltaMs) => Update(Stored! with { OffsetMs = Stored!.OffsetMs + deltaMs });
+    public void Shift(long deltaMs)
+    {
+        Update(Stored! with { OffsetMs = Stored!.OffsetMs + deltaMs });
+        ShiftPin();
+    }
 
-    public void ResetShift() => Update(Stored! with { OffsetMs = 0 });
+    public void ResetShift()
+    {
+        Update(Stored! with { OffsetMs = 0 });
+        ShiftPin();
+    }
+
+    /// <summary>Сдвиг «позже» закреплённого текста — в закрепление: другие устройства сдвинут так же (tasks/0012).</summary>
+    private void ShiftPin()
+    {
+        if (Track is not { } track || Stored is not { } stored) return;
+        var videoId = track.VideoId;
+        _ = Task.Run(() =>
+        {
+            if (_library.LyricsPinOf(videoId) is { } pin && LyricsPins.Shifted(pin, stored) is { } shifted) _library.UpdatePin(videoId, shifted);
+        });
+    }
 
     /// <summary>
     /// Текст, выбранный в LRCLIB: свой (<see cref="StoredLyrics.Chosen"/>) — через 2 с уходит на сервер, и на других

@@ -350,6 +350,23 @@ public sealed class LibrarySync : IDisposable
             }
         }
 
+        // Закреплённые тексты (tasks/0012): ссылка у поставщика и сдвиг «позже»
+        if (Supports("lyrics.pin.set"))
+        {
+            var syncedPins = tx.SyncedLyricsPins();
+            foreach (var (videoId, (pin, at)) in tx.LyricsPins())
+            {
+                if (syncedPins.GetValueOrDefault(videoId) == pin) continue;
+                ops.Add(MakeOp("lyrics.pin.set", "lpin:" + videoId, at, o =>
+                {
+                    o["videoId"] = videoId;
+                    o["source"] = pin.Source;
+                    o["ref"] = pin.Ref;
+                    if (pin.StartTimeMs is { } start) o["startTimeMs"] = start;
+                }));
+            }
+        }
+
         // Плейлисты
         var synced = tx.SyncedPlaylists();
         var playlists = tx.Playlists();
@@ -676,6 +693,12 @@ public sealed class LibrarySync : IDisposable
             if (row.Type is not ("album" or "artist")) continue;
             tx.SetBookmark(row.Type, row.BrowseId, row.Bookmarked ? IsoTime.TryParse(row.BookmarkedAt) ?? IsoTime.NowMs() : null,
                 row.Title, row.Subtitle, row.ThumbnailUrl, row.Year);
+        }
+
+        foreach (var row in response.LyricsPins ?? [])
+        {
+            var pin = row.Deleted ? null : Melogold.Core.Lyrics.LyricsPins.Of(row.Source, row.Ref, row.StartTimeMs);
+            tx.ApplyLyricsPin(row.VideoId, pin, IsoTime.TryParse(row.UpdatedAt) ?? IsoTime.NowMs());
         }
 
         foreach (var row in response.Overrides ?? [])

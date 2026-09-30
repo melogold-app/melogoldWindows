@@ -66,8 +66,10 @@ public sealed record AllTracksEntry(Track Track, long? LastPlayedAt, long PlayTi
 /// текст») или он пришёл с сервера своей версией: такой текст — свой, как набранный и импортированный, и уходит на
 /// сервер со своим настоящим источником (API §4.10: «выбранные вместо найденного автоматически»).
 /// </summary>
+/// <param name="SyncedRef">номер синхронного текста у поставщика — для закрепления (tasks/0012)</param>
+/// <param name="PlainRef">номер обычного текста у поставщика</param>
 public sealed record StoredLyrics(string? Synced, string? Plain, string? SyncedSource, string? PlainSource, long OffsetMs = 0, string? Language = null,
-    bool Chosen = false);
+    bool Chosen = false, string? SyncedRef = null, string? PlainRef = null);
 
 /// <summary>Откуда текст — словарь сервера (docs/LYRICS-SYNC.md §2) и <see cref="Melogold"/>, общий текст сообщества.</summary>
 public static class LyricsSources
@@ -721,12 +723,13 @@ public sealed class Library(LibraryDatabase db)
         return r.Read() ? ReadLyrics(r) : null;
     });
 
-    internal const string LyricsColumns = "synced, plain, source, plain_source, offset_ms, language, chosen";
+    internal const string LyricsColumns = "synced, plain, source, plain_source, offset_ms, language, chosen, synced_ref, plain_ref";
 
     internal static StoredLyrics ReadLyrics(SqliteDataReader r, int o = 0) => new(
         r.IsDBNull(o) ? null : r.GetString(o), r.IsDBNull(o + 1) ? null : r.GetString(o + 1),
         r.IsDBNull(o + 2) ? null : r.GetString(o + 2), r.IsDBNull(o + 3) ? null : r.GetString(o + 3), r.GetInt64(o + 4),
-        r.IsDBNull(o + 5) ? null : r.GetString(o + 5), r.GetInt64(o + 6) != 0);
+        r.IsDBNull(o + 5) ? null : r.GetString(o + 5), r.GetInt64(o + 6) != 0,
+        r.IsDBNull(o + 7) ? null : r.GetString(o + 7), r.IsDBNull(o + 8) ? null : r.GetString(o + 8));
 
     /// <summary>Записать текст; свой текст через 2 с уходит на сервер (<see cref="LibraryChange.Lyrics"/>).</summary>
     public void SaveLyrics(string videoId, StoredLyrics lyrics)
@@ -737,11 +740,59 @@ public sealed class Library(LibraryDatabase db)
 
     internal static void WriteLyrics(SqliteConnection c, SqliteTransaction t, string videoId, StoredLyrics lyrics) =>
         LibraryDatabase.Exec(c, t, """
-            INSERT OR REPLACE INTO lyrics (video_id, synced, plain, source, plain_source, offset_ms, language, chosen, fetched_at)
-            VALUES ($v, $s, $p, $src, $psrc, $offset, $lang, $chosen, $now)
+            INSERT OR REPLACE INTO lyrics (video_id, synced, plain, source, plain_source, offset_ms, language, chosen, synced_ref, plain_ref, fetched_at)
+            VALUES ($v, $s, $p, $src, $psrc, $offset, $lang, $chosen, $sref, $pref, $now)
             """,
             ("$v", videoId), ("$s", lyrics.Synced), ("$p", lyrics.Plain), ("$src", lyrics.SyncedSource), ("$psrc", lyrics.PlainSource),
-            ("$offset", lyrics.OffsetMs), ("$lang", lyrics.Language), ("$chosen", lyrics.Chosen ? 1 : 0), ("$now", IsoTime.NowMs()));
+            ("$offset", lyrics.OffsetMs), ("$lang", lyrics.Language), ("$chosen", lyrics.Chosen ? 1 : 0),
+            ("$sref", lyrics.SyncedRef), ("$pref", lyrics.PlainRef), ("$now", IsoTime.NowMs()));
+
+    // ---------- Закреплённый текст (tasks/0012) ----------
+
+    /// <summary>Закрепление текста трека; null — нет.</summary>
+    public Lyrics.LyricsPin? LyricsPinOf(string videoId) => Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT source, ref, start_time_ms FROM lyrics_pins WHERE video_id = $v";
+        command.Parameters.AddWithValue("$v", videoId);
+        using var r = command.ExecuteReader();
+        return r.Read() ? Lyrics.LyricsPins.Of(r.IsDBNull(0) ? null : r.GetString(0), r.IsDBNull(1) ? null : r.GetString(1), r.IsDBNull(2) ? null : r.GetInt64(2)) : null;
+    });
+
+    /// <summary>
+    /// Трек прослушан 30 с: найденный автоматически текст закрепляется, если у трека ещё нет закрепления — первое
+    /// закрепление общее для всех устройств. true — закреплён сейчас.
+    /// </summary>
+    public bool PinPlayedLyrics(string videoId)
+    {
+        var pinned = Database.Write((c, t) =>
+        {
+            if (LibraryDatabase.Scalar(c, "SELECT 1 FROM lyrics_pins WHERE video_id = $v", ("$v", videoId)) is not null) return false;
+            using var command = c.CreateCommand();
+            command.Transaction = t;
+            command.CommandText = $"SELECT {LyricsColumns} FROM lyrics WHERE video_id = $v";
+            command.Parameters.AddWithValue("$v", videoId);
+            StoredLyrics? stored;
+            using (var r = command.ExecuteReader()) stored = r.Read() ? ReadLyrics(r) : null;
+            if (Lyrics.LyricsPins.PinOf(stored) is not { } pin) return false;
+            WritePin(c, t, videoId, pin, IsoTime.NowMs());
+            return true;
+        });
+        if (pinned) Notify(LibraryChange.Lyrics);
+        return pinned;
+    }
+
+    /// <summary>Сдвиг «позже» закреплённого текста — в закрепление (другие устройства сдвинут так же).</summary>
+    public void UpdatePin(string videoId, Lyrics.LyricsPin pin)
+    {
+        Database.Write((c, t) => WritePin(c, t, videoId, pin, IsoTime.NowMs()));
+        Notify(LibraryChange.Lyrics);
+    }
+
+    internal static void WritePin(SqliteConnection c, SqliteTransaction t, string videoId, Lyrics.LyricsPin pin, long updatedAt) =>
+        LibraryDatabase.Exec(c, t,
+            "INSERT OR REPLACE INTO lyrics_pins (video_id, source, ref, start_time_ms, updated_at) VALUES ($v, $s, $r, $st, $at)",
+            ("$v", videoId), ("$s", pin.Source), ("$r", pin.Ref), ("$st", pin.StartTimeMs), ("$at", updatedAt));
 
     // Выбранный пользователем текст — не кэш: «Очистить» его не трогает
     private const string FetchedOnly = "COALESCE(source, '') NOT IN ('file', 'user') AND COALESCE(plain_source, '') NOT IN ('file', 'user') AND chosen = 0";

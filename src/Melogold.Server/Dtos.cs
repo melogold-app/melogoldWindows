@@ -164,6 +164,9 @@ public sealed record PlayStatRow(string VideoId, long TotalPlayTimeMs, string? L
 
 public sealed record PlayForgetRow(string VideoId, string EventsBefore, string? TotalBefore);
 
+/// <summary>Закреплённый текст (API §4.8 <c>lyrics.pin.set</c>): ссылка на текст у поставщика; <c>deleted</c> — снято.</summary>
+public sealed record LyricsPinRow(string VideoId, string? Source, string? Ref, long? StartTimeMs, string UpdatedAt, bool Deleted);
+
 /// <summary>Своё название, исполнитель и альбом трека (API §4.8 <c>track.override.set</c>); <c>deleted</c> — правка снята.</summary>
 public sealed record TrackOverrideRow(string VideoId, string? Title, string? ArtistsText, string? AlbumTitle, string UpdatedAt, bool Deleted);
 
@@ -180,7 +183,8 @@ public sealed record SyncResponse(
     IReadOnlyList<PlayRow> Plays,
     IReadOnlyList<PlayStatRow> PlayStats,
     IReadOnlyList<PlayForgetRow> PlayForgets,
-    IReadOnlyList<TrackOverrideRow>? Overrides = null);
+    IReadOnlyList<TrackOverrideRow>? Overrides = null,
+    IReadOnlyList<LyricsPinRow>? LyricsPins = null);
 
 // ---------- Тексты песен (API §4.10, docs/LYRICS-SYNC.md) ----------
 

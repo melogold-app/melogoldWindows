@@ -75,6 +75,14 @@ public sealed class PlayerEngine : IDisposable
     // Учёт прослушивания текущего элемента: реальное время звучания
     private readonly Stopwatch _listened = new();
     private Track? _listenedTrack;
+    private Timer? _listenedEnoughTimer;
+    private bool _listenedEnoughSent;
+
+    /// <summary>
+    /// Трек отыграл <see cref="Melogold.Core.Lyrics.LyricsPins.PinAfterMs"/> реального звучания в этом сеансе — один раз
+    /// на сеанс: найденный автоматически текст закрепляется (tasks/0012).
+    /// </summary>
+    public event Action<Track>? ListenedEnough;
 
     public PlayerEngine(StreamResolver resolver, YouTubeMusic music, Library library, IPlaybackSettings settings)
     {
@@ -697,16 +705,36 @@ public sealed class PlayerEngine : IDisposable
 
     private void UpdateListening()
     {
+        _listenedEnoughTimer?.Dispose();
+        _listenedEnoughTimer = null;
         if (Status == PlayerStatus.Playing)
         {
             if (!ReferenceEquals(_listenedTrack, Current))
             {
                 FinishListening();
                 _listenedTrack = Current;
+                _listenedEnoughSent = false;
             }
             _listened.Start();
+            // Когда наберётся 30 с звучания — проверить ещё раз (пауза и перемотка таймер сбрасывают)
+            if (!_listenedEnoughSent)
+            {
+                var left = Melogold.Core.Lyrics.LyricsPins.PinAfterMs - ListenedMs();
+                _listenedEnoughTimer = new Timer(_ => Post(CheckListenedEnough), null, TimeSpan.FromMilliseconds(Math.Max(0, left / Math.Clamp(_settings.Speed, 0.5, 2)) + 250), Timeout.InfiniteTimeSpan);
+            }
         }
         else _listened.Stop();
+    }
+
+    /// <summary>Звучание текущего сеанса во времени трека (со скоростью).</summary>
+    private long ListenedMs() => (long)(_listened.Elapsed.TotalMilliseconds * Math.Clamp(_settings.Speed, 0.5, 2));
+
+    private void CheckListenedEnough()
+    {
+        if (_listenedEnoughSent || Status != PlayerStatus.Playing || _listenedTrack is not { } track || ListenedMs() < Melogold.Core.Lyrics.LyricsPins.PinAfterMs)
+            return;
+        _listenedEnoughSent = true;
+        ListenedEnough?.Invoke(track);
     }
 
     /// <summary>Сеанс элемента закончился (переход, остановка): ≥ 5 с реального звучания — одно прослушивание.</summary>

@@ -216,9 +216,13 @@ public class LyricsSyncTests
                     DROP TABLE downloads;
                     DROP TABLE track_overrides;
                     DROP TABLE synced_overrides;
+                    DROP TABLE lyrics_pins;
+                    DROP TABLE synced_lyrics_pins;
                     ALTER TABLE play_events DROP COLUMN device_id;
                     ALTER TABLE lyrics DROP COLUMN language;
                     ALTER TABLE lyrics DROP COLUMN chosen;
+                    ALTER TABLE lyrics DROP COLUMN synced_ref;
+                    ALTER TABLE lyrics DROP COLUMN plain_ref;
                     INSERT INTO lyrics (video_id, synced, plain, source, plain_source, offset_ms, fetched_at) VALUES
                       ('aaaaaaaaaaa', '[00:01.00]Hi', 'Hi', 'File', 'YouTubeMusic', 0, 0),
                       ('bbbbbbbbbbb', '[00:01.00]Yo', '', 'LrcLib', NULL, 0, 0);

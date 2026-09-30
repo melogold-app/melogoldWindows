@@ -455,4 +455,40 @@ public class LiveSyncTests(ITestOutputHelper output)
             output.WriteLine($"Аккаунт {login} удалён");
         }
     }
+    /// <summary>tasks/0012: закрепление найденного текста с одного устройства — на другом; сдвиг «позже» тоже.</summary>
+    [Fact]
+    public async Task LyricsPinsReachOtherDevices()
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var video = "e2e" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+
+        using var a = new Device("E2E Windows A", server, output);
+        using var b = new Device("E2E Windows B", server, output);
+        try
+        {
+            await a.Account.RegisterAsync(login, password);
+            a.Sync.Start();
+            await b.Account.SignInAsync(login, password);
+            b.Sync.Start();
+            await WaitFor("оба устройства синхронизировались", () =>
+                a.Sync.Status is SyncStatus.Idle { LastSyncAt: not null } && b.Sync.Status is SyncStatus.Idle { LastSyncAt: not null });
+
+            // На A найден текст LrcLib с id — прослушан 30 с, закреплён
+            a.Library.SaveLyrics(video, new StoredLyrics("[00:01.00]Строка", "Строка", LyricsSources.LrcLib, LyricsSources.LrcLib, SyncedRef: "33476831", PlainRef: "33476831"));
+            Assert.True(a.Library.PinPlayedLyrics(video));
+            await WaitFor("B получил закрепление A", () => b.Library.LyricsPinOf(video) is { Source: "lrclib", Ref: "33476831" });
+
+            // Сдвиг «позже» на A — в закреплении и на B
+            a.Library.UpdatePin(video, new Melogold.Core.Lyrics.LyricsPin("lrclib", "33476831", 1500));
+            await WaitFor("B получил сдвиг", () => b.Library.LyricsPinOf(video)?.StartTimeMs == 1500);
+        }
+        finally
+        {
+            if (a.Account.Session is not null) await a.Account.DeleteAccountAsync(password);
+            output.WriteLine($"Аккаунт {login} удалён");
+        }
+    }
 }

@@ -46,12 +46,24 @@ public sealed class LrcLib(HttpClient http)
         .Where(t => !string.IsNullOrWhiteSpace(t.SyncedLyrics) || !string.IsNullOrWhiteSpace(t.PlainLyrics)).ToList();
 
     /// <summary>Текст версии трека, ближайшей по длительности; синхронный — только в пределах max(3 с, 10 %).</summary>
-    public async Task<string?> BestLyricsAsync(string artist, string title, long durationMs, bool synced, CancellationToken ct = default)
+    public async Task<string?> BestLyricsAsync(string artist, string title, long durationMs, bool synced, CancellationToken ct = default) =>
+        await BestAsync(artist, title, durationMs, synced, ct).ConfigureAwait(false) is { } best ? synced ? best.SyncedLyrics : best.PlainLyrics : null;
+
+    /// <summary>Та же версия целиком — с id записи (ссылка для закрепления, tasks/0012).</summary>
+    public async Task<LrcLibTrack?> BestAsync(string artist, string title, long durationMs, bool synced, CancellationToken ct = default)
     {
         var tracks = (await SearchAsync(artist, title, ct).ConfigureAwait(false))
             .Where(t => synced ? t.SyncedLyrics is not null : t.PlainLyrics is not null).ToList();
-        var best = BestMatching(tracks, title, durationMs);
-        return synced ? best?.SyncedLyrics : best?.PlainLyrics;
+        return BestMatching(tracks, title, durationMs);
+    }
+
+    /// <summary>Запись по id (закреплённый текст); null — такой записи нет.</summary>
+    public async Task<LrcLibTrack?> GetAsync(long id, CancellationToken ct = default)
+    {
+        using var response = await http.GetAsync($"{BaseUrl}/api/get/{id}", ct).ConfigureAwait(false);
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<LrcLibTrack>(Json, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -66,6 +78,9 @@ public sealed class LrcLib(HttpClient http)
         return closest is not null && Math.Abs(closest.Duration - seconds) <= Math.Max(3.0, seconds * 0.1) ? closest : null;
     }
 }
+
+/// <summary>Текст KuGou и его ссылка <c>id:accesskey</c>.</summary>
+public sealed record KuGouLyrics(string Text, string Ref);
 
 /// <summary>KuGou (Android <c>providers/kugou</c>): последняя линия синхронного текста.</summary>
 public sealed class KuGou(HttpClient http)
@@ -91,7 +106,11 @@ public sealed class KuGou(HttpClient http)
     };
 
     /// <summary>LRC трека: сначала песня с совпадающей длительностью (допуск до 5 с), потом поиск текста по словам.</summary>
-    public async Task<string?> LyricsAsync(string artist, string title, long durationSeconds, CancellationToken ct = default)
+    public async Task<string?> LyricsAsync(string artist, string title, long durationSeconds, CancellationToken ct = default) =>
+        (await LyricsWithRefAsync(artist, title, durationSeconds, ct).ConfigureAwait(false))?.Text;
+
+    /// <summary>Тот же LRC — со ссылкой <c>id:accesskey</c> (закрепление, tasks/0012).</summary>
+    public async Task<KuGouLyrics?> LyricsWithRefAsync(string artist, string title, long durationSeconds, CancellationToken ct = default)
     {
         var keyword = Keyword(artist, title);
         var songs = await GetAsync<SongResponse>(
@@ -102,11 +121,24 @@ public sealed class KuGou(HttpClient http)
             foreach (var info in infos.Where(i => i.Duration >= durationSeconds - tolerance && i.Duration <= durationSeconds + tolerance))
             {
                 var byHash = await GetAsync<CandidatesResponse>($"https://krcs.kugou.com/search?ver=1&man=yes&client=mobi&hash={info.Hash}", ct).ConfigureAwait(false);
-                if (byHash?.Candidates.FirstOrDefault() is { } candidate) return await DownloadAsync(candidate, ct).ConfigureAwait(false);
+                if (byHash?.Candidates.FirstOrDefault() is { } candidate) return await WithRefAsync(candidate, ct).ConfigureAwait(false);
             }
         }
         var byKeyword = await GetAsync<CandidatesResponse>($"https://krcs.kugou.com/search?ver=1&man=yes&client=mobi&keyword={Uri.EscapeDataString(keyword)}", ct).ConfigureAwait(false);
-        return byKeyword?.Candidates.FirstOrDefault() is { } found ? await DownloadAsync(found, ct).ConfigureAwait(false) : null;
+        return byKeyword?.Candidates.FirstOrDefault() is { } found ? await WithRefAsync(found, ct).ConfigureAwait(false) : null;
+    }
+
+    private async Task<KuGouLyrics?> WithRefAsync(Candidate candidate, CancellationToken ct) =>
+        await DownloadAsync(candidate, ct).ConfigureAwait(false) is { } text
+            ? new KuGouLyrics(text, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{candidate.Id}:{candidate.AccessKey}"))
+            : null;
+
+    /// <summary>LRC по ссылке <c>id:accesskey</c> (закреплённый текст); null — ссылка не разбирается или текста нет.</summary>
+    public async Task<string?> ByRefAsync(string reference, CancellationToken ct = default)
+    {
+        var colon = reference.IndexOf(':', StringComparison.Ordinal);
+        if (colon <= 0 || !long.TryParse(reference[..colon], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var id)) return null;
+        return await DownloadAsync(new Candidate(id, reference[(colon + 1)..]), ct).ConfigureAwait(false);
     }
 
     private async Task<T?> GetAsync<T>(string url, CancellationToken ct)

@@ -9,7 +9,7 @@ namespace Melogold.Core.Data;
 /// </summary>
 public sealed class LibraryDatabase
 {
-    public const int SchemaVersion = 7;
+    public const int SchemaVersion = 8;
 
     private readonly string _connectionString;
     private readonly Lock _writeLock = new();
@@ -168,6 +168,20 @@ public sealed class LibraryDatabase
                 CREATE TABLE synced_overrides (video_id TEXT PRIMARY KEY, title TEXT, artists_text TEXT, album_title TEXT);
                 """);
             Exec(connection, transaction, "PRAGMA user_version = 7;");
+            transaction.Commit();
+            version = 7;
+        }
+        if (version < 8)
+        {
+            // v8: закреплённый текст (tasks/0012) — у найденного текста ссылка у поставщика, закрепления и их снимок сервера
+            using var transaction = connection.BeginTransaction();
+            Exec(connection, transaction, """
+                ALTER TABLE lyrics ADD COLUMN synced_ref TEXT;
+                ALTER TABLE lyrics ADD COLUMN plain_ref TEXT;
+                CREATE TABLE lyrics_pins (video_id TEXT PRIMARY KEY, source TEXT, ref TEXT, start_time_ms INTEGER, updated_at INTEGER NOT NULL);
+                CREATE TABLE synced_lyrics_pins (video_id TEXT PRIMARY KEY, source TEXT, ref TEXT, start_time_ms INTEGER);
+                """);
+            Exec(connection, transaction, "PRAGMA user_version = 8;");
             transaction.Commit();
         }
     }

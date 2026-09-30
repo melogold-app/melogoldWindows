@@ -1,6 +1,6 @@
 # Вход по коду: показать код на новом устройстве и на устройстве, где уже вошли
 
-Статус: открыто
+Статус: в работе — логика, запросы, страницы и тесты готовы (оба режима проверены против локального сервера); осталось снять страницы
 
 Те же задания: `melogoldAndroid/tasks/0015-sign-in-by-code.md` (сделано, ветка `feature/sign-in-by-code`), `melogoldLinux/tasks/0008-sign-in-by-code.md`, `melogoldiOSmacOS/tasks/0017-sign-in-by-code.md`.
 Образец — Android (`sync/DeviceLinking.kt`, `ui/screens/settings/account/LinkCodeScreens.kt`, `AddDeviceScreen.kt`); контракт — API §4.6 сервера (`melogoldServer/docs/API.md`, «Привязка устройств»).

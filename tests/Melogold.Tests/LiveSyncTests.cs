@@ -491,4 +491,86 @@ public class LiveSyncTests(ITestOutputHelper output)
             output.WriteLine($"Аккаунт {login} удалён");
         }
     }
+    /// <summary>
+    /// tasks/0014 против ЛОКАЛЬНОГО сервера (<c>MELOGOLD_LOCAL_SERVER=http://127.0.0.1:18080</c>): живой вход на рабочем
+    /// сервере задание запрещает. Режим request и режим invite до сессии, отказ, неверное число, отмена кода.
+    /// </summary>
+    [Fact]
+    public async Task SignInByCodeBothModes()
+    {
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_LOCAL_SERVER");
+        Assert.SkipUnless(server is not null, "MELOGOLD_LOCAL_SERVER");
+        var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        using var laptop = new Device("MacBook Air", server, output);
+        using var phone = new Device("Pixel 8", server, output);
+        using var tablet = new Device("Galaxy Tab", server, output);
+        await laptop.Account.RegisterAsync(login, password);
+
+        // request: телефон показывает код, ноутбук вводит его и выбирает число, которое видно на телефоне
+        var newPhone = new NewDeviceLinker(new AccountLinkPort(phone.Account), TimeSpan.FromMilliseconds(200));
+        _ = newPhone.ShowCodeAsync();
+        await WaitFor("телефон показал код", () => newPhone.State is NewDeviceLinkState.ShowingCode);
+        var code = ((NewDeviceLinkState.ShowingCode)newPhone.State).UserCode;
+        var details = await laptop.Account.ResolveLinkAsync(code);
+        Assert.Equal("claimed", details.Status);
+        Assert.Equal(3, details.VerifyChoices.Count);
+        await WaitFor("телефон показал число", () => newPhone.State is NewDeviceLinkState.Verify { Login: var who } && who == login);
+        var verify = (NewDeviceLinkState.Verify)newPhone.State;
+        Assert.Equal("MacBook Air", verify.ApproverName);
+        Assert.Contains(verify.VerifyCode, details.VerifyChoices);
+        await laptop.Account.ApproveLinkAsync(details.LinkId, verify.VerifyCode);
+        await WaitFor("телефон вошёл", () => newPhone.State is NewDeviceLinkState.SignedIn && phone.Account.Session is not null);
+        Assert.Equal(login, phone.Account.Session!.Login);
+        output.WriteLine("✓ request");
+
+        // invite: ноутбук показывает код, планшет вводит его и показывает число; ноутбук его выбирает
+        var invite = new InviteLinker(new AccountLinkPort(laptop.Account), TimeSpan.FromMilliseconds(300));
+        _ = invite.StartAsync();
+        await WaitFor("ноутбук показал код", () => invite.State is InviteState.Waiting);
+        var inviteCode = ((InviteState.Waiting)invite.State).UserCode;
+        var newTablet = new NewDeviceLinker(new AccountLinkPort(tablet.Account), TimeSpan.FromMilliseconds(200));
+        _ = newTablet.ClaimAsync(inviteCode);
+        await WaitFor("планшет показал число", () => newTablet.State is NewDeviceLinkState.Verify);
+        await WaitFor("ноутбук увидел планшет", () => invite.State is InviteState.Claimed);
+        var claimed = ((InviteState.Claimed)invite.State).Link;
+        Assert.Equal("Galaxy Tab", claimed.Device?.Name);
+        await laptop.Account.ApproveLinkAsync(claimed.LinkId, ((NewDeviceLinkState.Verify)newTablet.State).VerifyCode);
+        invite.Release();
+        await WaitFor("планшет вошёл", () => newTablet.State is NewDeviceLinkState.SignedIn && tablet.Account.Session is not null);
+        output.WriteLine("✓ invite");
+
+        // Отказ и неверное число — у нового устройства «Вход отклонён на другом устройстве»
+        using var other = new Device("Другой телефон", server, output);
+        var denied = new NewDeviceLinker(new AccountLinkPort(other.Account), TimeSpan.FromMilliseconds(200));
+        _ = denied.ShowCodeAsync();
+        await WaitFor("код для отказа", () => denied.State is NewDeviceLinkState.ShowingCode);
+        var deny = await laptop.Account.ResolveLinkAsync(((NewDeviceLinkState.ShowingCode)denied.State).UserCode);
+        await laptop.Account.DenyLinkAsync(deny.LinkId);
+        await WaitFor("отказ дошёл", () => denied.State is NewDeviceLinkState.Failed { Failure: LinkFailure.Denied, Started: true });
+
+        var wrong = new NewDeviceLinker(new AccountLinkPort(other.Account), TimeSpan.FromMilliseconds(200));
+        _ = wrong.ShowCodeAsync();
+        await WaitFor("код для неверного числа", () => wrong.State is NewDeviceLinkState.ShowingCode);
+        var mismatch = await laptop.Account.ResolveLinkAsync(((NewDeviceLinkState.ShowingCode)wrong.State).UserCode);
+        await WaitFor("число на экране", () => wrong.State is NewDeviceLinkState.Verify);
+        var right = ((NewDeviceLinkState.Verify)wrong.State).VerifyCode;
+        var error = await Assert.ThrowsAsync<ApiException>(() => laptop.Account.ApproveLinkAsync(mismatch.LinkId, mismatch.VerifyChoices.First(c => c != right)));
+        Assert.Equal("link_verify_mismatch", error.Code);
+        await WaitFor("неверное число — отказ", () => wrong.State is NewDeviceLinkState.Failed { Failure: LinkFailure.Denied });
+        output.WriteLine("✓ отказ и неверное число");
+
+        // Отмена кода новым устройством: ввести его уже нельзя (сервер отвечает link_expired и для отменённой)
+        var cancelled = new NewDeviceLinker(new AccountLinkPort(other.Account));
+        _ = cancelled.ShowCodeAsync();
+        await WaitFor("код для отмены", () => cancelled.State is NewDeviceLinkState.ShowingCode);
+        var cancelledCode = ((NewDeviceLinkState.ShowingCode)cancelled.State).UserCode;
+        cancelled.Cancel();
+        await Task.Delay(500, TestContext.Current.CancellationToken);
+        var gone = await Assert.ThrowsAsync<ApiException>(() => laptop.Account.ResolveLinkAsync(cancelledCode));
+        Assert.Equal("link_expired", gone.Code);
+        output.WriteLine("✓ отмена");
+
+        await laptop.Account.DeleteAccountAsync(password);
+    }
 }

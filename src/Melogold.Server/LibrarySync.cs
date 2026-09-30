@@ -89,6 +89,9 @@ public sealed class LibrarySync : IDisposable
     /// <summary>Список устройств изменился на сервере (<c>devices.updated</c>): экраны со списком перечитывают его.</summary>
     public event Action? DevicesChanged;
 
+    /// <summary>Живое событие <c>link.updated</c>: привязка с этим id изменилась.</summary>
+    public event Action<string>? LinkUpdated;
+
     /// <summary>Свой текст сервер не принял как слишком большой (413): он остаётся только на этом устройстве.</summary>
     public event Action<string>? LyricsRejected;
 
@@ -804,6 +807,10 @@ public sealed class LibrarySync : IDisposable
                 break;
             case "lyrics.changed":
                 _ = RunAsync(true, true, ct);
+                break;
+            case "link.updated":
+                // Приглашение забрали или решили (tasks/0014): окно «Показать код» читает его сразу, не ждёт опроса
+                if (e.Payload?["linkId"]?.GetValue<string>() is { } linkId) LinkUpdated?.Invoke(linkId);
                 break;
         }
     }

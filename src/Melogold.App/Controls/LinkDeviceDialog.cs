@@ -28,6 +28,19 @@ public static class LinkDeviceDialog
         body.Children.Add(code);
         body.Children.Add(error);
         body.Children.Add(progress);
+        var showCode = new HyperlinkButton { Content = Loc.Get("LinkShowCode"), Padding = new Thickness(0, 4, 0, 4) };
+        body.Children.Add(showCode);
+
+        // Режим invite (tasks/0014): код здесь, вводят его на новом устройстве; забрали — та же карточка и три числа
+        var sync = App.Services.GetRequiredService<LibrarySync>();
+        var invite = new InviteLinker(new AccountLinkPort(account));
+        void OnLinkUpdated(string linkId) => invite.Nudge(linkId);
+        sync.LinkUpdated += OnLinkUpdated;
+        var countdown = new TextBlock { Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"], Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] };
+        long inviteExpires = 0;
+        var clock = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().CreateTimer();
+        clock.Interval = TimeSpan.FromSeconds(1);
+        clock.Tick += (_, _) => countdown.Text = Loc.Format("CodeValidFormat", LinkRules.CountdownText(inviteExpires - IsoTime.NowMs()));
 
         var dialog = new ContentDialog
         {
@@ -43,6 +56,79 @@ public static class LinkDeviceDialog
         LinkDetails? link = null;
         string? approvedName = null;
         var busy = false;
+        var decided = false;
+
+        void ShowInvite(InviteState state)
+        {
+            clock.Stop();
+            switch (state)
+            {
+                case InviteState.Starting:
+                    body.Children.Clear();
+                    body.Children.Add(new ProgressBar { IsIndeterminate = true });
+                    break;
+                case InviteState.Waiting waiting:
+                    body.Children.Clear();
+                    body.Children.Add(new TextBlock { Text = Loc.Get("LinkInviteText"), TextWrapping = TextWrapping.Wrap });
+                    var big = new TextBlock
+                    {
+                        Text = waiting.UserCode,
+                        FontSize = 40,
+                        FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                        FontFamily = new FontFamily("Cascadia Mono, Consolas"),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        IsTextSelectionEnabled = true,
+                    };
+                    AutomationProperties.SetName(big, Loc.Format("CodeSpokenFormat", LinkRules.SpokenCode(waiting.UserCode)));
+                    body.Children.Add(new Border { Child = big, Padding = new Thickness(16), CornerRadius = new CornerRadius(8), Background = (Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"] });
+                    inviteExpires = waiting.ExpiresAt;
+                    countdown.Text = Loc.Format("CodeValidFormat", LinkRules.CountdownText(inviteExpires - IsoTime.NowMs()));
+                    clock.Start();
+                    body.Children.Add(countdown);
+                    body.Children.Add(new ProgressBar { IsIndeterminate = true });
+                    body.Children.Add(new TextBlock { Text = Loc.Get("LinkWaitingNew"), TextWrapping = TextWrapping.Wrap });
+                    dialog.PrimaryButtonText = "";
+                    break;
+                case InviteState.Claimed claimed when link is null:
+                    // Та же карточка одобрения, что и для кода, введённого здесь
+                    link = claimed.Link;
+                    ShowDevice(body, link, error, progress, async choice => await DecideAsync(choice));
+                    dialog.SecondaryButtonText = Loc.Get("LinkDeny");
+                    break;
+                case InviteState.Failed failed when !decided:
+                    link = null;
+                    body.Children.Clear();
+                    Fail(Loc.Get(failed.Failure switch
+                    {
+                        LinkFailure.Expired => "LinkInviteExpired",
+                        LinkFailure.Cancelled or LinkFailure.Denied => "LinkInviteCancelled",
+                        LinkFailure.DeviceLimit => "AccountErrorDeviceLimit",
+                        LinkFailure.Throttled => "AccountErrorThrottled",
+                        LinkFailure.Network => "AccountErrorNetwork",
+                        _ => "AccountErrorUnknown",
+                    }));
+                    body.Children.Add(error);
+                    var again = new Button { Content = Loc.Get("LinkShowCode") };
+                    again.Click += (_, _) =>
+                    {
+                        error.Visibility = Visibility.Collapsed;
+                        _ = invite.StartAsync();
+                    };
+                    body.Children.Add(again);
+                    dialog.SecondaryButtonText = "";
+                    break;
+            }
+        }
+        invite.StateChanged += state => dialog.DispatcherQueue.TryEnqueue(() => ShowInvite(state));
+        showCode.Click += (_, _) => _ = invite.StartAsync();
+        dialog.Closed += (_, _) =>
+        {
+            clock.Stop();
+            sync.LinkUpdated -= OnLinkUpdated;
+            // Пока решения нет — отменить приглашение, иначе набегут (их не больше трёх, четвёртое отменяет самое старое)
+            if (decided) invite.Release();
+            else invite.Cancel();
+        };
 
         void Fail(string text)
         {
@@ -76,6 +162,7 @@ public static class LinkDeviceDialog
             error.Visibility = Visibility.Collapsed;
             try
             {
+                decided = true;
                 if (verifyCode is null)
                 {
                     await account.DenyLinkAsync(link.LinkId);

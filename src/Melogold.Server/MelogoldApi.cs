@@ -192,6 +192,34 @@ public sealed class MelogoldApi : IDisposable
     public Task<LinkDecisionResponse> DenyLinkAsync(string token, string linkId, CancellationToken ct = default) =>
         SendAsync<LinkDecisionResponse>(HttpMethod.Post, $"/auth/me/links/{linkId}/deny", new { }, token, false, ct);
 
+    // ---------- Вход по коду: новое устройство (API §4.6, tasks/0014) ----------
+
+    /// <summary>Режим <c>request</c>: это устройство показывает код.</summary>
+    public Task<LinkCreated> CreateLinkRequestAsync(DeviceInput device, CancellationToken ct = default) =>
+        SendAsync<LinkCreated>(HttpMethod.Post, "/auth/link/requests", new { device }, null, false, ct);
+
+    /// <summary>Режим <c>invite</c>: это устройство вводит код, который показывает устройство, где уже вошли.</summary>
+    public Task<LinkClaimed> ClaimLinkAsync(string userCode, DeviceInput device, CancellationToken ct = default) =>
+        SendAsync<LinkClaimed>(HttpMethod.Post, "/auth/link/claim", new { userCode, device }, null, false, ct);
+
+    /// <summary>Длинный опрос: сервер держит ответ до 25 с, если статус равен <paramref name="knownStatus"/>; таймаут — 35 с.</summary>
+    public Task<LinkPollResponse> PollLinkAsync(string pollSecret, string knownStatus, CancellationToken ct = default) =>
+        SendAsync<LinkPollResponse>(HttpMethod.Post, "/auth/link/poll", new { pollSecret, knownStatus, waitSeconds = 25 }, null, false, ct, TimeSpan.FromSeconds(35));
+
+    public Task CancelLinkRequestAsync(string pollSecret, CancellationToken ct = default) =>
+        SendNoContentAsync(HttpMethod.Post, "/auth/link/cancel", new { pollSecret }, null, false, ct);
+
+    // ---------- Вход по коду: устройство, где уже вошли, показывает код (режим invite) ----------
+
+    public Task<LinkCreated> CreateInviteAsync(string token, CancellationToken ct = default) =>
+        SendAsync<LinkCreated>(HttpMethod.Post, "/auth/me/links", new { }, token, false, ct);
+
+    public Task<LinkDetails> GetLinkAsync(string token, string linkId, CancellationToken ct = default) =>
+        SendAsync<LinkDetails>(HttpMethod.Get, $"/auth/me/links/{linkId}", null, token, false, ct);
+
+    public Task CancelInviteAsync(string token, string linkId, CancellationToken ct = default) =>
+        SendNoContentAsync(HttpMethod.Post, $"/auth/me/links/{linkId}/cancel", new { }, token, false, ct);
+
     public Task DeleteAccountAsync(string token, string password, CancellationToken ct = default) =>
         SendNoContentAsync(HttpMethod.Post, "/auth/me/delete", new { password }, token, false, ct);
 

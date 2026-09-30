@@ -144,6 +144,10 @@ public sealed partial class SignInPage : Page
         body.Children.Add(_password);
         body.Children.Add(_error);
         body.Children.Add(_submit);
+        // Вход по коду (tasks/0014): новое устройство без пароля — одобряют на устройстве, где уже вошли
+        var byCode = new Button { Content = Loc.Get("AccountSignInWithCode"), MinWidth = 160 };
+        byCode.Click += (_, _) => Form.Navigator.Open(typeof(CodeSignInPage));
+        body.Children.Add(byCode);
         var register = new HyperlinkButton { Content = Loc.Get("AccountNoAccount"), Padding = new Thickness(0, 4, 0, 4) };
         register.Click += (_, _) => Form.Navigator.Open(typeof(RegisterPage));
         body.Children.Add(register);

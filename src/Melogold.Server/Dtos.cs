@@ -281,3 +281,17 @@ public sealed record LinkDeviceInfo(string Name, string Platform, string? OsVers
 public sealed record LinkDetails(string LinkId, string Mode, string Status, string CreatedAt, string ExpiresAt, LinkDeviceInfo? Device, bool? SameNetwork, IReadOnlyList<string> VerifyChoices);
 
 public sealed record LinkDecisionResponse(string LinkId, string Status);
+
+/// <summary>Код привязки создан (API §4.6 <c>LinkCreated</c>): у <c>request</c> есть <c>pollSecret</c>, у <c>invite</c> — нет.</summary>
+public sealed record LinkCreated(string LinkId, string Mode, string ServerId, string LinkToken, string UserCode, string? PollSecret, string ExpiresAt, int LongPollSeconds);
+
+public sealed record LinkAccount(string Login);
+
+/// <summary>Устройство, которое одобряет вход (его значок и имя показывает новое устройство рядом с числом).</summary>
+public sealed record LinkApprover(string Name, string Platform);
+
+/// <summary>Новое устройство ввело код приглашения (API §4.6 <c>LinkClaimed</c>): число, которое нужно выбрать там.</summary>
+public sealed record LinkClaimed(string LinkId, string Status, string PollSecret, LinkAccount Account, LinkApprover ApproverDevice, string VerifyCode, string ExpiresAt, int LongPollSeconds);
+
+/// <summary>Длинный опрос нового устройства (API §4.6 <c>LinkPollResponse</c>): у <c>completed</c> — сессия.</summary>
+public sealed record LinkPollResponse(string LinkId, string Status, string ExpiresAt, LinkAccount? Account, LinkApprover? ApproverDevice, string? VerifyCode, AuthSession? Session);

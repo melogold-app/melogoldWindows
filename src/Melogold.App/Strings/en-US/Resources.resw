@@ -538,7 +538,7 @@
   <data name="LinkDeny" xml:space="preserve"><value>Deny</value></data>
   <data name="LinkDenied" xml:space="preserve"><value>Sign-in denied</value></data>
   <data name="LinkSameNetwork" xml:space="preserve"><value>On the same network</value></data>
-  <data name="LinkOtherNetwork" xml:space="preserve"><value>On another network</value></data>
+  <data name="LinkOtherNetwork" xml:space="preserve"><value>On another network — make sure it's your device</value></data>
   <data name="LinkExpiresFormat" xml:space="preserve"><value>The code works for {0} more min</value></data>
   <data name="LinkApprovedFormat" xml:space="preserve"><value>“{0}” signed in to your account</value></data>
   <data name="LinkNotFound" xml:space="preserve"><value>Code not found</value></data>
@@ -667,4 +667,31 @@
   <data name="SelectionSetAlbumTitle" xml:space="preserve"><value>Set album</value></data>
   <data name="SelectionAlbumSetFormat" xml:space="preserve"><value>Album set: {0}</value></data>
   <data name="LyricsEditorNextLabel" xml:space="preserve"><value>Next</value></data>
+  <data name="AccountSignInWithCode" xml:space="preserve"><value>Sign in with a code</value></data>
+  <data name="CodeSignInTitle" xml:space="preserve"><value>Sign in with a code</value></data>
+  <data name="CodeSignInText" xml:space="preserve"><value>On a device where you're signed in, open Account › Add device and enter this code</value></data>
+  <data name="CodeValidFormat" xml:space="preserve"><value>Valid for {0}</value></data>
+  <data name="CodeReconnecting" xml:space="preserve"><value>Can't reach the server. Trying again…</value></data>
+  <data name="CodeHaveOther" xml:space="preserve"><value>I have a code from another device</value></data>
+  <data name="CodeShowMine" xml:space="preserve"><value>Show my code</value></data>
+  <data name="CodeEnterHint" xml:space="preserve"><value>Enter the code another device shows: Account › Add device › Show a code for a new device</value></data>
+  <data name="CodeChooseFormat" xml:space="preserve"><value>Choose this number on “{0}”</value></data>
+  <data name="CodeAccountFormat" xml:space="preserve"><value>Signing in to {0}</value></data>
+  <data name="CodeGetting" xml:space="preserve"><value>Getting a code…</value></data>
+  <data name="CodeSigningIn" xml:space="preserve"><value>Signing in…</value></data>
+  <data name="CodeGetNew" xml:space="preserve"><value>Get a new code</value></data>
+  <data name="CodeEnterOther" xml:space="preserve"><value>Enter another code</value></data>
+  <data name="CodeUsePassword" xml:space="preserve"><value>Sign in with a password</value></data>
+  <data name="CodeSpokenFormat" xml:space="preserve"><value>Sign-in code: {0}</value></data>
+  <data name="CodeNumberSpokenFormat" xml:space="preserve"><value>Number {0}</value></data>
+  <data name="CodeErrDenied" xml:space="preserve"><value>Sign-in was denied on the other device</value></data>
+  <data name="CodeErrExpiredRequest" xml:space="preserve"><value>The code has expired. Get a new one</value></data>
+  <data name="CodeErrExpiredInvite" xml:space="preserve"><value>The code has expired. Show a new one on the device where you're signed in</value></data>
+  <data name="CodeErrCancelled" xml:space="preserve"><value>Sign-in was canceled on the other device</value></data>
+  <data name="CodeErrWrongMode" xml:space="preserve"><value>This is a new device's code. Enter it where you're signed in: Account › Add device</value></data>
+  <data name="LinkShowCode" xml:space="preserve"><value>Show a code for a new device</value></data>
+  <data name="LinkInviteText" xml:space="preserve"><value>On the new device, choose “Sign in with a code” and “I have a code from another device”, then enter this code</value></data>
+  <data name="LinkWaitingNew" xml:space="preserve"><value>Waiting for the new device…</value></data>
+  <data name="LinkInviteExpired" xml:space="preserve"><value>The code has expired. Show a new one</value></data>
+  <data name="LinkInviteCancelled" xml:space="preserve"><value>The invitation was canceled</value></data>
 </root>

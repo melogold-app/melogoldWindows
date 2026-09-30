@@ -291,6 +291,45 @@ public sealed class AccountService : IDisposable
     public Task<LinkDecisionResponse> DenyLinkAsync(string linkId, CancellationToken ct = default) =>
         AuthorizedAsync((api, token) => api.DenyLinkAsync(token, linkId, ct), ct);
 
+    // ---------- Вход по коду (API §4.6, tasks/0014) ----------
+
+    /// <summary>Новое устройство, режим <c>request</c>: код, который вводят на устройстве, где уже вошли.</summary>
+    public async Task<LinkCreated> RequestLinkAsync(CancellationToken ct = default)
+    {
+        var (_, device) = await DeviceForServerAsync(ct).ConfigureAwait(false);
+        return await Api().CreateLinkRequestAsync(device, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Новое устройство, режим <c>invite</c>: ввести код, который показывает устройство, где уже вошли.</summary>
+    public async Task<LinkClaimed> ClaimLinkAsync(string userCode, CancellationToken ct = default)
+    {
+        var (_, device) = await DeviceForServerAsync(ct).ConfigureAwait(false);
+        return await Api().ClaimLinkAsync(userCode, device, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Длинный опрос нового устройства. <c>completed</c> — сессия берётся так же, как после входа по паролю (то же
+    /// хранилище, тот же первый синк).
+    /// </summary>
+    public async Task<LinkPollResponse> PollLinkAsync(string pollSecret, string knownStatus, CancellationToken ct = default)
+    {
+        var answer = await Api().PollLinkAsync(pollSecret, knownStatus, ct).ConfigureAwait(false);
+        if (answer.Status == "completed" && answer.Session is { } session) Save(session);
+        return answer;
+    }
+
+    public Task CancelLinkRequestAsync(string pollSecret, CancellationToken ct = default) => Api().CancelLinkRequestAsync(pollSecret, ct);
+
+    /// <summary>Устройство, где уже вошли: «Показать код для нового устройства» (режим <c>invite</c>).</summary>
+    public Task<LinkCreated> CreateInviteAsync(CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.CreateInviteAsync(token, ct), ct);
+
+    public Task<LinkDetails> GetLinkAsync(string linkId, CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.GetLinkAsync(token, linkId, ct), ct);
+
+    public Task CancelInviteAsync(string linkId, CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.CancelInviteAsync(token, linkId, ct), ct);
+
     public Task RevokeAsync(string deviceId, string? password, CancellationToken ct = default) =>
         AuthorizedAsync((api, token) => api.RevokeDeviceAsync(token, deviceId, password, ct), ct);
 

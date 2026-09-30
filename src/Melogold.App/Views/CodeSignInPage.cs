@@ -31,6 +31,7 @@ public sealed partial class CodeSignInPage : Page
 
     public CodeSignInPage()
     {
+        InitializeComponent();
         var (scroller, body) = Form.Page(Loc.Get("CodeSignInTitle"), null);
         body.Children.Add(_area);
         Content = scroller;

@@ -107,6 +107,11 @@ public sealed partial class YearRecapPage : Page
         Paint();
         Fill(stats);
         _cards.Focus(FocusState.Programmatic);
+#if DEBUG
+        // Только отладочная сборка: MELOGOLD_RECAP_PNG=<файл> — картинка для «Поделиться» без окна «Поделиться» (проверка вида)
+        if (Environment.GetEnvironmentVariable("MELOGOLD_RECAP_PNG") is { Length: > 0 } debugPath && await PictureAsync() is { } picture)
+            await picture.CopyAsync(await StorageFolder.GetFolderFromPathAsync(Path.GetDirectoryName(debugPath)!), Path.GetFileName(debugPath), NameCollisionOption.ReplaceExisting);
+#endif
     }
 
     /// <summary>Фон — цвет обложки трека года, книзу темнее; текст — чёрный или белый, какой читается.</summary>
@@ -328,6 +333,10 @@ public sealed partial class YearRecapPage : Page
             {
                 var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
                 encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied, (uint)bitmap.PixelWidth, (uint)bitmap.PixelHeight, 96, 96, System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeBufferExtensions.ToArray(pixels));
+                // Размер картинки — ровно 1080×1920, каким бы ни был масштаб экрана (RenderAsync отдаёт кратно ему)
+                encoder.BitmapTransform.ScaledWidth = PictureWidth;
+                encoder.BitmapTransform.ScaledHeight = PictureHeight;
+                encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
                 await encoder.FlushAsync();
             }
             Log.Info($"Year recap picture {bitmap.PixelWidth}x{bitmap.PixelHeight}");

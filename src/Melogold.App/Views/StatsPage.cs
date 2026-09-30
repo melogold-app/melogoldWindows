@@ -248,7 +248,7 @@ public sealed partial class StatsPage : Page, IScrollToTop
     private StackPanel Section(string title, UIElement content, string? expandKey = null, int count = 0)
     {
         var panel = new StackPanel { Spacing = 4, Margin = new Thickness(0, 24, 0, 0) };
-        var header = new Grid();
+        var header = new Grid { MinHeight = 32 };
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var heading = new TextBlock { Text = title, Style = StatsUi.Style("SubtitleTextBlockStyle"), VerticalAlignment = VerticalAlignment.Center };

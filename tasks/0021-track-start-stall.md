@@ -1,6 +1,6 @@
 # Трек не начинает играть, пока не подвинешь ползунок перемотки
 
-Статус: в работе — на Windows не воспроизвелось; нужны подробности от пользователя (см. «Что проверено на Windows»)
+Статус: сделано для Windows — не воспроизводится (пользователь 2026-09-30: видел только на Android и Linux); живой тест `LiveStallTests` на настоящем выводе звука зелёный; найденная попутно гонка исправлена в 0.1.12
 
 Те же задания: `melogoldAndroid/tasks/0019-track-start-stall.md`, `melogoldiOSmacOS/tasks/0021-track-start-stall.md`; Linux — `melogoldLinux/tasks/0016-track-start-stall.md` (сделано).
 

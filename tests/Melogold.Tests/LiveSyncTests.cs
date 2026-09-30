@@ -745,4 +745,45 @@ public class LiveSyncTests(ITestOutputHelper output)
             if (pc.Account.Session is not null) await pc.Account.DeleteAccountAsync(password);
         }
     }
+
+    /// <summary>
+    /// tasks/0018 против ЛОКАЛЬНОГО сервера: второе устройство послушало трек, его отозвали — после devices.updated оно
+    /// пропадает из фильтра устройств, а прослушивание остаётся во «Все устройства».
+    /// </summary>
+    [Fact]
+    public async Task RevokedDeviceLeavesTheFilter()
+    {
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_LOCAL_SERVER");
+        Assert.SkipUnless(server is not null, "MELOGOLD_LOCAL_SERVER");
+        var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        using var pc = new Device("Windows PC", server, output);
+        using var phone = new Device("Pixel 8", server, output);
+        await pc.Account.RegisterAsync(login, password);
+        try
+        {
+            pc.Sync.Start();
+            await phone.Account.SignInAsync(login, password);
+            phone.Sync.Start();
+            var phoneId = ((AccountState.SignedIn)phone.Account.State).DeviceId;
+            var pcId = ((AccountState.SignedIn)pc.Account.State).DeviceId;
+            var known = new KnownDevices(pc.Account, pc.Library, pc.Sync);
+            var changed = 0;
+            known.Changed += () => Interlocked.Increment(ref changed);
+
+            phone.Library.RecordPlay(A1, 60_000, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            await WaitFor("компьютер видит прослушивание телефона", () => pc.Library.HistoryDeviceIds().SequenceEqual([phoneId]));
+            Assert.Equal([phoneId], KnownDevices.Others(pc.Library.HistoryDeviceIds(), pcId, await known.ListAsync()).Select(d => d.Id));
+
+            await pc.Account.RevokeAsync(phoneId, password);
+            await WaitFor("devices.updated дошёл", () => Volatile.Read(ref changed) > 0);
+            Assert.Empty(KnownDevices.Others(pc.Library.HistoryDeviceIds(), pcId, await known.ListAsync()));
+            Assert.Single(pc.Library.RecentHistory());
+            output.WriteLine("✓ отозванное устройство пропало из фильтра, прослушивание — во «Все устройства»");
+        }
+        finally
+        {
+            if (pc.Account.Session is not null) await pc.Account.DeleteAccountAsync(password);
+        }
+    }
 }

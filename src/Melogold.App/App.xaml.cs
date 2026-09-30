@@ -86,6 +86,7 @@ public partial class App : Application
         services.AddSingleton(sp => new LibrarySync(sp.GetRequiredService<AccountService>(), sp.GetRequiredService<SyncStore>(),
             (message, error) => Log.Warn(message, error)));
         services.AddSingleton<ForYouBuilder>();
+        services.AddSingleton(sp => new KnownDevices(sp.GetRequiredService<AccountService>(), sp.GetRequiredService<Library>(), sp.GetRequiredService<LibrarySync>()));
         // Всё, что ниже, создаётся в потоке интерфейса: плеер запоминает его контекст, плашка — его очередь
         services.AddSingleton<Snackbar>();
         services.AddSingleton<ImageCache>();

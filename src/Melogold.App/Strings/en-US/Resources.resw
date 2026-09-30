@@ -65,8 +65,6 @@
   <data name="PlayerMute.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mute</value></data>
   <data name="PlayerMute.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Mute (Ctrl+M)</value></data>
   <data name="PlayerVolume.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Volume</value></data>
-  <data name="PlayerVolumeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Volume</value></data>
-  <data name="PlayerVolumeButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Volume (mouse wheel changes it)</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>More</value></data>
   <data name="PlayerMore.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>More</value></data>
   <data name="ResolvingText.Text" xml:space="preserve"><value>Getting the stream…</value></data>
@@ -79,14 +77,6 @@
   <data name="PlayErrorNetwork" xml:space="preserve"><value>No connection. Check your network or VPN</value></data>
   <data name="PlayErrorBot" xml:space="preserve"><value>YouTube wants to check you're not a robot. Try again later or switch networks</value></data>
   <data name="PlayErrorGeo" xml:space="preserve"><value>Unavailable in your country</value></data>
-  <data name="PlayErrorGeoCountryShortFormat" xml:space="preserve"><value>Unavailable in {0}</value></data>
-  <data name="PlayErrorGeoCountryNoticeFormat" xml:space="preserve"><value>Unavailable in {0}</value></data>
-  <data name="PlayErrorGeoCountryFormat" xml:space="preserve"><value>Unavailable in {0}: YouTube places you there, and the rights holder closed this track for it. With a VPN, pick a server in another country: YouTube counts some VPN servers as {0} too.</value></data>
-  <data name="PlayErrorGeoCountryOpenFormat" xml:space="preserve"><value>Unavailable in {0}: YouTube places you there, and the rights holder opened this track {1}. With a VPN, pick a server in another country: YouTube counts some VPN servers as {0} too.</value></data>
-  <data name="GeoOtherCountries_one" xml:space="preserve"><value>in {0} other country</value></data>
-  <data name="GeoOtherCountries_few" xml:space="preserve"><value>in {0} other countries</value></data>
-  <data name="GeoOtherCountries_many" xml:space="preserve"><value>in {0} other countries</value></data>
-  <data name="GeoOtherCountries_other" xml:space="preserve"><value>in {0} other countries</value></data>
   <data name="PlayErrorUnavailable" xml:space="preserve"><value>The video was removed or made private</value></data>
   <data name="PlayErrorAge" xml:space="preserve"><value>Age verification is required — not supported yet</value></data>
   <data name="PlayErrorExtractor" xml:space="preserve"><value>Couldn't get the stream</value></data>
@@ -496,7 +486,6 @@
   <data name="MoreOptions" xml:space="preserve"><value>More options</value></data>
   <data name="HistoryDeviceAll" xml:space="preserve"><value>All devices</value></data>
   <data name="HistoryDeviceThis" xml:space="preserve"><value>This device</value></data>
-  <data name="HistoryDeviceOther" xml:space="preserve"><value>Another device</value></data>
   <data name="HistoryDeviceChoose" xml:space="preserve"><value>Whose plays to show</value></data>
   <data name="ClearHistoryPromptFormat" xml:space="preserve"><value>Delete all plays ({0})? Favorites and playlists stay as they are.</value></data>
   <data name="ClearHistoryEverywherePromptFormat" xml:space="preserve"><value>Delete all plays ({0}) on every device of the account? Favorites and playlists stay as they are.</value></data>
@@ -658,6 +647,16 @@
   <data name="NothingToDownload" xml:space="preserve"><value>The selection is already downloaded</value></data>
   <data name="ShortcutSelectAll" xml:space="preserve"><value>Select all tracks; several — Ctrl+click and Shift+click</value></data>
   <data name="ShortcutClearSelection" xml:space="preserve"><value>Clear selection</value></data>
+  <data name="PlayerVolumeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Volume</value></data>
+  <data name="PlayerVolumeButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Volume (mouse wheel changes it)</value></data>
+  <data name="PlayErrorGeoCountryShortFormat" xml:space="preserve"><value>Unavailable in {0}</value></data>
+  <data name="PlayErrorGeoCountryNoticeFormat" xml:space="preserve"><value>Unavailable in {0}</value></data>
+  <data name="PlayErrorGeoCountryFormat" xml:space="preserve"><value>Unavailable in {0}: YouTube places you there, and the rights holder closed this track for it. With a VPN, pick a server in another country: YouTube counts some VPN servers as {0} too.</value></data>
+  <data name="PlayErrorGeoCountryOpenFormat" xml:space="preserve"><value>Unavailable in {0}: YouTube places you there, and the rights holder opened this track {1}. With a VPN, pick a server in another country: YouTube counts some VPN servers as {0} too.</value></data>
+  <data name="GeoOtherCountries_one" xml:space="preserve"><value>in {0} other country</value></data>
+  <data name="GeoOtherCountries_few" xml:space="preserve"><value>in {0} other countries</value></data>
+  <data name="GeoOtherCountries_many" xml:space="preserve"><value>in {0} other countries</value></data>
+  <data name="GeoOtherCountries_other" xml:space="preserve"><value>in {0} other countries</value></data>
   <data name="MenuEditDetails" xml:space="preserve"><value>Edit details…</value></data>
   <data name="TrackDetailsTitle" xml:space="preserve"><value>Track details</value></data>
   <data name="TrackDetailsName" xml:space="preserve"><value>Title</value></data>

@@ -11,14 +11,14 @@ namespace Melogold.App.Controls;
 
 /// <summary>
 /// Чьи прослушивания показать (tasks/0002 §3.5) — История и «Итоги» (tasks/0015): «Все устройства · Это устройство ·
-/// имя…»; устройство, которого уже нет в аккаунте, — «Другое устройство». Виден с аккаунтом, когда есть прослушивания
-/// других устройств.
+/// имя…». Устройства, которого уже нет в аккаунте, в списке нет вовсе (tasks/0018): его прослушивания — только во «Все
+/// устройства». Виден с аккаунтом, когда есть прослушивания других устройств аккаунта.
 /// </summary>
 public sealed partial class HistoryDeviceFilter : ComboBox
 {
     private readonly Library _library = App.Services.GetRequiredService<Library>();
     private readonly AccountService _account = App.Services.GetRequiredService<AccountService>();
-    private Dictionary<string, DeviceDto>? _names;
+    private readonly KnownDevices _devices = App.Services.GetRequiredService<KnownDevices>();
 
     public HistoryDeviceFilter()
     {
@@ -33,6 +33,8 @@ public sealed partial class HistoryDeviceFilter : ComboBox
             Filter = filter;
             FilterChanged?.Invoke();
         };
+        Loaded += (_, _) => _devices.Changed += OnDevicesChanged;
+        Unloaded += (_, _) => _devices.Changed -= OnDevicesChanged;
     }
 
     public HistoryDevice Filter { get; private set; } = HistoryDevice.All;
@@ -41,27 +43,31 @@ public sealed partial class HistoryDeviceFilter : ComboBox
 
     private string? CurrentDeviceId => _account.State is AccountState.SignedIn signedIn ? signedIn.DeviceId : null;
 
-    /// <summary>Перечитать устройства с прослушиваниями; без аккаунта или без чужих прослушиваний фильтра нет.</summary>
-    public async Task RefreshAsync()
+    // Выбранное устройство удалили, пока открыт экран, — снова «Все устройства»
+    private void OnDevicesChanged() => DispatcherQueue.TryEnqueue(async () =>
     {
+        if (await RefreshAsync()) FilterChanged?.Invoke();
+    });
+
+    /// <summary>
+    /// Перечитать устройства с прослушиваниями; без аккаунта или без других устройств аккаунта фильтра нет. true —
+    /// выбранного устройства больше нет, фильтр вернулся к «Все устройства».
+    /// </summary>
+    public async Task<bool> RefreshAsync()
+    {
+        var selected = Filter;
         var current = CurrentDeviceId;
-        var others = current is null ? [] : (await Task.Run(_library.HistoryDeviceIds)).Where(id => id != current).ToList();
-        if (others.Count == 0)
+        IReadOnlyList<DeviceDto> others = [];
+        if (current is not null)
+        {
+            var ids = await Task.Run(_library.HistoryDeviceIds);
+            others = KnownDevices.Others(ids, current, await _devices.ListAsync());
+        }
+        if (current is null || others.Count == 0)
         {
             Visibility = Visibility.Collapsed;
             Filter = HistoryDevice.All;
-            return;
-        }
-        if (_names is null)
-        {
-            try
-            {
-                _names = (await _account.DevicesAsync()).Devices.ToDictionary(d => d.Id);
-            }
-            catch (Exception e) when (e is ApiException or HttpRequestException or TaskCanceledException)
-            {
-                Log.Warn("Device names unavailable", e);
-            }
+            return selected != HistoryDevice.All;
         }
         var options = new List<(string Text, string? Glyph, HistoryDevice Filter)>
         {
@@ -69,11 +75,8 @@ public sealed partial class HistoryDeviceFilter : ComboBox
             (Loc.Get("HistoryDeviceThis"), DeviceSymbols.Glyph("windows"), HistoryDevice.This(current)),
         };
         options.AddRange(others
-            .Select(id => _names?.GetValueOrDefault(id) is { } d
-                ? (d.Name, DeviceSymbols.Glyph(d.Platform), HistoryDevice.Other(id))
-                : (Loc.Get("HistoryDeviceOther"), (string?)DeviceSymbols.Glyph(null), HistoryDevice.Other(id)))
+            .Select(d => (d.Name, (string?)DeviceSymbols.Glyph(d.Platform), HistoryDevice.Other(d.Id)))
             .OrderBy(o => o.Item1, StringComparer.CurrentCulture));
-        var selected = Filter;
         Items.Clear();
         foreach (var (text, glyph, filter) in options)
         {
@@ -87,5 +90,6 @@ public sealed partial class HistoryDeviceFilter : ComboBox
         SelectedIndex = Math.Max(0, options.FindIndex(o => o.Filter == selected));
         Filter = options[SelectedIndex].Filter;
         Visibility = Visibility.Visible;
+        return Filter != selected;
     }
 }

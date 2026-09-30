@@ -77,7 +77,7 @@ StreamSource	Клиент	Client
 Close	Закрыть	Close
 PlayErrorNetwork	Нет соединения. Проверьте сеть или VPN	No connection. Check your network or VPN
 PlayErrorBot	YouTube просит подтвердить, что вы не робот. Попробуйте позже или смените сеть	YouTube wants to check you're not a robot. Try again later or switch networks
-PlayErrorGeo	Недоступно в вашем регионе	Not available in your region
+PlayErrorGeo	Недоступно в вашей стране	Unavailable in your country
 PlayErrorUnavailable	Видео удалено или закрыто	The video was removed or made private
 PlayErrorAge	Нужна проверка возраста — пока не поддерживается	Age verification is required — not supported yet
 PlayErrorExtractor	Не удалось получить поток	Couldn't get the stream
@@ -99,7 +99,7 @@ MenuGoToAlbum	Открыть альбом	Go to album
 MenuGoToArtist	Открыть исполнителя	Go to artist
 MenuGoToChannel	Открыть канал	Go to channel
 MenuOtherVersions	Другие версии	Other versions
-MenuCopyLink	Копировать ссылку	Copy link
+MenuCopyLink	Скопировать ссылку	Copy link
 MenuRemoveFromPlaylist	Убрать из плейлиста	Remove from playlist
 MenuRemoveFromHistory	Убрать из истории	Remove from history
 MenuRemoveFromQueue	Убрать из очереди	Remove from queue
@@ -135,7 +135,7 @@ TypeChannel	Канал	Channel
 TypePlaylist	Плейлист	Playlist
 Live	В ЭФИРЕ	LIVE
 LinkUnsupported	Эту ссылку не открыть	This link can't be opened
-LinkImportLater	Импорт из других сервисов появится позже	Import from other services is coming later
+LinkImportLater	Импорт плейлистов из других сервисов появится позже	Importing playlists from other services is coming later
 # Коллекции
 SeeAll	Все	See all
 PlayAll	Слушать	Play
@@ -495,7 +495,6 @@ LyricsEditorKeysHint	Enter — отметить · Shift+Enter — конец с
 MoreOptions	Другие действия	More options
 HistoryDeviceAll	Все устройства	All devices
 HistoryDeviceThis	Это устройство	This device
-HistoryDeviceOther	Другое устройство	Another device
 HistoryDeviceChoose	Чьи прослушивания показать	Whose plays to show
 ClearHistoryPromptFormat	Удалить все прослушивания ({0})? Избранное и плейлисты не изменятся.	Delete all plays ({0})? Favorites and playlists stay as they are.
 ClearHistoryEverywherePromptFormat	Удалить все прослушивания ({0}) на всех устройствах аккаунта? Избранное и плейлисты не изменятся.	Delete all plays ({0}) on every device of the account? Favorites and playlists stay as they are.
@@ -539,7 +538,7 @@ LinkChooseNumber	Выберите число, которое видно на н�
 LinkDeny	Отклонить	Deny
 LinkDenied	Вход отклонён	Sign-in denied
 LinkSameNetwork	В той же сети	On the same network
-LinkOtherNetwork	В другой сети	On another network
+LinkOtherNetwork	В другой сети — убедитесь, что это ваше устройство	On another network — make sure it's your device
 LinkExpiresFormat	Код действует ещё {0} мин	The code works for {0} more min
 LinkApprovedFormat	«{0}» вошло в аккаунт	“{0}” signed in to your account
 LinkNotFound	Код не найден	Code not found
@@ -613,8 +612,6 @@ SearchBox.AccessKey	П	F
 PlayerMore.AccessKey	Е	M
 DropOpen	Открыть в Melogold	Open in Melogold
 DropImport	Импорт копии	Import a copy
-MenuMute	Без звука	Mute
-MenuUnmute	Включить звук	Unmute
 SettingsDownloads.Header	Загрузки	Downloads
 SettingsDownloadsEmpty	Скачанного нет · ⋯ › Скачать у трека	Nothing downloaded · ⋯ › Download on a track
 RemoveDownloadsButton.Content	Удалить все	Remove all
@@ -659,3 +656,161 @@ DownloadingCountFormat	Скачивается: {0}	Downloading: {0}
 NothingToDownload	Выделенное уже скачано	The selection is already downloaded
 ShortcutSelectAll	Выделить все треки; несколько — Ctrl+щелчок и Shift+щелчок	Select all tracks; several — Ctrl+click and Shift+click
 ShortcutClearSelection	Снять выделение	Clear selection
+# Добавлено в .resw напрямую (задания 0005–0018), перенесено сюда 2026-09-30
+PlayerVolumeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Громкость	Volume
+PlayerVolumeButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Громкость (колесо мыши меняет её)	Volume (mouse wheel changes it)
+PlayErrorGeoCountryShortFormat	Недоступно: {0}	Unavailable in {0}
+PlayErrorGeoCountryNoticeFormat	Недоступно в стране «{0}»	Unavailable in {0}
+PlayErrorGeoCountryFormat	Недоступно в стране «{0}»: YouTube считает, что вы там, а правообладатель закрыл трек для этой страны. С VPN выберите сервер другой страны: некоторые серверы YouTube тоже относит к стране «{0}».	Unavailable in {0}: YouTube places you there, and the rights holder closed this track for it. With a VPN, pick a server in another country: YouTube counts some VPN servers as {0} too.
+PlayErrorGeoCountryOpenFormat	Недоступно в стране «{0}»: YouTube считает, что вы там, а правообладатель открыл трек {1}. С VPN выберите сервер другой страны: некоторые серверы YouTube тоже относит к стране «{0}».	Unavailable in {0}: YouTube places you there, and the rights holder opened this track {1}. With a VPN, pick a server in another country: YouTube counts some VPN servers as {0} too.
+GeoOtherCountries_one	в {0} другой стране	in {0} other country
+GeoOtherCountries_few	в {0} других странах	in {0} other countries
+GeoOtherCountries_many	в {0} других странах	in {0} other countries
+GeoOtherCountries_other	в {0} других странах	in {0} other countries
+MenuEditDetails	Изменить сведения…	Edit details…
+TrackDetailsTitle	Сведения о треке	Track details
+TrackDetailsName	Название	Title
+TrackDetailsArtist	Исполнитель	Artist
+TrackDetailsAlbum	Альбом	Album
+TrackDetailsSave	Сохранить	Save
+TrackDetailsReset	Как на YouTube	As on YouTube
+SelectionSetAlbum	Указать альбом…	Set album…
+SelectionSetAlbumTitle	Указать альбом	Set album
+SelectionAlbumSetFormat	Альбом указан: {0}	Album set: {0}
+LyricsEditorNextLabel	Далее	Next
+AccountSignInWithCode	Войти по коду	Sign in with a code
+CodeSignInTitle	Вход по коду	Sign in with a code
+CodeSignInText	На устройстве, где вы уже вошли, откройте Аккаунт › Добавить устройство и введите этот код	On a device where you're signed in, open Account › Add device and enter this code
+CodeValidFormat	Действует {0}	Valid for {0}
+CodeReconnecting	Нет связи с сервером. Пробуем снова…	Can't reach the server. Trying again…
+CodeHaveOther	У меня есть код с другого устройства	I have a code from another device
+CodeShowMine	Показать мой код	Show my code
+CodeEnterHint	Введите код, который показывает другое устройство: Аккаунт › Добавить устройство › Показать код для нового устройства	Enter the code another device shows: Account › Add device › Show a code for a new device
+CodeChooseFormat	Выберите это число на «{0}»	Choose this number on “{0}”
+CodeAccountFormat	Вход в аккаунт {0}	Signing in to {0}
+CodeGetting	Получаем код…	Getting a code…
+CodeSigningIn	Входим…	Signing in…
+CodeGetNew	Получить новый код	Get a new code
+CodeEnterOther	Ввести другой код	Enter another code
+CodeUsePassword	Войти по паролю	Sign in with a password
+CodeSpokenFormat	Код для входа: {0}	Sign-in code: {0}
+CodeNumberSpokenFormat	Число {0}	Number {0}
+CodeErrDenied	Вход отклонён на другом устройстве	Sign-in was denied on the other device
+CodeErrExpiredRequest	Код устарел. Получите новый	The code has expired. Get a new one
+CodeErrExpiredInvite	Код устарел. Покажите новый на устройстве, где вы уже вошли	The code has expired. Show a new one on the device where you're signed in
+CodeErrCancelled	Вход отменили на другом устройстве	Sign-in was canceled on the other device
+CodeErrWrongMode	Это код нового устройства. Введите его там, где вы уже вошли: Аккаунт › Добавить устройство	This is a new device's code. Enter it where you're signed in: Account › Add device
+LinkShowCode	Показать код для нового устройства	Show a code for a new device
+LinkInviteText	На новом устройстве выберите «Войти по коду» и «У меня есть код с другого устройства», затем введите этот код	On the new device, choose “Sign in with a code” and “I have a code from another device”, then enter this code
+LinkWaitingNew	Ждём новое устройство…	Waiting for the new device…
+LinkInviteExpired	Код устарел. Покажите новый	The code has expired. Show a new one
+LinkInviteCancelled	Приглашение отменено	The invitation was canceled
+Stats	Итоги	Insights
+StatsHint	Неделя, месяц, год	Week, month, year
+StatsWeek	Неделя	Week
+StatsMonth	Месяц	Month
+StatsYear	Год	Year
+StatsAllTime	Всё время	All time
+StatsPrevious	Предыдущий период	Previous period
+StatsNext	Следующий период	Next period
+StatsListeningTime	Время прослушивания	Listening time
+StatsPlays	Прослушиваний	Plays
+StatsTracks	Треков	Tracks
+StatsArtists	Исполнителей	Artists
+StatsAlbums	Альбомов	Albums
+StatsTopTracks	Лучшие треки	Top tracks
+StatsTopArtists	Лучшие исполнители	Top artists
+StatsTopAlbums	Лучшие альбомы	Top albums
+StatsWhen	Когда вы слушали	When you listened
+StatsTimeOfDay	Время суток	Time of day
+StatsDiscoveries	Открытия	Discoveries
+StatsShowAll	Показать все	Show all
+StatsShowLess	Свернуть	Show less
+StatsEmpty	За этот период прослушиваний нет	No plays in this period
+StatsAllTimeNote	Сервер хранит историю 400 дней: на новом устройстве видно столько, сколько пришло с сервера	The server keeps the history for 400 days: on a new device you see as much as came from the server
+StatsPlaysCount_one	{0} прослушивание	{0} play
+StatsPlaysCount_few	{0} прослушивания	{0} plays
+StatsPlaysCount_many	{0} прослушиваний	{0} plays
+StatsPlaysCount_other	{0} прослушивания	{0} plays
+StatsDiscovered_one	{0} новый трек	{0} new track
+StatsDiscovered_few	{0} новых трека	{0} new tracks
+StatsDiscovered_many	{0} новых треков	{0} new tracks
+StatsDiscovered_other	{0} нового трека	{0} new tracks
+StatsDiscoveriesText	Услышаны впервые в этом периоде	Heard for the first time in this period
+StatsChangeFormat	{0} % к {1}	{0}% vs {1}
+StatsVsLastWeek	прошлой неделе	last week
+StatsVsMonthYearFormat	{0} {1}	{0} {1}
+StatsVsYearFormat	{0} году	{0}
+StatsMonthsCompare	январю|февралю|марту|апрелю|маю|июню|июлю|августу|сентябрю|октябрю|ноябрю|декабрю	January|February|March|April|May|June|July|August|September|October|November|December
+StatsBusiestFormat	Больше всего слушали: {0}, {1}	Most listening: {0}, {1}
+StatsHoursBusiestFormat	Больше всего слушали около {0}, {1}	Most listening around {0}, {1}
+StatsRecap	Итоги года	Year in review
+StatsRecapTitleFormat	Итоги {0}	Insights {0}
+StatsRecapReadyFormat	Итоги {0} готовы	Insights {0} are ready
+StatsRecapReadyText	Посмотрите, что вы слушали в этом году	See what you listened to this year
+StatsRecapMinutes_one	минута музыки за год	minute of music this year
+StatsRecapMinutes_few	минуты музыки за год	minutes of music this year
+StatsRecapMinutes_many	минут музыки за год	minutes of music this year
+StatsRecapMinutes_other	минуты музыки за год	minutes of music this year
+StatsRecapTrack	Трек года	Track of the year
+StatsRecapMonth	Любимый месяц	Favorite month
+StatsRecapTime	Любимое время суток	Favorite time of day
+StatsRecapPeakFormat	Больше всего слушали около {0}	Most listening around {0}
+StatsRecapNewTracks_one	новый трек	new track
+StatsRecapNewTracks_few	новых трека	new tracks
+StatsRecapNewTracks_many	новых треков	new tracks
+StatsRecapNewTracks_other	нового трека	new tracks
+StatsRecapDiscoveries	Новое в этом году	New this year
+StatsRecapEmpty	За этот год пока нечего показать	There is nothing to show for this year yet
+StatsRecapPageFormat	Карточка {0} из {1}	Card {0} of {1}
+StatsShare	Поделиться	Share
+StatsSaveAs	Сохранить как…	Save as…
+StatsShareWatermarkFormat	Melogold · Итоги {0}	Melogold · Insights {0}
+StatsShareTextFormat	Мой {0} год в Melogold	My {0} in Melogold
+StatsPictureSaved	Картинка сохранена	Picture saved
+StatsPictureFailed	Не удалось сделать картинку	Couldn't make the picture
+StatsDayPartNight	Ночь	Night
+StatsDayPartMorning	Утро	Morning
+StatsDayPartAfternoon	День	Afternoon
+StatsDayPartEvening	Вечер	Evening
+ShareFirstFifty	Ссылка откроет первые 50 треков на YouTube	The link opens the first 50 tracks on YouTube
+ShareLimitFormat	Ссылок уже {0} — удалите старые в «Мои ссылки»	You already have {0} links — delete old ones in “My links”
+ShareNoTracks	В плейлисте нет треков YouTube — делиться нечем	There are no YouTube tracks in this playlist to share
+SharedPlaylist	Плейлист по ссылке	Shared playlist
+ShareSaveToLibrary	Сохранить в Библиотеку	Save to Library
+ShareSavedToLibrary	Сохранено в Библиотеку	Saved to Library
+ShareGone	Ссылка удалена или неверна	The link was deleted or is wrong
+MyShares	Мои ссылки	My links
+MySharesText	Ссылки на ваши плейлисты: по ним слушают и сохраняют себе	Links to your playlists: people listen and save them
+MySharesEmpty	Ссылок пока нет	No links yet
+MySharesEmptyHint	Откройте свой плейлист и выберите «Поделиться» в меню	Open your playlist and choose “Share” in its menu
+ShareDelete	Удалить ссылку	Delete link
+ShareDeleteTitleFormat	Удалить ссылку на «{0}»?	Delete the link to “{0}”?
+ShareDeleteText	Ссылка перестанет открываться у всех, кому вы её отправили. Сам плейлист останется.	The link stops opening for everyone you sent it to. The playlist itself stays.
+ShareDeleted	Ссылка удалена	Link deleted
+LinkKindShare	плейлист Melogold	Melogold playlist
+ServiceYandexMusic	Яндекс Музыка	Yandex Music
+LinkLookingFormat	Ищем ссылку {0} на YouTube Music…	Looking for the {0} link on YouTube Music…
+ClipboardLink	Ссылка из буфера обмена	Link from the clipboard
+PlayerDeviceButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Устройство	Device
+PlayerDeviceButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip	Устройство	Device
+RemoteListenHere.Content	Слушать здесь	Listen here
+RemoteDisconnect.Content	Отключиться	Disconnect
+SettingsRemoteControl.Header	Управление с других устройств	Control from other devices
+SettingsRemoteControl.Description	Пауза, следующий трек и громкость — с телефона или другого компьютера	Pause, skip and change the volume from your phone or another computer
+RemoteDevice	Устройство	Device
+RemoteThisDevice	Это устройство	This device
+RemoteSystemSound	Вывод звука в Windows	Windows sound output
+RemoteOtherDevices	Другие устройства	Other devices
+RemoteNoOtherDevices	Других устройств в аккаунте нет	No other devices in the account
+RemoteOnline	В сети	Online
+RemoteOffline	Не в сети	Offline
+RemoteNotControllable	Управление выключено	Control is off
+RemoteVolumeFormat	громкость {0}	volume {0}
+RemoteChosen	Выбрано	Selected
+RemotePlayingOnFormat	Играет на «{0}»	Playing on “{0}”
+RemoteNothingPlaying	Ничего не играет	Nothing is playing
+RemoteNothingFormat	На «{0}» ничего не играет	Nothing is playing on “{0}”
+RemoteControlledByFormat	Управляет «{0}»	“{0}” is in control
+RemoteOfflineFormat	„{0}“ не в сети	“{0}” is offline
+RemoteDisabledFormat	На „{0}“ управление выключено	Control is off on “{0}”

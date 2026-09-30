@@ -204,6 +204,33 @@ public sealed class ListeningStatsTests : IDisposable
         Assert.False(library.HasPlays(new StatsPeriod(StatsPeriodKind.Year, new DateOnly(2026, 1, 1)), Moscow));
     }
 
+    private static Melogold.Server.DeviceDto Device(string id, string name) =>
+        new(id, name, name, null, "android", null, null, null, "login", null, "2026-09-01T00:00:00.000Z", "2026-09-30T00:00:00.000Z", null, null, false);
+
+    [Fact]
+    public void RemovedDevicesAndEventsWithoutDeviceStayInAllDevicesOnly()
+    {
+        var library = new Library(new LibraryDatabase(Path.Combine(_directory, "library.db")));
+        var september = At(Moscow, 2026, 9, 10);
+        new SyncStore(library).Run(tx =>
+        {
+            tx.InsertPlay("e1", "aaaaaaaaaaa", september, 10_000, null);
+            tx.InsertPlay("e2", "aaaaaaaaaaa", september + 1, 20_000, "phone");
+            tx.InsertPlay("e3", "aaaaaaaaaaa", september + 2, 40_000, "tablet");
+            tx.InsertPlay("e4", "aaaaaaaaaaa", september + 3, 80_000, "");
+        });
+        var ids = library.HistoryDeviceIds();
+        // Планшет удалён из аккаунта: в фильтре — только телефон (и «Это устройство»)
+        var account = new[] { Device("this", "Windows"), Device("phone", "Pixel 8") };
+        Assert.Equal(["phone"], Melogold.Server.KnownDevices.Others(ids, "this", account).Select(d => d.Id));
+        // Все чужие удалены — фильтра нет
+        Assert.Empty(Melogold.Server.KnownDevices.Others(ids, "this", [Device("this", "Windows")]));
+        // Событие без deviceId: не «Это устройство», но во «Все устройства»
+        var month = new StatsPeriod(StatsPeriodKind.Month, new DateOnly(2026, 9, 1));
+        Assert.Equal(150_000, library.Stats(month, Moscow).PlayTimeMs);
+        Assert.Equal(10_000, library.Stats(month, Moscow, HistoryDevice.This("this")).PlayTimeMs);
+    }
+
     [Fact]
     public void FiftyThousandEventsAreFast()
     {

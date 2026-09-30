@@ -666,4 +666,5 @@
   <data name="SelectionSetAlbum" xml:space="preserve"><value>Set album…</value></data>
   <data name="SelectionSetAlbumTitle" xml:space="preserve"><value>Set album</value></data>
   <data name="SelectionAlbumSetFormat" xml:space="preserve"><value>Album set: {0}</value></data>
+  <data name="LyricsEditorNextLabel" xml:space="preserve"><value>Next</value></data>
 </root>

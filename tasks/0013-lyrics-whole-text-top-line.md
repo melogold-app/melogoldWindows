@@ -1,6 +1,6 @@
 # Текст песни: всё целиком, текущая строка у самого верха
 
-Статус: открыто
+Статус: в работе — код готов; осталось снять «Синхронизацию» с длинной строкой и «Текст» в плеере
 
 Те же задания: `melogoldAndroid/tasks/0014-lyrics-whole-text-top-line.md` (сделано, Android 0.1.11), `melogoldiOSmacOS/tasks/0016-lyrics-whole-text-top-line.md`, `melogoldLinux/tasks/0007-lyrics-whole-text-top-line.md`.
 Образец — Android (`ui/screens/player/lyricseditor/LyricsEditorSync.kt`, `ui/screens/player/modern/ModernPlayer.kt`).

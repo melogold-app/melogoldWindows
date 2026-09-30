@@ -668,4 +668,5 @@
   <data name="SelectionSetAlbum" xml:space="preserve"><value>Указать альбом…</value></data>
   <data name="SelectionSetAlbumTitle" xml:space="preserve"><value>Указать альбом</value></data>
   <data name="SelectionAlbumSetFormat" xml:space="preserve"><value>Альбом указан: {0}</value></data>
+  <data name="LyricsEditorNextLabel" xml:space="preserve"><value>Далее</value></data>
 </root>

@@ -123,7 +123,15 @@ public sealed partial class NowPlayingView : Grid
         SetRow(_body, 1);
         Children.Add(_body);
 
-        SizeChanged += (_, _) => Arrange();
+        SizeChanged += (_, _) =>
+        {
+            _resizedAt = DateTime.UtcNow;
+            Arrange();
+        };
+        // Обложка сдвинулась (размер окна, кадр видео вместо квадрата, перенос названия) — текущая строка за ней
+        _artwork.SizeChanged += (_, _) => DispatcherQueue.TryEnqueue(AnchorLyrics);
+        _artPanel.SizeChanged += (_, _) => DispatcherQueue.TryEnqueue(AnchorLyrics);
+        _synced.SizeChanged += (_, _) => DispatcherQueue.TryEnqueue(AnchorLyrics);
         _engine.TrackChanged += OnTrackChanged;
         _lyrics.Changed += ShowLyrics;
         ActualThemeChanged += (_, _) => _ = LoadPaletteAsync(force: true);
@@ -326,6 +334,24 @@ public sealed partial class NowPlayingView : Grid
     }
 
     private static Color SystemColor(string key) => Application.Current.Resources.TryGetValue(key, out var value) && value is Color color ? color : Colors.Black;
+
+    private DateTime _resizedAt;
+
+    /// <summary>
+    /// Широкое окно (обложка слева, текст справа): середина текущей строки — на уровне середины обложки, как в Linux
+    /// (пользователь: «это решение для ноутбуков»); при смене размера окна — сразу, при прочих сдвигах — плавно. Узкое —
+    /// строка у верха (tasks/0013).
+    /// </summary>
+    private void AnchorLyrics()
+    {
+        var immediate = DateTime.UtcNow - _resizedAt < TimeSpan.FromMilliseconds(400);
+        if (ActualWidth >= WideWidth && _artPanel.Visibility == Visibility.Visible && _artwork.ActualHeight > 0 && _synced.ActualHeight > 0)
+        {
+            var center = _artwork.TransformToVisual(_synced).TransformPoint(new Windows.Foundation.Point(0, _artwork.ActualHeight / 2)).Y;
+            _synced.SetAnchor(center, immediate);
+        }
+        else _synced.SetAnchor(null, immediate);
+    }
 
     /// <summary>Широкое окно — обложка и текст рядом; узкое — одно из двух по переключателю.</summary>
     private void Arrange()

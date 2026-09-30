@@ -51,7 +51,13 @@ public sealed partial class SyncedLyricsView : Grid
     private readonly Grid _content = new();
     private readonly Canvas _pillHost = new() { IsHitTestVisible = false };
     private readonly StackPanel _lines = new() { Spacing = 4 };
-    private readonly Microsoft.UI.Xaml.Shapes.Rectangle _topFade = new() { Height = 32, VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false };
+    /// <summary>Полоса затухания у верха: под ней встаёт текущая строка (tasks/0013).</summary>
+    private const double TopFade = 24;
+
+    private readonly Microsoft.UI.Xaml.Shapes.Rectangle _topFade = new() { Height = TopFade, VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false };
+
+    /// <summary>Высота в области текста, на которой стоит середина текущей строки; null — строка у самого верха.</summary>
+    private double? _anchor;
     private readonly Microsoft.UI.Xaml.Shapes.Rectangle _bottomFade = new() { Height = 72, VerticalAlignment = VerticalAlignment.Bottom, IsHitTestVisible = false };
     private readonly Button _jump = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 16), Visibility = Visibility.Collapsed };
     private readonly DispatcherQueueTimer _clock;
@@ -122,9 +128,7 @@ public sealed partial class SyncedLyricsView : Grid
         _scroller.SizeChanged += (_, _) =>
         {
             ApplyFontSize(FontSizeFor(_scroller.ActualWidth, _scroller.ActualHeight));
-            // Активная строка — посередине области: первая строка встаёт туда до начала, последняя может дойти до неё
-            var half = _scroller.ActualHeight / 2;
-            _lines.Margin = new Thickness(0, Math.Max(0, half - _fontSize), 0, half);
+            ApplyMargins();
             DispatcherQueue.TryEnqueue(() =>
             {
                 _scroller.UpdateLayout();
@@ -266,12 +270,41 @@ public sealed partial class SyncedLyricsView : Grid
         if (index >= 0) _rowViews[index].Update(position, IsPlaying(), _animations, _text);
     }
 
+    /// <summary>
+    /// Где стоит текущая строка (tasks/0013): в широком окне «Сейчас играет» — её середина на уровне середины обложки
+    /// (<paramref name="y"/> — высота в этой области), взгляд идёт от обложки к строке по одной линии; иначе
+    /// (<paramref name="y"/> = null) — её верх у самого верха, под полосой затухания. <paramref name="immediate"/> — сразу
+    /// (смена размера окна), иначе плавно.
+    /// </summary>
+    public void SetAnchor(double? y, bool immediate)
+    {
+        if (_anchor is null && y is null || _anchor is { } old && y is { } value && Math.Abs(old - value) < 1) return;
+        _anchor = y;
+        ApplyMargins();
+        if (_follow) DispatcherQueue.TryEnqueue(() =>
+        {
+            _scroller.UpdateLayout();
+            MovePill(immediate: true);
+            ScrollToActive(animated: !immediate);
+        });
+    }
+
+    /// <summary>
+    /// Поля над и под строками: первая строка может встать на своё место с начала песни, последняя — дойти до него.
+    /// </summary>
+    private void ApplyMargins() =>
+        _lines.Margin = new Thickness(0, _anchor is { } anchor ? Math.Max(TopFade, anchor) : TopFade, 0, _scroller.ActualHeight);
+
     private void ScrollToActive(bool animated)
     {
-        var target = _active >= 0 ? _rowViews[_active].Element : null;
+        // До первой строки — первая строка на своём месте
+        var target = _active >= 0 ? _rowViews[_active].Element : _rowViews.FirstOrDefault(r => !r.IsInterlude)?.Element;
         double y = 0;
         if (target is not null && target.ActualHeight > 0)
-            y = target.TransformToVisual(_content).TransformPoint(default).Y + target.ActualHeight / 2 - _scroller.ActualHeight / 2;
+        {
+            var top = target.TransformToVisual(_content).TransformPoint(default).Y;
+            y = _anchor is { } anchor ? top + target.ActualHeight / 2 - anchor : top - TopFade;
+        }
         y = Math.Clamp(y, 0, _scroller.ScrollableHeight);
         if (Math.Abs(y - _scroller.VerticalOffset) < 1) return;
         _programmaticUntil = DateTime.UtcNow.AddMilliseconds(animated ? 900 : 200);

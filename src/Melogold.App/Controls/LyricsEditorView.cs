@@ -56,7 +56,13 @@ public sealed partial class LyricsEditorView : Grid
     private readonly ScrollViewer _linesScroller = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly StackPanel _lines = new() { Spacing = 2, Margin = new Thickness(12, 0, 12, 8) };
     private readonly TextBlock _position = new() { FontSize = 18, VerticalAlignment = VerticalAlignment.Center, MinWidth = 90 };
-    private readonly TextBlock _next = new() { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 2, TextWrapping = TextWrapping.Wrap };
+    /// <summary>
+    /// «Далее» — строка, которую отметит нажатие, целиком, как её написали, с подпевкой (tasks/0013: «сколько человек
+    /// написал, столько и показывай»); в режиме слов следующее слово выделено. Выше ~200 — прокрутка внутри блока.
+    /// </summary>
+    private readonly RichTextBlock _next = new() { TextWrapping = TextWrapping.Wrap, FontSize = 18, IsTextSelectionEnabled = false };
+    private readonly ScrollViewer _nextScroller = new() { MaxHeight = 200, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+    private (int Cursor, int Word, LyricsTiming Timing, int Count)? _nextShown;
     private readonly Button _mark = new() { Style = (Style)Application.Current.Resources["AccentButtonStyle"], HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 48 };
     private readonly Button _markEnd = new() { MinHeight = 48 };
     private readonly Button _undo = new();
@@ -240,7 +246,22 @@ public sealed partial class LyricsEditorView : Grid
         controls.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         controls.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         controls.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        controls.Children.Add(Transport(_next));
+        controls.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        controls.Children.Add(Transport(_position));
+
+        // «Далее» — своим блоком на всю ширину над кнопками
+        var next = new StackPanel { Spacing = 2 };
+        next.Children.Add(new TextBlock
+        {
+            Text = Loc.Get("LyricsEditorNextLabel"),
+            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+            Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+        });
+        _nextScroller.Content = _next;
+        next.Children.Add(_nextScroller);
+        AutomationProperties.SetName(_next, Loc.Get("LyricsEditorNextLabel"));
+        SetRow(next, 1);
+        controls.Children.Add(next);
 
         var buttons = new Grid { ColumnSpacing = 8 };
         buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -255,7 +276,7 @@ public sealed partial class LyricsEditorView : Grid
         _mark.Click += (_, _) => Mark();
         SetColumn(_mark, 1);
         buttons.Children.Add(_mark);
-        SetRow(buttons, 1);
+        SetRow(buttons, 2);
         controls.Children.Add(buttons);
         // Подсказка о клавишах — своей строкой под кнопками: в узком окне она переносится и не наезжает на перемотку
         var hint = new TextBlock
@@ -266,14 +287,14 @@ public sealed partial class LyricsEditorView : Grid
             TextWrapping = TextWrapping.WrapWholeWords,
             Margin = new Thickness(0, -4, 0, 0),
         };
-        SetRow(hint, 2);
+        SetRow(hint, 3);
         controls.Children.Add(hint);
         SetRow(controls, 2);
         _sync.Children.Add(controls);
     }
 
-    /// <summary>Назад на 3 с, play/pause, позиция и подпись справа.</summary>
-    private StackPanel Transport(TextBlock caption)
+    /// <summary>Назад на 3 с, play/pause и позиция.</summary>
+    private StackPanel Transport(TextBlock position)
     {
         var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         row.Children.Add(IconButton("", Loc.Get("LyricsEditorRewind"), () => _engine.Seek(TimeSpan.FromMilliseconds(Math.Max(0, Position - RewindMs)))));
@@ -284,11 +305,9 @@ public sealed partial class LyricsEditorView : Grid
         });
         _playButtons.Add(play);
         row.Children.Add(play);
-        var position = caption == _next ? _position : new TextBlock { FontSize = 18, VerticalAlignment = VerticalAlignment.Center, MinWidth = 90 };
         Typography.SetNumeralAlignment(position, FontNumeralAlignment.Tabular);
         row.Children.Add(position);
-        if (caption != _next) _previewPosition = position;
-        row.Children.Add(caption);
+        if (position != _position) _previewPosition = position;
         return row;
     }
 
@@ -456,7 +475,7 @@ public sealed partial class LyricsEditorView : Grid
         }
         texts.Children.Add(main);
         if (line.Backing is { } backing)
-            texts.Children.Add(new TextBlock { Text = backing, Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"], Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"], TextAlignment = main.TextAlignment });
+            texts.Children.Add(new TextBlock { Text = backing, Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"], Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"], TextAlignment = main.TextAlignment, TextWrapping = TextWrapping.Wrap });
         SetColumn(texts, 1);
         row.Children.Add(texts);
 
@@ -522,7 +541,7 @@ public sealed partial class LyricsEditorView : Grid
         _previewLyrics.Seek = ms => _engine.Seek(TimeSpan.FromMilliseconds(ms));
         _previewLyrics.Margin = new Thickness(24, 0, 24, 0);
         _preview.Children.Add(_previewLyrics);
-        var transport = Transport(new TextBlock());
+        var transport = Transport(new TextBlock { FontSize = 18, VerticalAlignment = VerticalAlignment.Center, MinWidth = 90 });
         transport.HorizontalAlignment = HorizontalAlignment.Center;
         transport.Margin = new Thickness(16);
         SetRow(transport, 1);
@@ -634,12 +653,51 @@ public sealed partial class LyricsEditorView : Grid
             AutomationProperties.SetName(button, Loc.Get(_engine.IsPlaying ? "Pause" : "Play"));
         }
         var line = _draft.Cursor < _draft.Lines.Count ? _draft.Lines[_draft.Cursor] : null;
-        var next = line is null ? null
-            : _draft.Timing == LyricsTiming.Word && line.Words.Count > 0 ? line.Words[Math.Min(_draft.WordCursor, line.Words.Count - 1)]
-            : line.Text;
-        _next.Text = next is null ? Loc.Get("LyricsEditorAllMarked") : Loc.Format("LyricsEditorNextFormat", next);
+        ShowNext(line);
         _mark.IsEnabled = line is not null;
         _markEnd.IsEnabled = _draft.Cursor > 0;
+    }
+
+    /// <summary>
+    /// «Далее»: строка целиком с подпевкой; в режиме слов отмеченные слова — цветом акцента, следующее — жирным и
+    /// подчёркнутым. Перерисовывается, только когда строка или слово сменились; новая строка — с начала прокрутки.
+    /// </summary>
+    private void ShowNext(DraftLine? line)
+    {
+        var shown = (_draft.Cursor, _draft.WordCursor, _draft.Timing, _draft.Lines.Count);
+        if (_nextShown == shown && _next.Blocks.Count > 0) return;
+        var newLine = _nextShown?.Cursor != _draft.Cursor;
+        _nextShown = shown;
+        _next.Blocks.Clear();
+        var paragraph = new Paragraph();
+        if (line is null) paragraph.Inlines.Add(new Run { Text = Loc.Get("LyricsEditorAllMarked") });
+        else if (_draft.Timing == LyricsTiming.Word && line.Words.Count > 0)
+        {
+            var accent = (Brush)Application.Current.Resources["AccentTextFillColorPrimaryBrush"];
+            var words = line.Words;
+            var cursor = Math.Min(_draft.WordCursor, words.Count - 1);
+            for (var i = 0; i < words.Count; i++)
+            {
+                var run = new Run { Text = words[i] };
+                if (i < line.WordStarts.Count && line.WordStarts[i] is not null) run.Foreground = accent;
+                if (i == cursor)
+                {
+                    run.FontWeight = FontWeights.Bold;
+                    run.TextDecorations = Windows.UI.Text.TextDecorations.Underline;
+                }
+                paragraph.Inlines.Add(run);
+                if (i < words.Count - 1) paragraph.Inlines.Add(new Run { Text = " " });
+            }
+        }
+        else paragraph.Inlines.Add(new Run { Text = line.Text });
+        _next.Blocks.Add(paragraph);
+        if (line?.Backing is { } backing)
+        {
+            var under = new Paragraph { FontSize = 14, Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] };
+            under.Inlines.Add(new Run { Text = backing });
+            _next.Blocks.Add(under);
+        }
+        if (newLine) _nextScroller.ChangeView(null, 0, null, true);
     }
 
     private static string FormatTime(long ms) =>

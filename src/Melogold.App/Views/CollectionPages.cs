@@ -51,15 +51,22 @@ public sealed partial class ListToolbar : Grid
 
     public string SortKey => (_sort?.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
 
+    /// <summary>Фильтр списка — по своим названиям (tasks/0011) и по названиям YouTube.</summary>
     public static bool Matches(Track track, string filter) =>
-        filter.Length == 0 || track.Title.Contains(filter, StringComparison.CurrentCultureIgnoreCase) ||
+        filter.Length == 0 || MatchesText(track, filter) || (Shown(track) is var shown && !ReferenceEquals(shown, track) && MatchesText(shown, filter));
+
+    private static bool MatchesText(Track track, string filter) =>
+        track.Title.Contains(filter, StringComparison.CurrentCultureIgnoreCase) ||
         track.ArtistsText?.Contains(filter, StringComparison.CurrentCultureIgnoreCase) == true ||
         track.AlbumTitle?.Contains(filter, StringComparison.CurrentCultureIgnoreCase) == true;
 
+    private static Track Shown(Track track) => ViewModels.RowVm.Display?.Invoke(track) ?? track;
+
+    /// <summary>Сортировка — по тому, что видно в строке.</summary>
     public static IEnumerable<Track> Sorted(IEnumerable<Track> tracks, string key) => key switch
     {
-        "title" => tracks.OrderBy(t => t.Title, StringComparer.CurrentCultureIgnoreCase),
-        "artist" => tracks.OrderBy(t => t.ArtistsText ?? "", StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.Title, StringComparer.CurrentCultureIgnoreCase),
+        "title" => tracks.OrderBy(t => Shown(t).Title, StringComparer.CurrentCultureIgnoreCase),
+        "artist" => tracks.OrderBy(t => Shown(t).ArtistsText ?? "", StringComparer.CurrentCultureIgnoreCase).ThenBy(t => Shown(t).Title, StringComparer.CurrentCultureIgnoreCase),
         _ => tracks,
     };
 }
@@ -517,6 +524,7 @@ public sealed partial class LocalPlaylistPage : CatalogPage
             return;
         }
         _playlist = playlist;
+        _list.ListName = playlist?.Name;
         _tracks = tracks.Where(t => !_pendingRemoval.Contains(t.VideoId)).ToList();
         var duration = _tracks.Sum(t => t.DurationMs ?? 0);
         _header.Set(playlist.Name, Loc.Plural("Tracks", _tracks.Count), duration > 0 ? Durations.Format(duration) : null,

@@ -1,3 +1,4 @@
+using Melogold.Core.Data;
 using Melogold.Core.Music;
 using Melogold.Playback;
 
@@ -8,7 +9,7 @@ namespace Melogold.App.Services;
 /// туда, куда выберет пользователь (по умолчанию «Музыка»). Байты — из загрузок или кэша, а если трека нет целиком
 /// нигде — из сети (заодно он ляжет в кэш). Звук не перекодируется: те же кадры AAC (<see cref="Mp4Writer"/>).
 /// </summary>
-public sealed class FileExport(TrackDownloads downloads, ImageCache images, Snackbar snackbar)
+public sealed class FileExport(TrackDownloads downloads, ImageCache images, Snackbar snackbar, Library library)
 {
     private const int MaxNameLength = 120;
 
@@ -29,7 +30,9 @@ public sealed class FileExport(TrackDownloads downloads, ImageCache images, Snac
         {
             var bytes = await downloads.ReadWholeAsync(track.VideoId);
             var cover = await CoverAsync(track);
-            var m4a = await Task.Run(() => Mp4Writer.FromFragmented(bytes, new Mp4Tags(track.Title, track.ArtistsText, track.AlbumTitle, cover)));
+            // Теги — со своими названием, исполнителем и альбомом (tasks/0011)
+            var shown = library.Display(track);
+            var m4a = await Task.Run(() => Mp4Writer.FromFragmented(bytes, new Mp4Tags(shown.Title, shown.ArtistsText, shown.AlbumTitle, cover)));
             await File.WriteAllBytesAsync(file.Path, m4a);
             Log.Info($"Saved {track.VideoId} as a file ({m4a.Length / 1024} KB)");
             snackbar.Show(Loc.Get("SaveFileDone"), Loc.Get("SaveFileOpen"), () => _ = Windows.System.Launcher.LaunchFileAsync(file));

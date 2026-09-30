@@ -18,7 +18,8 @@ public enum LibraryChange
     Blocks = 64,
     Lyrics = 128,
     Downloads = 256,
-    All = Likes | Playlists | Bookmarks | History | Tracks | Searches | Blocks | Lyrics | Downloads,
+    Overrides = 512,
+    All = Likes | Playlists | Bookmarks | History | Tracks | Searches | Blocks | Lyrics | Downloads | Overrides,
 }
 
 /// <summary>Свой плейлист (в Библиотеке): <see cref="SyncId"/> — UUID сервера, если плейлист синхронизирован.</summary>
@@ -96,6 +97,8 @@ public sealed class Library(LibraryDatabase db)
 
     public void Notify(LibraryChange change)
     {
+        // Правки могла записать синхронизация: перечитать при следующем показе
+        if (change.HasFlag(LibraryChange.Overrides)) _overrides = null;
         if (change != LibraryChange.None) Changed?.Invoke(change);
     }
 
@@ -193,6 +196,57 @@ public sealed class Library(LibraryDatabase db)
         while (r.Read()) list.Add(ReadTrack(r));
         return list;
     }
+
+    // ---------- Своё название, исполнитель и альбом (tasks/0011) ----------
+
+    private volatile Dictionary<string, TrackOverride>? _overrides;
+
+    /// <summary>Правки треков (без снятых), в памяти: показ трека спрашивает их на каждой строке.</summary>
+    public IReadOnlyDictionary<string, TrackOverride> Overrides() => _overrides ??= Database.Read(c =>
+    {
+        using var command = c.CreateCommand();
+        command.CommandText = "SELECT video_id, title, artists_text, album_title FROM track_overrides";
+        using var r = command.ExecuteReader();
+        var map = new Dictionary<string, TrackOverride>(StringComparer.Ordinal);
+        while (r.Read())
+        {
+            var value = new TrackOverride(r.IsDBNull(1) ? null : r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2), r.IsDBNull(3) ? null : r.GetString(3));
+            if (!value.IsEmpty) map[r.GetString(0)] = value;
+        }
+        return map;
+    });
+
+    public TrackOverride? Override(string videoId) => Overrides().GetValueOrDefault(videoId);
+
+    /// <summary>
+    /// Трек для показа — со своими названием, исполнителем и альбомом. В действия (♡, плейлисты, загрузки, синк) идёт
+    /// исходный трек: лайк с метаданными YouTube правку не сбрасывает.
+    /// </summary>
+    public Track Display(Track track) => Override(track.VideoId) is { } value ? value.Apply(track) : track;
+
+    /// <summary>Правка трека; пустая — снять («Как на YouTube»). Трек сохраняется, чтобы его было что показать.</summary>
+    public void SetOverride(Track track, TrackOverride value) => SetOverrides([(track, value)]);
+
+    /// <summary>Правки нескольких треков одной записью («Указать альбом…» у выделенного).</summary>
+    public void SetOverrides(IReadOnlyList<(Track Track, TrackOverride Value)> changes)
+    {
+        if (changes.Count == 0) return;
+        var now = IsoTime.NowMs();
+        Database.Write((c, t) =>
+        {
+            foreach (var (track, value) in changes)
+            {
+                UpsertTrack(c, t, track);
+                WriteOverride(c, t, track.VideoId, value, now);
+            }
+        });
+        Notify(LibraryChange.Overrides);
+    }
+
+    internal static void WriteOverride(SqliteConnection c, SqliteTransaction t, string videoId, TrackOverride value, long updatedAt) =>
+        LibraryDatabase.Exec(c, t,
+            "INSERT OR REPLACE INTO track_overrides (video_id, title, artists_text, album_title, updated_at) VALUES ($id, $t, $a, $al, $at)",
+            ("$id", videoId), ("$t", value.Title), ("$a", value.ArtistsText), ("$al", value.AlbumTitle), ("$at", updatedAt));
 
     // ---------- Избранное ----------
 
@@ -649,7 +703,8 @@ public sealed class Library(LibraryDatabase db)
             $"""
              SELECT {TrackColumns} FROM tracks
              WHERE (liked_at IS NOT NULL OR total_play_ms > 0 OR video_id IN (SELECT video_id FROM playlist_items))
-               AND (title LIKE $q OR artists_text LIKE $q)
+               AND (title LIKE $q OR artists_text LIKE $q
+                    OR video_id IN (SELECT video_id FROM track_overrides WHERE title LIKE $q OR artists_text LIKE $q OR album_title LIKE $q))
              ORDER BY liked_at IS NULL, total_play_ms DESC LIMIT $limit
              """, ("$q", pattern), ("$limit", limit)));
     }

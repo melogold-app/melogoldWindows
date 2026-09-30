@@ -112,7 +112,8 @@ public sealed class LyricsService
             try
             {
                 var duration = (long)_engine.Duration.TotalMilliseconds;
-                result = await Task.Run(() => _fetcher.FetchAsync(track, duration > 0 ? duration : track.DurationMs ?? 0, stored, ct), ct);
+                var custom = _library.Override(track.VideoId);
+                result = await Task.Run(() => _fetcher.FetchAsync(track, duration > 0 ? duration : track.DurationMs ?? 0, stored, ct, custom), ct);
             }
             catch (OperationCanceledException)
             {

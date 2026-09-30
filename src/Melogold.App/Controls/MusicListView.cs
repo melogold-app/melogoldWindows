@@ -90,6 +90,9 @@ public sealed partial class MusicListView : ListView
 
     private static TrackActions Actions => App.Services.GetRequiredService<TrackActions>();
 
+    /// <summary>Название своего плейлиста в этом списке: «Указать альбом…» предлагает его, если общего альбома нет.</summary>
+    public string? ListName { get; set; }
+
     /// <summary>Выделенные треки в порядке списка (заголовки секций и коллекции не в счёт).</summary>
     public List<Track> SelectedTracks()
     {
@@ -230,7 +233,7 @@ public sealed partial class MusicListView : ListView
         // Щелчок по выделенному, когда выделено несколько, — действия со всем выделенным
         if (SelectedItems.Count > 1 && SelectedItems.Contains(row) && SelectedTracks() is { Count: > 1 } tracks)
         {
-            var menu = Actions.BuildSelectionMenu(tracks, XamlRoot);
+            var menu = Actions.BuildSelectionMenu(tracks, XamlRoot, ListName);
             if (args.TryGetPosition(element, out var at)) menu.ShowAt(element, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions { Position = at });
             else menu.ShowAt(element);
             args.Handled = true;
@@ -260,6 +263,11 @@ public sealed partial class MusicListView : ListView
 
     private void OnLibraryChanged(LibraryChange change)
     {
+        if (change.HasFlag(LibraryChange.Overrides))
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                foreach (var row in Rows) row.RefreshText();
+            });
         if (!change.HasFlag(LibraryChange.Likes)) return;
         DispatcherQueue.TryEnqueue(() =>
         {

@@ -70,7 +70,7 @@
                 <TextBlock
                     Style="{StaticResource BodyTextBlockStyle}"
                     Foreground="{x:Bind local:MusicRow.TitleBrush(Item.IsCurrent, Item.Unavailable), Mode=OneWay}"
-                    Text="{x:Bind Item.Title}"
+                    Text="{x:Bind Item.Title, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
                     TextWrapping="NoWrap"
                     MaxLines="1" />
@@ -78,7 +78,7 @@
             <TextBlock
                 Style="{StaticResource CaptionTextBlockStyle}"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Text="{x:Bind Item.Subtitle}"
+                Text="{x:Bind Item.Subtitle, Mode=OneWay}"
                 TextTrimming="CharacterEllipsis"
                 TextWrapping="NoWrap"
                 MaxLines="1" />

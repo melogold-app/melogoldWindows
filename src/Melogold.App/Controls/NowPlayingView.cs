@@ -236,7 +236,8 @@ public sealed partial class NowPlayingView : Grid
 
     private void ShowTrack()
     {
-        if (_engine.Current is not { } track) return;
+        if (_engine.Current is not { } original) return;
+        var track = App.Services.GetRequiredService<Library>().Display(original);
         _title.Text = track.Title;
         _artist.Text = track.ArtistsText ?? "";
         var artwork = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 720);
@@ -497,8 +498,9 @@ public sealed partial class NowPlayingView : Grid
 
     private async Task FindAsync()
     {
-        if (_lyrics.Track is not { } track) return;
-        // Запрос — очищенные исполнитель и название, как ищет цепочка текстов
+        if (_lyrics.Track is not { } original) return;
+        // Запрос — очищенные исполнитель и название, как ищет цепочка текстов; свои названия — первыми (tasks/0011)
+        var track = App.Services.GetRequiredService<Library>().Display(original);
         var clean = TitleCleaner.Clean(track.Title, track.ArtistsText, track.AlbumId is not null || track.AlbumTitle is not null ? "song" : null);
         await LyricsSearchDialog.ShowAsync(XamlRoot, _lyrics, $"{clean.Artist ?? track.ArtistsText} {clean.Title}".Trim());
     }

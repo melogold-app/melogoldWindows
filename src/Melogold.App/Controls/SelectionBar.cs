@@ -40,6 +40,7 @@ public sealed partial class SelectionBar : Grid
         Add("SelectionAddToPlaylist", "", () => Actions.AddAllToPlaylist(_tracks));
         Add("SelectionNewPlaylist", "", () => _ = Actions.NewPlaylistAsync(_tracks, XamlRoot));
         Add("SelectionDownload", "", () => Actions.DownloadAll(_tracks));
+        Add("SelectionSetAlbum", "", () => _ = Actions.SetAlbumAsync(_tracks, XamlRoot, _owner?.ListName));
         _bar.PrimaryCommands.Add(new AppBarSeparator());
         Add("SelectionSelectAll", "", () => _owner?.SelectAllTracks(), "Ctrl+A");
         Add("SelectionClear", "", () => _owner?.ClearSelection(), "Esc");

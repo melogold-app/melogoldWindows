@@ -9,7 +9,7 @@ namespace Melogold.Core.Data;
 /// </summary>
 public sealed class LibraryDatabase
 {
-    public const int SchemaVersion = 6;
+    public const int SchemaVersion = 7;
 
     private readonly string _connectionString;
     private readonly Lock _writeLock = new();
@@ -155,6 +155,19 @@ public sealed class LibraryDatabase
             using var transaction = connection.BeginTransaction();
             Exec(connection, transaction, "ALTER TABLE lyrics ADD COLUMN chosen INTEGER NOT NULL DEFAULT 0;");
             Exec(connection, transaction, "PRAGMA user_version = 6;");
+            transaction.Commit();
+            version = 6;
+        }
+        if (version < 7)
+        {
+            // v7: своё название, исполнитель и альбом трека (tasks/0011). Снятая правка остаётся строкой без полей со своим
+            // временем: так при встрече с правкой другого устройства побеждает более поздняя. synced_overrides — снимок сервера
+            using var transaction = connection.BeginTransaction();
+            Exec(connection, transaction, """
+                CREATE TABLE track_overrides (video_id TEXT PRIMARY KEY, title TEXT, artists_text TEXT, album_title TEXT, updated_at INTEGER NOT NULL);
+                CREATE TABLE synced_overrides (video_id TEXT PRIMARY KEY, title TEXT, artists_text TEXT, album_title TEXT);
+                """);
+            Exec(connection, transaction, "PRAGMA user_version = 7;");
             transaction.Commit();
         }
     }

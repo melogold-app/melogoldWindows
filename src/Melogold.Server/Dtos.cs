@@ -164,6 +164,9 @@ public sealed record PlayStatRow(string VideoId, long TotalPlayTimeMs, string? L
 
 public sealed record PlayForgetRow(string VideoId, string EventsBefore, string? TotalBefore);
 
+/// <summary>Своё название, исполнитель и альбом трека (API §4.8 <c>track.override.set</c>); <c>deleted</c> — правка снята.</summary>
+public sealed record TrackOverrideRow(string VideoId, string? Title, string? ArtistsText, string? AlbumTitle, string UpdatedAt, bool Deleted);
+
 public sealed record SyncResponse(
     IReadOnlyList<OpResult> Results,
     string Cursor,
@@ -176,7 +179,8 @@ public sealed record SyncResponse(
     IReadOnlyList<BookmarkRow> Bookmarks,
     IReadOnlyList<PlayRow> Plays,
     IReadOnlyList<PlayStatRow> PlayStats,
-    IReadOnlyList<PlayForgetRow> PlayForgets);
+    IReadOnlyList<PlayForgetRow> PlayForgets,
+    IReadOnlyList<TrackOverrideRow>? Overrides = null);
 
 // ---------- Тексты песен (API §4.10, docs/LYRICS-SYNC.md) ----------
 

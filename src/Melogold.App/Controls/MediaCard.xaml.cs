@@ -32,7 +32,8 @@ public sealed class CardVm
                 Subtitle = playlist.Subtitle ?? Loc.Get("TypePlaylist");
                 ImageUrl = Thumbnails.Sized(playlist.ThumbnailUrl, 320);
                 break;
-            case Track track:
+            case Track original:
+                var track = ViewModels.RowVm.Display?.Invoke(original) ?? original;
                 Title = track.Title;
                 Subtitle = track.ArtistsText ?? "";
                 ImageUrl = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 320);

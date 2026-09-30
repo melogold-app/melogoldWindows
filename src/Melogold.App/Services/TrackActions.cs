@@ -85,13 +85,13 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
     public void PlayNext(Track track)
     {
         engine.PlayNext([track]);
-        snackbar.Show(Loc.Format("PlayingNextFormat", track.Title));
+        snackbar.Show(Loc.Format("PlayingNextFormat", library.Display(track).Title));
     }
 
     public void AddToQueue(Track track)
     {
         engine.AddToEnd([track]);
-        snackbar.Show(Loc.Format("AddedToQueueFormat", track.Title));
+        snackbar.Show(Loc.Format("AddedToQueueFormat", library.Display(track).Title));
     }
 
     public void ToggleLike(Track track) => library.SetLiked(track, !library.IsLiked(track.VideoId));
@@ -224,6 +224,8 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
         }
         // У трека без ссылок (из истории, из файла) исполнитель находится при нажатии — так же, как по имени в панели плеера
         else if (anchor is not null && !string.IsNullOrWhiteSpace(track.ArtistsText)) Add(artistKey, "", () => OpenArtist(track, anchor));
+        if ((anchor?.XamlRoot ?? App.Current?.Window?.Content?.XamlRoot) is { } detailsRoot)
+            Add("MenuEditDetails", "\uE70F", () => _ = EditDetailsAsync(track, detailsRoot));
         Add("MenuOtherVersions", "", () => OtherVersions(track));
         Add("MenuCopyLink", "", () => CopyLink(track));
         Add("MenuShare", "", () => Share.Track(track));
@@ -314,12 +316,34 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
     /// </summary>
     public async Task NewPlaylistAsync(IReadOnlyList<Track> tracks, XamlRoot root)
     {
-        var albums = tracks.Select(t => t.AlbumTitle).Where(a => !string.IsNullOrWhiteSpace(a)).Distinct().ToList();
-        var name = await PlaylistDialogs.AskNameAsync(root, Loc.Get("NewPlaylist"), albums.Count == 1 ? albums[0]! : "");
+        var name = await PlaylistDialogs.AskNameAsync(root, Loc.Get("NewPlaylist"), CommonAlbum(tracks) ?? "");
         if (name is null) return;
         var id = library.CreatePlaylist(name, tracks);
         snackbar.Show(Loc.Format("PlaylistCreatedFormat", name, Loc.Plural("Tracks", tracks.Count)), Loc.Get("OpenAction"),
             () => navigator.Open(typeof(LocalPlaylistPage), id.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+    }
+
+    /// <summary>Общий альбом выделенного (со своими правками), если у всех, у кого он есть, он один.</summary>
+    private string? CommonAlbum(IReadOnlyList<Track> tracks) =>
+        tracks.Select(t => library.Display(t).AlbumTitle).Where(a => !string.IsNullOrWhiteSpace(a)).Distinct().ToList() is [var single] ? single : null;
+
+    /// <summary>«Изменить сведения…»: своё название, исполнитель и альбом (tasks/0011).</summary>
+    public async Task EditDetailsAsync(Track track, XamlRoot root)
+    {
+        if (await Controls.TrackDetailsDialog.ShowAsync(root, track, library.Override(track.VideoId)) is not { } value) return;
+        library.SetOverride(track, value);
+    }
+
+    /// <summary>
+    /// «Указать альбом…» у выделенного: альбом ставится всем, их названия и исполнители не меняются. По умолчанию — общий
+    /// альбом выделенного, иначе название плейлиста, из которого выделяли.
+    /// </summary>
+    public async Task SetAlbumAsync(IReadOnlyList<Track> tracks, XamlRoot root, string? listName)
+    {
+        if (tracks.Count == 0 || await Controls.TrackDetailsDialog.AskAlbumAsync(root, CommonAlbum(tracks) ?? listName ?? "") is not { } album) return;
+        var value = TrackOverride.Of(null, null, album);
+        library.SetOverrides(tracks.Select(t => (t, (library.Override(t.VideoId) ?? TrackOverride.None) with { AlbumTitle = value.AlbumTitle })).ToList());
+        snackbar.Show(Loc.Format("SelectionAlbumSetFormat", value.AlbumTitle));
     }
 
     /// <summary>«Скачать» выделенное: что уже скачано или скачивается и трансляции — пропускаются.</summary>
@@ -331,7 +355,7 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
     }
 
     /// <summary>Правый щелчок по выделенному (два трека и больше): те же действия, что на панели выделения.</summary>
-    public MenuFlyout BuildSelectionMenu(IReadOnlyList<Track> tracks, XamlRoot root)
+    public MenuFlyout BuildSelectionMenu(IReadOnlyList<Track> tracks, XamlRoot root, string? listName = null)
     {
         var menu = new MenuFlyout();
         void Add(string key, string glyph, Action action)
@@ -347,6 +371,8 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
         Add("SelectionAddToPlaylist", "\uE710", () => AddAllToPlaylist(tracks));
         Add("SelectionNewPlaylist", "\uE8F4", () => _ = NewPlaylistAsync(tracks, root));
         Add("SelectionDownload", "\uE896", () => DownloadAll(tracks));
+        menu.Items.Add(new MenuFlyoutSeparator());
+        Add("SelectionSetAlbum", "\uE93C", () => _ = SetAlbumAsync(tracks, root, listName));
         return menu;
     }
 

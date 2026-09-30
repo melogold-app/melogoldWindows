@@ -45,6 +45,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         library.Changed += change =>
         {
             if (change.HasFlag(LibraryChange.Likes)) DispatcherQueue.GetForCurrentThread()?.TryEnqueue(RefreshLike);
+            if (change.HasFlag(LibraryChange.Overrides)) DispatcherQueue.GetForCurrentThread()?.TryEnqueue(Refresh);
         };
         _settings.PropertyChanged += (_, e) =>
         {
@@ -167,8 +168,9 @@ public sealed partial class PlayerViewModel : ObservableObject
     {
         var track = Engine.Current;
         HasTrack = track is not null;
-        Title = track?.Title ?? "";
-        Subtitle = track?.Subtitle ?? "";
+        var shown = track is null ? null : _library.Display(track);
+        Title = shown?.Title ?? "";
+        Subtitle = shown?.Subtitle ?? "";
         ArtworkUrl = track is null ? null : Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 112);
         IsPlaying = Engine.IsPlaying;
         var resolving = Engine.Status is PlayerStatus.Resolving or PlayerStatus.Buffering && Engine.IsPlaying;

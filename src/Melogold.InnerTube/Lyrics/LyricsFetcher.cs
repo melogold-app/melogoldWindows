@@ -33,7 +33,11 @@ public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou
     /// </summary>
     public Func<string, CancellationToken, Task<(LyricsPayload Payload, bool Mine)?>>? Community { get; set; }
 
-    public async Task<LyricsFetchResult> FetchAsync(Track track, long durationMs, StoredLyrics? current, CancellationToken ct = default)
+    /// <param name="custom">
+    /// своё название и исполнитель (tasks/0011): LrcLib и KuGou спрашиваются сначала по ним — у загрузок фанатов по
+    /// оригиналу «Artist — Song (live, fan upload)» текста не находится
+    /// </param>
+    public async Task<LyricsFetchResult> FetchAsync(Track track, long durationMs, StoredLyrics? current, CancellationToken ct = default, TrackOverride? custom = null)
     {
         var rawArtist = track.ArtistsText ?? "";
         var rawTitle = track.Title;
@@ -42,6 +46,12 @@ public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou
         var artist = clean.Artist ?? rawArtist;
         var title = clean.Title.Trim().Length > 0 ? clean.Title : rawTitle;
         var anyFailure = false;
+        // Варианты запроса: свои названия, очищенные, как у трека
+        List<(string Artist, string Title)> names = [];
+        if (custom is { IsEmpty: false }) names.Add((custom.ArtistsText ?? artist, custom.Title ?? title));
+        names.Add((artist, title));
+        names.Add((rawArtist, rawTitle));
+        names = names.Distinct().ToList();
 
         async Task<T?> Try<T>(Func<Task<T?>> call) where T : class
         {
@@ -55,6 +65,14 @@ public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou
                 if (e is HttpRequestException or TaskCanceledException or YouTubeException { Kind: YouTubeErrorKind.Offline }) anyFailure = true;
                 return null;
             }
+        }
+
+        // LrcLib: первый вариант запроса, по которому нашёлся текст
+        async Task<string?> LrcLibFirst(bool synced)
+        {
+            foreach (var (a, t) in names)
+                if (await Try(() => lrcLib.BestLyricsAsync(a, t, durationMs, synced, ct)).ConfigureAwait(false) is { } found) return found;
+            return null;
         }
 
         // Вкладка «Текст» страницы трека; нет её — у YouTube Music текста нет
@@ -77,7 +95,7 @@ public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou
                 plain = ytm;
                 plainSource = LyricsSources.YouTubeMusic;
             }
-            else if (await Try(() => lrcLib.BestLyricsAsync(artist, title, durationMs, false, ct)).ConfigureAwait(false) is { } lrc)
+            else if (await LrcLibFirst(false).ConfigureAwait(false) is { } lrc)
             {
                 plain = lrc;
                 plainSource = LyricsSources.LrcLib;
@@ -87,10 +105,7 @@ public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou
         async Task<string?> YouTubeMusicTimed() =>
             await LyricsBrowseId().ConfigureAwait(false) is { } id ? await Try(() => music.TimedLyricsAsync(id, ct)).ConfigureAwait(false) : null;
 
-        async Task<string?> LrcLibSynced() =>
-            await Try(() => lrcLib.BestLyricsAsync(artist, title, durationMs, true, ct)).ConfigureAwait(false)
-            // Название как у трека, если очистка его изменила
-            ?? (artist != rawArtist || title != rawTitle ? await Try(() => lrcLib.BestLyricsAsync(rawArtist, rawTitle, durationMs, true, ct)).ConfigureAwait(false) : null);
+        async Task<string?> LrcLibSynced() => await LrcLibFirst(true).ConfigureAwait(false);
 
         var syncedSource = current?.SyncedSource;
         var synced = current?.Synced;
@@ -101,7 +116,7 @@ public sealed class LyricsFetcher(YouTubeMusic music, LrcLib lrcLib, KuGou kuGou
                     : await LrcLibSynced().ConfigureAwait(false) is { } b ? (b, LyricsSources.LrcLib) : (null, "")
                 : await LrcLibSynced().ConfigureAwait(false) is { } c ? (c, LyricsSources.LrcLib)
                     : await YouTubeMusicTimed().ConfigureAwait(false) is { } d ? (d, LyricsSources.YouTubeMusic) : (null, "");
-            if (found.Text is null && await Try(() => kuGou.LyricsAsync(artist, title, durationMs / 1000, ct)).ConfigureAwait(false) is { } kugou)
+            if (found.Text is null && await Try(() => kuGou.LyricsAsync(names[0].Artist, names[0].Title, durationMs / 1000, ct)).ConfigureAwait(false) is { } kugou)
                 found = (kugou, LyricsSources.KuGou);
             if (found.Text is not null)
             {

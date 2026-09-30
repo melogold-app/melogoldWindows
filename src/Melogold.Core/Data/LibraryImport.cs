@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Melogold.Core.Domain;
+using Melogold.Core.Music;
 using Microsoft.Data.Sqlite;
 
 namespace Melogold.Core.Data;
@@ -178,13 +179,17 @@ public static partial class LibraryImport
 
     private sealed record Album(string Id, string? Title, string? ThumbnailUrl, string? Year, string? AuthorsText, long? BookmarkedAt);
 
+    /// <summary>Своё название, исполнитель и альбом трека (tasks/0011, backup-format §2 <c>TrackOverride</c>).</summary>
+    private sealed record Override(string SongId, TrackOverride Value, long UpdatedAt);
+
     private sealed record Artist(string Id, string? Name, string? ThumbnailUrl, long? BookmarkedAt);
 
     private sealed record Playlist(string Name, string? BrowseId, string? Thumbnail, string? SyncId, List<string> SongIds);
 
     private sealed record Bundle(
         List<Song> Songs, int LocalSkipped, List<Event> Events, List<Lyrics> Lyrics, List<Album> Albums, List<Artist> Artists,
-        List<(string SongId, string AlbumId)> SongAlbums, List<(string SongId, string ArtistId)> SongArtists, List<Playlist> Playlists, List<string> Searches);
+        List<(string SongId, string AlbumId)> SongAlbums, List<(string SongId, string ArtistId)> SongArtists, List<Playlist> Playlists, List<string> Searches,
+        List<Override> Overrides);
 
     /// <summary>Таблицы копии по колонкам, которые у неё есть; недостающие читаются как NULL.</summary>
     private sealed class Reader(SqliteConnection db)
@@ -269,7 +274,14 @@ public static partial class LibraryImport
                     : null, "rowid");
 
             var searches = Select("SearchQuery", ["query"], row => row.String("query"), "rowid DESC").Take(SearchQueries).ToList();
-            return new Bundle(songs, localSkipped, events, lyrics, albums, artists, songAlbums, songArtists, playlists, searches);
+
+            // Правки: только id видео; поля — как у сервера, все пустые — строка пропускается
+            var overrides = Select("TrackOverride", ["videoId", "title", "artistsText", "albumTitle", "updatedAt"], row =>
+                row.String("videoId") is { } id && VideoId().IsMatch(id)
+                    && TrackOverride.Of(row.String("title"), row.String("artistsText"), row.String("albumTitle")) is { IsEmpty: false } value
+                    ? new Override(id, value, row.Long("updatedAt") ?? 0)
+                    : null);
+            return new Bundle(songs, localSkipped, events, lyrics, albums, artists, songAlbums, songArtists, playlists, searches, overrides);
         }
 
         private sealed class Row(SqliteDataReader r, string[] names)
@@ -450,6 +462,14 @@ public static partial class LibraryImport
             if (takePlain) Exec(c, t, "UPDATE lyrics SET plain = $p, plain_source = $ps WHERE video_id = $v", ("$p", lyrics.Fixed), ("$ps", lyrics.FixedSource), ("$v", lyrics.SongId));
             if (takeSynced) Exec(c, t, "UPDATE lyrics SET synced = $s, source = $ss, offset_ms = $o WHERE video_id = $v", ("$s", lyrics.Synced), ("$ss", lyrics.SyncedSource), ("$o", offset), ("$v", lyrics.SongId));
             if (visible.Contains(lyrics.SongId)) lyricsAdded++;
+        }
+
+        // Правки названий: есть здесь — побеждает более поздняя
+        foreach (var imported in bundle.Overrides)
+        {
+            var local = Query(c, t, "SELECT updated_at FROM track_overrides WHERE video_id = $v", r => r.GetInt64(0), ("$v", imported.SongId));
+            if (local.Count > 0 && local[0] >= imported.UpdatedAt) continue;
+            Library.WriteOverride(c, t, imported.SongId, imported.Value, imported.UpdatedAt);
         }
 
         // Плейлисты: тот же (id сервера), иначе с той же ссылкой YouTube или единственный с тем же именем — недостающие

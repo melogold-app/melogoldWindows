@@ -729,7 +729,8 @@ public sealed partial class MainWindow : Window
             await Task.Delay(250, cts.Token);
             var library = App.Services.GetRequiredService<Library>();
             var local = await Task.Run(() => library.SearchLibrary(text, 3), cts.Token);
-            items.AddRange(local.Select(t => new SuggestionVm("", t.Title, $"{Loc.Get("InLibrary")} · {t.ArtistsText}", t)));
+            items.AddRange(local.Select(t => (Track: t, Shown: library.Display(t)))
+                .Select(p => new SuggestionVm("", p.Shown.Title, $"{Loc.Get("InLibrary")} · {p.Shown.ArtistsText}", p.Track)));
             sender.ItemsSource = items.ToList();
             var remote = await App.Services.GetRequiredService<YouTubeMusic>().SuggestionsAsync(text, cts.Token);
             if (cts.IsCancellationRequested) return;

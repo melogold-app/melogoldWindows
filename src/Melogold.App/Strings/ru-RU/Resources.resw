@@ -658,4 +658,14 @@
   <data name="NothingToDownload" xml:space="preserve"><value>Выделенное уже скачано</value></data>
   <data name="ShortcutSelectAll" xml:space="preserve"><value>Выделить все треки; несколько — Ctrl+щелчок и Shift+щелчок</value></data>
   <data name="ShortcutClearSelection" xml:space="preserve"><value>Снять выделение</value></data>
+  <data name="MenuEditDetails" xml:space="preserve"><value>Изменить сведения…</value></data>
+  <data name="TrackDetailsTitle" xml:space="preserve"><value>Сведения о треке</value></data>
+  <data name="TrackDetailsName" xml:space="preserve"><value>Название</value></data>
+  <data name="TrackDetailsArtist" xml:space="preserve"><value>Исполнитель</value></data>
+  <data name="TrackDetailsAlbum" xml:space="preserve"><value>Альбом</value></data>
+  <data name="TrackDetailsSave" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="TrackDetailsReset" xml:space="preserve"><value>Как на YouTube</value></data>
+  <data name="SelectionSetAlbum" xml:space="preserve"><value>Указать альбом…</value></data>
+  <data name="SelectionSetAlbumTitle" xml:space="preserve"><value>Указать альбом</value></data>
+  <data name="SelectionAlbumSetFormat" xml:space="preserve"><value>Альбом указан: {0}</value></data>
 </root>

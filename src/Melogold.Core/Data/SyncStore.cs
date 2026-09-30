@@ -90,6 +90,7 @@ public sealed class SyncTx
     public void ForgetBinding()
     {
         Exec("DELETE FROM synced_likes");
+        Exec("DELETE FROM synced_overrides");
         Exec("DELETE FROM synced_playlists");
         Exec("DELETE FROM synced_bookmarks");
         Exec("UPDATE playlists SET sync_id = NULL");
@@ -308,6 +309,33 @@ public sealed class SyncTx
         Exec("INSERT OR REPLACE INTO synced_lyrics (video_id, rev, hash) VALUES ($v, $r, $h)", ("$v", videoId), ("$r", rev), ("$h", hash));
 
     public void ForgetSyncedLyrics(string videoId) => Exec("DELETE FROM synced_lyrics WHERE video_id = $v", ("$v", videoId));
+
+    /// <summary>Правки треков здесь, со снятыми (все поля пустые) и временем правки.</summary>
+    public Dictionary<string, (TrackOverride Value, long UpdatedAt)> TrackOverrides() => Query(
+        "SELECT video_id, title, artists_text, album_title, updated_at FROM track_overrides",
+        r => (Id: r.GetString(0), Value: new TrackOverride(Str(r, 1), Str(r, 2), Str(r, 3)), At: r.GetInt64(4)))
+        .ToDictionary(p => p.Id, p => (p.Value, p.At), StringComparer.Ordinal);
+
+    /// <summary>Снимок правок на сервере.</summary>
+    public Dictionary<string, TrackOverride> SyncedOverrides() => Query(
+        "SELECT video_id, title, artists_text, album_title FROM synced_overrides",
+        r => (Id: r.GetString(0), Value: new TrackOverride(Str(r, 1), Str(r, 2), Str(r, 3))))
+        .ToDictionary(p => p.Id, p => p.Value, StringComparer.Ordinal);
+
+    /// <summary>
+    /// Правка с сервера (строка <c>overrides</c>): снимок — как на сервере; здесь — тоже, если здесь не правили позже
+    /// (правка, сделанная во время синхронизации, уйдёт следующей).
+    /// </summary>
+    public void ApplyOverride(string videoId, TrackOverride value, long updatedAt)
+    {
+        if (value.IsEmpty) Exec("DELETE FROM synced_overrides WHERE video_id = $id", ("$id", videoId));
+        else Exec("INSERT OR REPLACE INTO synced_overrides (video_id, title, artists_text, album_title) VALUES ($id, $t, $a, $al)",
+            ("$id", videoId), ("$t", value.Title), ("$a", value.ArtistsText), ("$al", value.AlbumTitle));
+        if (Scalar("SELECT updated_at FROM track_overrides WHERE video_id = $id", ("$id", videoId)) is long local && local > updatedAt) return;
+        if (value.IsEmpty) Exec("DELETE FROM track_overrides WHERE video_id = $id", ("$id", videoId));
+        else Library.WriteOverride(_c, _t, videoId, value, updatedAt);
+        Changes |= LibraryChange.Overrides;
+    }
 
     /// <summary>Лайк с сервера: время лайка — серверное, снятый лайк — снятие.</summary>
     public void SetLike(string videoId, long? likedAt)

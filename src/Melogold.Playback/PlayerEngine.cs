@@ -520,8 +520,10 @@ public sealed class PlayerEngine : IDisposable
 
     // ---------- SMTC ----------
 
-    private static void ApplyDisplayProperties(MediaPlaybackItem item, Track track)
+    private void ApplyDisplayProperties(MediaPlaybackItem item, Track original)
     {
+        // Свои название, исполнитель и альбом (tasks/0011) — и в медиапанели Windows
+        var track = _library.Display(original);
         var props = item.GetDisplayProperties();
         props.Type = MediaPlaybackType.Music;
         props.MusicProperties.Title = track.Title;
@@ -532,8 +534,9 @@ public sealed class PlayerEngine : IDisposable
         item.ApplyDisplayProperties(props);
     }
 
-    private void UpdateSmtcPlaceholder(Track track)
+    private void UpdateSmtcPlaceholder(Track original)
     {
+        var track = _library.Display(original);
         var smtc = _player.SystemMediaTransportControls;
         smtc.DisplayUpdater.Type = MediaPlaybackType.Music;
         smtc.DisplayUpdater.MusicProperties.Title = track.Title;

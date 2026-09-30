@@ -143,7 +143,7 @@ public sealed class LibrarySync : IDisposable
     /// <summary>Правка Избранного, плейлистов или закладок уходит через 2 с.</summary>
     private void OnLibraryChanged(LibraryChange change)
     {
-        if ((change & (LibraryChange.Likes | LibraryChange.Playlists | LibraryChange.Bookmarks | LibraryChange.Lyrics | LibraryChange.History)) == 0) return;
+        if ((change & (LibraryChange.Likes | LibraryChange.Playlists | LibraryChange.Bookmarks | LibraryChange.Lyrics | LibraryChange.History | LibraryChange.Overrides)) == 0) return;
         if (_account.State is not AccountState.SignedIn) return;
         CancellationTokenSource debounce;
         lock (_lock)
@@ -331,6 +331,25 @@ public sealed class LibrarySync : IDisposable
             }));
         }
 
+        // Своё название, исполнитель и альбом (tasks/0011): правка целиком, пустая — снятие. Только если сервер знает этот
+        // вид op; иначе правки ждут здесь
+        if (Supports("track.override.set"))
+        {
+            var syncedOverrides = tx.SyncedOverrides();
+            foreach (var (videoId, (value, at)) in tx.TrackOverrides())
+            {
+                var known = syncedOverrides.GetValueOrDefault(videoId);
+                if (value.IsEmpty ? known is null : value == known) continue;
+                ops.Add(MakeOp("track.override.set", "ovr:" + videoId, at, o =>
+                {
+                    o["videoId"] = videoId;
+                    if (value.Title is not null) o["title"] = value.Title;
+                    if (value.ArtistsText is not null) o["artistsText"] = value.ArtistsText;
+                    if (value.AlbumTitle is not null) o["albumTitle"] = value.AlbumTitle;
+                }));
+            }
+        }
+
         // Плейлисты
         var synced = tx.SyncedPlaylists();
         var playlists = tx.Playlists();
@@ -462,6 +481,9 @@ public sealed class LibrarySync : IDisposable
         }
         return ops;
     }
+
+    /// <summary>Сервер принимает этот вид op (<c>features.sync.kinds</c>): новые виды не шлются старому серверу.</summary>
+    private bool Supports(string kind) => _account.ServerInfo?.Features?.Sync?.Kinds.Contains(kind) == true;
 
     /// <summary><c>limits.history.mergeUploadMax</c> из <c>/server/info</c>.</summary>
     private int MergeUploadMax()
@@ -654,6 +676,12 @@ public sealed class LibrarySync : IDisposable
             if (row.Type is not ("album" or "artist")) continue;
             tx.SetBookmark(row.Type, row.BrowseId, row.Bookmarked ? IsoTime.TryParse(row.BookmarkedAt) ?? IsoTime.NowMs() : null,
                 row.Title, row.Subtitle, row.ThumbnailUrl, row.Year);
+        }
+
+        foreach (var row in response.Overrides ?? [])
+        {
+            var value = row.Deleted ? TrackOverride.None : TrackOverride.Of(row.Title, row.ArtistsText, row.AlbumTitle);
+            tx.ApplyOverride(row.VideoId, value, IsoTime.TryParse(row.UpdatedAt) ?? IsoTime.NowMs());
         }
 
         ApplyHistoryRows(tx, response);

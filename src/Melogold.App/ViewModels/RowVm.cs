@@ -46,6 +46,9 @@ public sealed partial class RowVm : ObservableObject
     /// <summary>Есть ли сеть (задаётся при запуске приложения).</summary>
     public static Func<bool>? IsOnline { get; set; }
 
+    /// <summary>Трек для показа — со своими названием, исполнителем и альбомом (tasks/0011; задаётся при запуске).</summary>
+    public static Func<Track, Track>? Display { get; set; }
+
     /// <summary>Загрузка трека (задаётся при запуске приложения).</summary>
     public static Func<string, Melogold.Playback.DownloadState?>? DownloadOf { get; set; }
 
@@ -86,11 +89,8 @@ public sealed partial class RowVm : ObservableObject
         switch (item)
         {
             case Track track:
-                Title = track.Title;
-                Subtitle = owner.Detail is { } detail
-                    ? Join(track.ArtistsText, detail(track))
-                    : Join(showType ? Loc.Get(track.IsVideo ? "TypeVideo" : "TypeSong") : null, track.ArtistsText,
-                        track.IsVideo ? track.ViewsText : track.AlbumTitle);
+                _showType = showType;
+                ShowText(track);
                 ArtworkUrl = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 120);
                 Duration = track.VideoType == "live" ? Loc.Get("Live") : track.DurationText;
                 // Скачан или целиком в кэше — играет без сети; без сети остальные приглушены (tasks/0003 §4)
@@ -132,9 +132,30 @@ public sealed partial class RowVm : ObservableObject
 
     public bool IsTrack => Item is Track;
 
-    public string Title { get; } = "";
+    [ObservableProperty]
+    public partial string Title { get; set; } = "";
 
-    public string Subtitle { get; } = "";
+    [ObservableProperty]
+    public partial string Subtitle { get; set; } = "";
+
+    private readonly bool _showType;
+
+    /// <summary>Название и подпись трека — со своими правками; в <see cref="Item"/> остаётся трек как на YouTube.</summary>
+    private void ShowText(Track original)
+    {
+        var track = Display?.Invoke(original) ?? original;
+        Title = track.Title;
+        Subtitle = Owner.Detail is { } detail
+            ? Join(track.ArtistsText, detail(track))
+            : Join(_showType ? Loc.Get(track.IsVideo ? "TypeVideo" : "TypeSong") : null, track.ArtistsText,
+                track.IsVideo ? track.ViewsText : track.AlbumTitle);
+    }
+
+    /// <summary>Правки названий изменились — подпись строки заново.</summary>
+    public void RefreshText()
+    {
+        if (Item is Track track) ShowText(track);
+    }
 
     public string? ArtworkUrl { get; }
 

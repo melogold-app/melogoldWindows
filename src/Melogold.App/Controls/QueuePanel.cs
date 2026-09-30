@@ -296,16 +296,17 @@ public sealed partial class QueueRow : Grid
         }
         Children.Add(artwork);
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        var shown = ViewModels.RowVm.Display?.Invoke(track) ?? track;
         text.Children.Add(new TextBlock
         {
-            Text = track.Title,
+            Text = shown.Title,
             TextTrimming = TextTrimming.CharacterEllipsis,
             FontWeight = entry.IsCurrent ? FontWeights.SemiBold : FontWeights.Normal,
             Foreground = (Brush)Application.Current.Resources[entry.IsCurrent ? "AccentTextFillColorPrimaryBrush" : "TextFillColorPrimaryBrush"],
         });
         text.Children.Add(new TextBlock
         {
-            Text = track.ArtistsText ?? "",
+            Text = shown.ArtistsText ?? "",
             TextTrimming = TextTrimming.CharacterEllipsis,
             Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
             Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
@@ -330,7 +331,7 @@ public sealed partial class QueueRow : Grid
             SetColumn(remove, 2);
             Children.Add(remove);
         }
-        AutomationProperties.SetName(this, string.Join(", ", new[] { track.Title, track.ArtistsText }.Where(s => !string.IsNullOrEmpty(s))));
+        AutomationProperties.SetName(this, string.Join(", ", new[] { shown.Title, shown.ArtistsText }.Where(s => !string.IsNullOrEmpty(s))));
     }
 
     private void ShowRemove(bool show)

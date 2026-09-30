@@ -407,4 +407,52 @@ public class LiveSyncTests(ITestOutputHelper output)
             output.WriteLine($"Аккаунты {login} и {other} удалены");
         }
     }
+    /// <summary>
+    /// tasks/0011: своё название, исполнитель и альбом с одного устройства — на другом; лайк с метаданными YouTube правку не
+    /// сбрасывает; «Как на YouTube» снимает её везде. Аккаунт удаляется в конце.
+    /// </summary>
+    [Fact]
+    public async Task OverridesReachOtherDevices()
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var track = new Track
+        {
+            VideoId = "e2e" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4)),
+            Title = "Artist — Song (live 2014, fan upload)",
+            ArtistsText = "Some Channel",
+            VideoType = "ugc",
+        };
+
+        using var a = new Device("E2E Windows A", server, output);
+        using var b = new Device("E2E Windows B", server, output);
+        try
+        {
+            await a.Account.RegisterAsync(login, password);
+            a.Sync.Start();
+            await b.Account.SignInAsync(login, password);
+            b.Sync.Start();
+            await WaitFor("оба устройства синхронизировались", () =>
+                a.Sync.Status is SyncStatus.Idle { LastSyncAt: not null } && b.Sync.Status is SyncStatus.Idle { LastSyncAt: not null });
+
+            a.Library.SetOverride(track, TrackOverride.Of("Песня", "Исполнитель", "Альбом"));
+            await WaitFor("B получил правку A", () => b.Library.Override(track.VideoId) is { Title: "Песня", ArtistsText: "Исполнитель", AlbumTitle: "Альбом" });
+
+            // Лайк на B несёт метаданные YouTube — правка на A остаётся
+            b.Library.SetLiked(track, true);
+            await WaitFor("A получил лайк B", () => a.Library.IsLiked(track.VideoId));
+            Assert.Equal("Альбом", a.Library.Override(track.VideoId)?.AlbumTitle);
+
+            // «Как на YouTube» на B снимает правку и на A
+            b.Library.SetOverride(track, TrackOverride.None);
+            await WaitFor("A снял правку", () => a.Library.Override(track.VideoId) is null);
+        }
+        finally
+        {
+            if (a.Account.Session is not null) await a.Account.DeleteAccountAsync(password);
+            output.WriteLine($"Аккаунт {login} удалён");
+        }
+    }
 }

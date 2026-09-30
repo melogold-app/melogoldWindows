@@ -46,6 +46,7 @@ public partial class App : Application
         var songs = Services.GetRequiredService<SongCache>();
         var downloads = Services.GetRequiredService<TrackDownloads>();
         ViewModels.RowVm.IsCached = songs.IsComplete;
+        ViewModels.RowVm.Display = Services.GetRequiredService<Library>().Display;
         ViewModels.RowVm.DownloadOf = downloads.State;
         // Прерванные загрузки продолжаются
         downloads.Resume();

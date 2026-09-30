@@ -15,7 +15,7 @@ public static class Share
     private static (string Title, Uri Link)? _pending;
 
     public static void Track(Track track) =>
-        Link(track.Title, new Uri(track.IsVideo ? $"https://www.youtube.com/watch?v={track.VideoId}" : $"https://music.youtube.com/watch?v={track.VideoId}"));
+        Link((ViewModels.RowVm.Display?.Invoke(track) ?? track).Title, new Uri(track.IsVideo ? $"https://www.youtube.com/watch?v={track.VideoId}" : $"https://music.youtube.com/watch?v={track.VideoId}"));
 
     public static void Link(string title, Uri link)
     {

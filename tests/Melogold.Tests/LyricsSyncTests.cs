@@ -214,6 +214,8 @@ public class LyricsSyncTests
                     DROP TABLE synced_lyrics;
                     DROP TABLE history_ops;
                     DROP TABLE downloads;
+                    DROP TABLE track_overrides;
+                    DROP TABLE synced_overrides;
                     ALTER TABLE play_events DROP COLUMN device_id;
                     ALTER TABLE lyrics DROP COLUMN language;
                     ALTER TABLE lyrics DROP COLUMN chosen;

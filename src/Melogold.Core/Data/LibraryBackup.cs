@@ -32,6 +32,7 @@ public static class LibraryBackup
         CREATE TABLE Playlist (id INTEGER PRIMARY KEY, name TEXT NOT NULL, browseId TEXT, thumbnail TEXT, syncId TEXT);
         CREATE TABLE SongPlaylistMap (songId TEXT NOT NULL, playlistId INTEGER NOT NULL, position INTEGER NOT NULL, PRIMARY KEY (songId, playlistId));
         CREATE TABLE SearchQuery (id INTEGER PRIMARY KEY, query TEXT NOT NULL);
+        CREATE TABLE TrackOverride (videoId TEXT PRIMARY KEY, title TEXT, artistsText TEXT, albumTitle TEXT, updatedAt INTEGER);
         CREATE TABLE MelogoldBackup (key TEXT PRIMARY KEY, value TEXT);
         """;
 
@@ -90,6 +91,13 @@ public static class LibraryBackup
                         SELECT video_id, playlist_id, position FROM src.playlist_items;
                         INSERT INTO SearchQuery (query) SELECT query FROM src.search_history ORDER BY searched_at;
                         """);
+                    // Свои названия треков (tasks/0011); снятые правки не переносятся. У копий до v7 таблицы нет
+                    if (HasTable(copy, transaction, "track_overrides"))
+                        Exec(copy, transaction, """
+                            INSERT INTO TrackOverride (videoId, title, artistsText, albumTitle, updatedAt)
+                            SELECT video_id, title, artists_text, album_title, updated_at FROM src.track_overrides
+                            WHERE title IS NOT NULL OR artists_text IS NOT NULL OR album_title IS NOT NULL;
+                            """);
                     foreach (var (key, value) in new[] { ("format", "1"), ("platform", "windows"), ("appVersion", appVersion), ("createdAt", IsoTime.Format(IsoTime.NowMs())) })
                         Exec(copy, transaction, "INSERT INTO MelogoldBackup (key, value) VALUES ($k, $v)", ("$k", key), ("$v", value));
                     transaction.Commit();
@@ -112,6 +120,15 @@ public static class LibraryBackup
     private static string OffsetColumn(SqliteConnection c, SqliteTransaction t) => HasColumn(c, t, "lyrics", "offset_ms") ? "offset_ms" : "NULL";
 
     private static string PlainSourceColumn(SqliteConnection c, SqliteTransaction t) => HasColumn(c, t, "lyrics", "plain_source") ? "plain_source" : "NULL";
+
+    private static bool HasTable(SqliteConnection c, SqliteTransaction t, string table)
+    {
+        using var command = c.CreateCommand();
+        command.Transaction = t;
+        command.CommandText = "SELECT COUNT(*) FROM src.sqlite_master WHERE type = 'table' AND name = $n";
+        command.Parameters.AddWithValue("$n", table);
+        return Convert.ToInt64(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture) > 0;
+    }
 
     private static bool HasColumn(SqliteConnection c, SqliteTransaction t, string table, string column)
     {

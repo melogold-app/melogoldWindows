@@ -169,7 +169,13 @@ public sealed class PlayerEngine : IDisposable
     /// <summary>Трек пропущен из-за ошибки: для снекбара «Пропущен „…“: причина».</summary>
     public event Action<PlayerError>? Skipped;
 
-    private void Post(Action action) => _ui.Post(_ => action(), null);
+    private bool _disposed;
+
+    // События MediaPlayer, пришедшие после закрытия плеера, не выполняются: у закрытого MediaPlayer любой вызов — COMException
+    private void Post(Action action) => _ui.Post(_ =>
+    {
+        if (!Volatile.Read(ref _disposed)) action();
+    }, null);
 
     private void SetStatus(PlayerStatus status)
     {
@@ -808,6 +814,7 @@ public sealed class PlayerEngine : IDisposable
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, true)) return;
         FinishListening();
         _sleepTimer?.Dispose();
         _load?.Cancel();

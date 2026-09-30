@@ -25,12 +25,14 @@ public sealed class AacStreamSource : IDisposable
     private Loaded? _current;
 
     /// <summary>Фрагмент: все байты (или начало и задача на остаток) и его кадры.</summary>
-    private sealed class Loaded(byte[] data, List<Mp4Sample> samples, int ready, Task? rest)
+    private sealed class Loaded(byte[] data, List<Mp4Sample> samples, int ready)
     {
         public byte[] Data { get; } = data;
         public List<Mp4Sample> Samples { get; } = samples;
         public int Ready { get; set; } = ready;
-        public Task? Rest { get; } = rest;
+
+        /// <summary>Догрузка остатка фрагмента; null — фрагмент целиком.</summary>
+        public Task? Rest { get; set; }
 
         public bool Has(Mp4Sample sample) => sample.Offset + sample.Size <= Ready;
     }
@@ -129,7 +131,7 @@ public sealed class AacStreamSource : IDisposable
             if (inHead == fragment.Size)
             {
                 var whole = _head.AsSpan((int)fragment.Offset, fragment.Size).ToArray();
-                return new Loaded(whole, FragmentedMp4.ParseFragment(whole, Index.Track), whole.Length, null);
+                return new Loaded(whole, FragmentedMp4.ParseFragment(whole, Index.Track), whole.Length);
             }
             if (inHead > 0)
             {
@@ -139,19 +141,19 @@ public sealed class AacStreamSource : IDisposable
                 var samples = FragmentedMp4.ParseFragment(data, inHead, Index.Track);
                 if (samples.Count > 0)
                 {
-                    Loaded? loaded = null;
-                    var rest = Task.Run(async () =>
+                    // Сначала объект, потом догрузка: остаток из кэша приходит сразу, и задача не должна его опередить
+                    var loaded = new Loaded(data, samples, inHead);
+                    loaded.Rest = Task.Run(async () =>
                     {
                         var tail = await _reader.ReadAsync(fragment.Offset + inHead, fragment.Size - inHead, _life.Token).ConfigureAwait(false);
                         tail.CopyTo(data, inHead);
-                        loaded!.Ready = inHead + tail.Length;
+                        loaded.Ready = inHead + tail.Length;
                     });
-                    loaded = new Loaded(data, samples, inHead, rest);
                     return loaded;
                 }
             }
             var bytes = await _reader.ReadAsync(fragment.Offset, fragment.Size, _life.Token).ConfigureAwait(false);
-            return new Loaded(bytes, FragmentedMp4.ParseFragment(bytes, Index.Track), bytes.Length, null);
+            return new Loaded(bytes, FragmentedMp4.ParseFragment(bytes, Index.Track), bytes.Length);
         }
         catch (Exception e) when (e is Mp4FormatException or ArgumentOutOfRangeException or IndexOutOfRangeException)
         {

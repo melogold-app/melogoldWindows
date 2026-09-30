@@ -53,4 +53,30 @@ public class LiveCoverTests(ITestOutputHelper output)
             }
         }
     }
+
+    /// <summary>
+    /// Большая обложка «Сейчас играет» (720 px): скачать и обработать — доли секунды; на обработку (разбор, поиск полей и
+    /// обводки) уходит мало, основное время — сеть.
+    /// </summary>
+    [Fact]
+    public async Task BigCoverIsProcessedQuickly()
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
+        var music = new YouTubeMusic(new InnerTubeClient());
+        var page = await music.SearchAsync("Saba Photosynthesis", MusicSearchFilter.Songs, TestContext.Current.CancellationToken);
+        var song = page.Items.OfType<Track>().First();
+        using var http = new HttpClient();
+        var url = Thumbnails.Sized(song.ThumbnailUrl, 720)!;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var bytes = await http.GetByteArrayAsync(url, TestContext.Current.CancellationToken);
+        var download = watch.ElapsedMilliseconds;
+        watch.Restart();
+        var (pixels, width, height) = await DecodeAsync(bytes);
+        var decode = watch.ElapsedMilliseconds;
+        watch.Restart();
+        var content = FrameBars.Content(pixels, width, height, bars: false);
+        var bars = watch.ElapsedMilliseconds;
+        output.WriteLine($"{song.Title}: {width}×{height}, скачать {download} мс, разобрать {decode} мс, поля и обводка {bars} мс → {content?.ToString() ?? "как есть"}");
+        Assert.True(decode + bars < 1000, $"{decode + bars} мс");
+    }
 }

@@ -91,6 +91,10 @@ public sealed class PlayerEngine : IDisposable
         _library = library;
         _settings = settings;
         _ui = SynchronizationContext.Current ?? new SynchronizationContext();
+        library.Changed += change =>
+        {
+            if (change.HasFlag(LibraryChange.Overrides)) Post(RefreshDisplay);
+        };
         // googlevideo — по HTTP/2: куски и соседние фрагменты идут по одному соединению, без новых TLS-рукопожатий
         _http = new HttpClient(new SocketsHttpHandler
         {
@@ -546,7 +550,13 @@ public sealed class PlayerEngine : IDisposable
 
     // ---------- SMTC ----------
 
-    private void ApplyDisplayProperties(MediaPlaybackItem item, Track original)
+    /// <summary>Свои название, исполнитель и альбом изменились (tasks/0011): медиапанель Windows — сразу.</summary>
+    private void RefreshDisplay()
+    {
+        if (Current is { } track && _player.Source is MediaPlaybackItem item) ApplyDisplayProperties(item, track, artwork: false);
+    }
+
+    private void ApplyDisplayProperties(MediaPlaybackItem item, Track original, bool artwork = true)
     {
         // Свои название, исполнитель и альбом (tasks/0011) — и в медиапанели Windows
         var track = _library.Display(original);
@@ -555,7 +565,7 @@ public sealed class PlayerEngine : IDisposable
         props.MusicProperties.Title = track.Title;
         props.MusicProperties.Artist = track.ArtistsText ?? "";
         props.MusicProperties.AlbumTitle = track.AlbumTitle ?? "";
-        if (Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 544) is { } art)
+        if (artwork && Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 544) is { } art)
         {
             props.Thumbnail = RandomAccessStreamReference.CreateFromUri(new Uri(art));
             if (SystemArtwork is { } square) _ = ApplySquareArtworkAsync(item, art, square);

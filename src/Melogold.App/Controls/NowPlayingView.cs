@@ -35,6 +35,12 @@ public sealed partial class NowPlayingView : Grid
     private readonly Grid _lyricsPanel = new();
     private readonly Border _artwork = new() { CornerRadius = new CornerRadius(8), HorizontalAlignment = HorizontalAlignment.Center };
     private readonly Image _artworkImage = new() { Stretch = Stretch.UniformToFill, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+
+    /// <summary>
+    /// Маленькая обложка из панели плеера — под большой, пока та скачивается: она уже в кэше, и «Сейчас играет» не
+    /// открывается с пустым местом (после обновления и у новых треков большая обложка приходит не сразу).
+    /// </summary>
+    private readonly Image _artworkPlaceholder = new() { Stretch = Stretch.UniformToFill, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock _title = new() { FontSize = 28, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, MaxLines = 2, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock _artist = new() { FontSize = 18, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly SelectorBar _mode = new() { HorizontalAlignment = HorizontalAlignment.Center };
@@ -82,7 +88,7 @@ public sealed partial class NowPlayingView : Grid
         // Обложка, название, исполнитель
         _artPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _artPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        _artwork.Child = _artworkImage;
+        _artwork.Child = new Grid { Children = { _artworkPlaceholder, _artworkImage } };
         _artPanel.Children.Add(_artwork);
         // Название ведёт к альбому, исполнитель — к исполнителю, как в панели плеера
         var names = new StackPanel { Spacing = 4 };
@@ -133,6 +139,14 @@ public sealed partial class NowPlayingView : Grid
         _artPanel.SizeChanged += (_, _) => DispatcherQueue.TryEnqueue(AnchorLyrics);
         _synced.SizeChanged += (_, _) => DispatcherQueue.TryEnqueue(AnchorLyrics);
         _engine.TrackChanged += OnTrackChanged;
+        // Своё название, исполнитель или альбом (tasks/0011) — сразу и здесь, не после закрытия и открытия
+        App.Services.GetRequiredService<Library>().Changed += change =>
+        {
+            if (change.HasFlag(LibraryChange.Overrides)) DispatcherQueue.TryEnqueue(() =>
+            {
+                if (IsOpen) ShowNames();
+            });
+        };
         _lyrics.Changed += ShowLyrics;
         ActualThemeChanged += (_, _) => _ = LoadPaletteAsync(force: true);
     }
@@ -242,22 +256,35 @@ public sealed partial class NowPlayingView : Grid
         ShowTrack();
     });
 
-    private void ShowTrack()
+    /// <summary>Название и исполнитель — со своими правками (tasks/0011).</summary>
+    private void ShowNames()
     {
         if (_engine.Current is not { } original) return;
         var track = App.Services.GetRequiredService<Library>().Display(original);
         _title.Text = track.Title;
         _artist.Text = track.ArtistsText ?? "";
-        var artwork = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 720);
+        AutomationProperties.SetName(this, $"{Loc.Get("NowPlaying")}: {track.Title}");
+    }
+
+    private void ShowTrack()
+    {
+        if (_engine.Current is not { } original) return;
+        var track = App.Services.GetRequiredService<Library>().Display(original);
+        ShowNames();
+        var url = track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId);
+        // Пока большая обложка не открылась — маленькая, та же, что в панели плеера
+        _artworkPlaceholder.Source = Images.Player(Thumbnails.Sized(url, 112));
+        var artwork = Thumbnails.Sized(url, 720);
         var image = Images.From(artwork);
         _artworkImage.Source = image;
         if (image is Microsoft.UI.Xaml.Media.Imaging.BitmapImage bitmap)
             bitmap.ImageOpened += (_, _) =>
             {
-                if (_artworkImage.Source == bitmap && bitmap.PixelHeight > 0) SetWide(bitmap.PixelWidth > bitmap.PixelHeight * 1.2);
+                if (_artworkImage.Source != bitmap || bitmap.PixelHeight <= 0) return;
+                _artworkPlaceholder.Source = null;
+                SetWide(bitmap.PixelWidth > bitmap.PixelHeight * 1.2);
             };
         else SetWide(false);
-        AutomationProperties.SetName(this, $"{Loc.Get("NowPlaying")}: {track.Title}");
         _ = LoadPaletteAsync(force: false);
     }
 

@@ -111,6 +111,11 @@ public sealed partial class QueuePanel : Grid
 
         _engine.QueueChanged += QueueRebuild;
         _engine.TrackChanged += QueueRebuild;
+        // Своё название трека (tasks/0011) — и в очереди
+        App.Services.GetRequiredService<Library>().Changed += change =>
+        {
+            if (change.HasFlag(LibraryChange.Overrides)) DispatcherQueue.TryEnqueue(QueueRebuild);
+        };
     }
 
     public bool IsOpen => Visibility == Visibility.Visible;

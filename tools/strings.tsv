@@ -125,6 +125,9 @@ ResultsChannels	Каналы	Channels
 ResultsLive	Трансляции	Live
 ResultsTopResult	Лучший результат	Top result
 ResultsMore	Ещё	More
+DescriptionSource	Источник:	Source:
+DescriptionWikipedia	Википедия	Wikipedia
+DescriptionLicense	Лицензия:	License:
 ResultsNothing	Ничего не нашлось. Проверьте написание или посмотрите на YouTube	Nothing found. Check the spelling or look on YouTube
 ResultsNothingInCatalog	В каталоге YouTube Music ничего не нашлось — вот что есть на YouTube	Nothing in the YouTube Music catalog — here's what's on YouTube
 ResultsSearchYouTube	Искать на YouTube	Search YouTube
@@ -142,7 +145,7 @@ SeeAll	Все	See all
 PlayAll	Слушать	Play
 Shuffle	Перемешать	Shuffle
 SaveToLibrary	Сохранить	Save
-InLibraryCheck	✓ В библиотеке	✓ In library
+InLibraryCheck	В библиотеке	In library
 SaveAsPlaylist	Сохранить	Save
 SavedToLibraryFormat	Сохранено в Библиотеку: „{0}“	Saved to Library: “{0}”
 Subscribe	Подписаться	Subscribe

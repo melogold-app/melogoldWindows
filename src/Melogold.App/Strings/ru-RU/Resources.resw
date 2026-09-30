@@ -122,6 +122,9 @@
   <data name="ResultsLive" xml:space="preserve"><value>Трансляции</value></data>
   <data name="ResultsTopResult" xml:space="preserve"><value>Лучший результат</value></data>
   <data name="ResultsMore" xml:space="preserve"><value>Ещё</value></data>
+  <data name="DescriptionSource" xml:space="preserve"><value>Источник:</value></data>
+  <data name="DescriptionWikipedia" xml:space="preserve"><value>Википедия</value></data>
+  <data name="DescriptionLicense" xml:space="preserve"><value>Лицензия:</value></data>
   <data name="ResultsNothing" xml:space="preserve"><value>Ничего не нашлось. Проверьте написание или посмотрите на YouTube</value></data>
   <data name="ResultsNothingInCatalog" xml:space="preserve"><value>В каталоге YouTube Music ничего не нашлось — вот что есть на YouTube</value></data>
   <data name="ResultsSearchYouTube" xml:space="preserve"><value>Искать на YouTube</value></data>
@@ -138,7 +141,7 @@
   <data name="PlayAll" xml:space="preserve"><value>Слушать</value></data>
   <data name="Shuffle" xml:space="preserve"><value>Перемешать</value></data>
   <data name="SaveToLibrary" xml:space="preserve"><value>Сохранить</value></data>
-  <data name="InLibraryCheck" xml:space="preserve"><value>✓ В библиотеке</value></data>
+  <data name="InLibraryCheck" xml:space="preserve"><value>В библиотеке</value></data>
   <data name="SaveAsPlaylist" xml:space="preserve"><value>Сохранить</value></data>
   <data name="SavedToLibraryFormat" xml:space="preserve"><value>Сохранено в Библиотеку: „{0}“</value></data>
   <data name="Subscribe" xml:space="preserve"><value>Подписаться</value></data>

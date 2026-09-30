@@ -1,4 +1,5 @@
 using Melogold.App.Services;
+using Melogold.Core.Domain;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -9,7 +10,8 @@ namespace Melogold.App.Controls;
 
 /// <summary>
 /// Шапка детального экрана (§5.4): обложка около 200 px (у исполнителя — круг), название, подзаголовок и кнопки
-/// «Слушать · Перемешать · Сохранить · …». Описание — три строки, «Ещё» раскрывает целиком. Уже 560 — обложка 160
+/// «Слушать · Перемешать · Сохранить · …». Описание — три строки, «Ещё» открывает его целиком отдельным окном
+/// (<see cref="DescriptionDialog"/>): название, год, обложка, текст и ссылка на Википедию. Уже 560 — обложка 160
 /// сверху, текст и кнопки под ней во всю ширину. Без картинки («Все треки», пустой плейлист) — нота, а не пустой квадрат.
 /// </summary>
 public sealed partial class CollectionHeader : Grid
@@ -25,6 +27,10 @@ public sealed partial class CollectionHeader : Grid
     private readonly TextBlock _description = new() { TextWrapping = TextWrapping.WrapWholeWords, MaxLines = 3, TextTrimming = TextTrimming.WordEllipsis, Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"], Visibility = Visibility.Collapsed };
     private readonly HyperlinkButton _more = new() { Padding = new Thickness(0), Visibility = Visibility.Collapsed };
     private readonly StackPanel _buttons = new() { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 12, 0, 0) };
+    private string? _imageUrl;
+    private bool _round;
+    private string _body = "";
+    private DescriptionSource? _source;
 
     public CollectionHeader()
     {
@@ -49,10 +55,10 @@ public sealed partial class CollectionHeader : Grid
         };
         Children.Add(_artwork);
         _more.Content = Loc.Get("ResultsMore");
-        _more.Click += (_, _) =>
+        _more.Click += async (_, _) =>
         {
-            _description.MaxLines = 0;
-            _more.Visibility = Visibility.Collapsed;
+            if (XamlRoot is { } root)
+                await DescriptionDialog.ShowAsync(root, _title.Text, _subtitle.Text, _details.Text, _imageUrl, _round, _body, _source);
         };
         _text.Children.Add(_title);
         _text.Children.Add(_subtitle);
@@ -87,11 +93,19 @@ public sealed partial class CollectionHeader : Grid
         _artwork.CornerRadius = round ? new CornerRadius(100) : new CornerRadius(8);
         _image.Source = Images.From(imageUrl, 400);
         _placeholder.Visibility = string.IsNullOrEmpty(imageUrl) ? Visibility.Visible : Visibility.Collapsed;
-        if (!string.IsNullOrWhiteSpace(description))
+        (_imageUrl, _round) = (imageUrl, round);
+        // Строка «From Wikipedia (…) under …» из текста — ссылкой в окне описания, а не мелким шрифтом под ним
+        (_body, _source) = DescriptionText.Split(description);
+        if (_body.Length > 0 || _source is not null)
         {
-            _description.Text = description.Trim();
-            _description.Visibility = Visibility.Visible;
-            _more.Visibility = description.Length > 240 ? Visibility.Visible : Visibility.Collapsed;
+            _description.Text = _body;
+            _description.Visibility = _body.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+            _more.Visibility = _body.Length > 240 || _source is not null ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            _description.Visibility = Visibility.Collapsed;
+            _more.Visibility = Visibility.Collapsed;
         }
     }
 

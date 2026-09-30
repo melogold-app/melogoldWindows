@@ -122,6 +122,9 @@
   <data name="ResultsLive" xml:space="preserve"><value>Live</value></data>
   <data name="ResultsTopResult" xml:space="preserve"><value>Top result</value></data>
   <data name="ResultsMore" xml:space="preserve"><value>More</value></data>
+  <data name="DescriptionSource" xml:space="preserve"><value>Source:</value></data>
+  <data name="DescriptionWikipedia" xml:space="preserve"><value>Wikipedia</value></data>
+  <data name="DescriptionLicense" xml:space="preserve"><value>License:</value></data>
   <data name="ResultsNothing" xml:space="preserve"><value>Nothing found. Check the spelling or look on YouTube</value></data>
   <data name="ResultsNothingInCatalog" xml:space="preserve"><value>Nothing in the YouTube Music catalog — here's what's on YouTube</value></data>
   <data name="ResultsSearchYouTube" xml:space="preserve"><value>Search YouTube</value></data>
@@ -138,7 +141,7 @@
   <data name="PlayAll" xml:space="preserve"><value>Play</value></data>
   <data name="Shuffle" xml:space="preserve"><value>Shuffle</value></data>
   <data name="SaveToLibrary" xml:space="preserve"><value>Save</value></data>
-  <data name="InLibraryCheck" xml:space="preserve"><value>✓ In library</value></data>
+  <data name="InLibraryCheck" xml:space="preserve"><value>In library</value></data>
   <data name="SaveAsPlaylist" xml:space="preserve"><value>Save</value></data>
   <data name="SavedToLibraryFormat" xml:space="preserve"><value>Saved to Library: “{0}”</value></data>
   <data name="Subscribe" xml:space="preserve"><value>Subscribe</value></data>

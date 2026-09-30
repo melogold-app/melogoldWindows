@@ -278,6 +278,40 @@ public sealed class AccountService : IDisposable
         }
     }
 
+    // ---------- Ссылки на свои плейлисты (API §4.11, tasks/0016) ----------
+
+    /// <summary>Сервер аккаунта делает снимки (<c>features.share</c>); без входа или без ответа сервера — нет.</summary>
+    public async Task<bool> SharesAvailableAsync(CancellationToken ct = default)
+    {
+        if (_session is null) return false;
+        try
+        {
+            var info = ServerInfo ?? await CheckAsync(ServerUrl, ct).ConfigureAwait(false);
+            return info.Features?.Share is not null;
+        }
+        catch (ApiException)
+        {
+            return false;
+        }
+    }
+
+    public Task<ShareCreated> CreateShareAsync(string name, IReadOnlyList<TrackInput> tracks, CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.CreateShareAsync(token, new CreateShareRequest("playlist", name, tracks), ct), ct);
+
+    public Task<ShareList> SharesAsync(CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.SharesAsync(token, ct), ct);
+
+    public Task DeleteShareAsync(string shareId, CancellationToken ct = default) =>
+        AuthorizedAsync((api, token) => api.DeleteShareAsync(token, shareId, ct), ct);
+
+    /// <summary>Снимок по ссылке без входа — у сервера ссылки, который может быть и чужим.</summary>
+    public async Task<ShareDto> OpenShareAsync(Melogold.Core.Domain.ShareRef share, CancellationToken ct = default)
+    {
+        if (share.ServerUrl == ServerUrl) return await Api().ShareAsync(share.ShareId, ct).ConfigureAwait(false);
+        using var api = new MelogoldApi(share.ServerUrl, _identity.ClientVersion);
+        return await api.ShareAsync(share.ShareId, ct).ConfigureAwait(false);
+    }
+
     public Task<DeviceListResponse> DevicesAsync(CancellationToken ct = default) =>
         AuthorizedAsync((api, token) => api.DevicesAsync(token, ct), ct);
 

@@ -573,4 +573,61 @@ public class LiveSyncTests(ITestOutputHelper output)
 
         await laptop.Account.DeleteAccountAsync(password);
     }
+
+    /// <summary>
+    /// tasks/0016 против ЛОКАЛЬНОГО сервера: поделиться своим плейлистом → ссылка открывается без входа на другом
+    /// устройстве → «Мои ссылки» → удалить → «Ссылка удалена или неверна» (404). Без входа — первые 50 на YouTube.
+    /// </summary>
+    [Fact]
+    public async Task SharedPlaylistOpensWithoutSignIn()
+    {
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_LOCAL_SERVER");
+        Assert.SkipUnless(server is not null, "MELOGOLD_LOCAL_SERVER");
+        var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
+        using var laptop = new Device("MacBook Air", server, output);
+        using var friend = new Device("Pixel 8", server, output);
+        var tracks = new List<Track>
+        {
+            new() { VideoId = "dQw4w9WgXcQ", Title = "Never Gonna Give You Up", ArtistsText = "Rick Astley", AlbumTitle = "Своё название альбома" },
+            new() { VideoId = "fJ9rUzIMcZQ", Title = "Bohemian Rhapsody", ArtistsText = "Queen" },
+        };
+
+        // Без входа — список YouTube
+        var offline = await new PlaylistSharing(laptop.Account).ShareAsync("Дорога", tracks);
+        Assert.Equal(new PlaylistShare.OnYouTube("https://www.youtube.com/watch_videos?video_ids=dQw4w9WgXcQ,fJ9rUzIMcZQ", 2, 2), offline);
+
+        await laptop.Account.RegisterAsync(login, password);
+        try
+        {
+            Assert.True(await laptop.Account.SharesAvailableAsync());
+            var shared = Assert.IsType<PlaylistShare.OnServer>(await new PlaylistSharing(laptop.Account).ShareAsync(" Дорога ", tracks));
+            var reference = ShareLinkParser.Parse(shared.Url);
+            Assert.NotNull(reference);
+            Assert.Equal(shared.ShareId, reference.ShareId);
+            output.WriteLine($"✓ ссылка {shared.Url}");
+
+            // Друг не входил: снимок по ссылке и через melogold://share
+            var snapshot = await friend.Account.OpenShareAsync(reference);
+            Assert.Equal("Дорога", snapshot.Name);
+            Assert.Equal(["dQw4w9WgXcQ", "fJ9rUzIMcZQ"], snapshot.Tracks.Select(t => t.VideoId));
+            Assert.Equal("Своё название альбома", snapshot.Tracks[0].AlbumTitle);
+            var deep = ShareLinkParser.Parse(ShareLinks.MelogoldShare(reference.ServerUrl, reference.ShareId));
+            Assert.Equal(reference, deep);
+            Assert.Equal(snapshot.Tracks.Count, (await friend.Account.OpenShareAsync(deep!)).Tracks.Count);
+            output.WriteLine("✓ открыта без входа");
+
+            var mine = await laptop.Account.SharesAsync();
+            Assert.Equal(shared.ShareId, Assert.Single(mine.Shares).ShareId);
+            await laptop.Account.DeleteShareAsync(shared.ShareId);
+            Assert.Empty((await laptop.Account.SharesAsync()).Shares);
+            var gone = await Assert.ThrowsAsync<ApiException>(() => friend.Account.OpenShareAsync(reference));
+            Assert.Equal((404, "share_not_found"), (gone.Status, gone.Code));
+            output.WriteLine("✓ удалена — «Ссылка удалена или неверна»");
+        }
+        finally
+        {
+            if (laptop.Account.Session is not null) await laptop.Account.DeleteAccountAsync(password);
+        }
+    }
 }

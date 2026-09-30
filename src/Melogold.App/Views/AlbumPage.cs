@@ -2,6 +2,7 @@ using Melogold.App.Controls;
 using Melogold.App.Services;
 using Melogold.App.ViewModels;
 using Melogold.Core.Data;
+using Melogold.Core.Domain;
 using Melogold.Core.Music;
 using Melogold.InnerTube;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,7 +57,7 @@ public sealed partial class AlbumPage : CatalogPage
         _header.AddButton(Loc.Get("Shuffle"), "", () => actions.PlayShuffled(page.Tracks));
         _header.AddToggle(on => Loc.Get(on ? "InLibraryCheck" : "SaveToLibrary"), library.IsAlbumSaved(album.BrowseId), on => library.SetAlbumSaved(album, on));
         _header.AddMenu(App.Services.GetRequiredService<CollectionMenu>().Build(() => Task.FromResult(page.Tracks),
-            album.PlaylistId is { } playlist ? $"https://music.youtube.com/playlist?list={playlist}" : $"https://music.youtube.com/browse/{album.BrowseId}"));
+            new ShareTarget(album.Title, album.ArtistsText, ShareLinks.Album(album.BrowseId))));
         _header.Visibility = Visibility.Visible;
 
         _list.SetItems(page.Tracks, new RowOwner(new TrackContext.List()));

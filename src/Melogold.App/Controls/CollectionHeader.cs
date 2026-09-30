@@ -95,6 +95,9 @@ public sealed partial class CollectionHeader : Grid
         }
     }
 
+    /// <summary>Кнопки заново — после «Повторить».</summary>
+    public void ClearButtons() => _buttons.Children.Clear();
+
     public Button AddButton(string label, string glyph, Action action, bool accent = false)
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };

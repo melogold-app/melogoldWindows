@@ -106,7 +106,9 @@ public sealed record ServerFeatures(
     FeatureVersion? Export,
     FeatureVersion? AccountDeletion,
     FeatureVersion? RegistrationPow,
-    FeatureVersion? Lyrics = null);
+    FeatureVersion? Lyrics = null,
+    FeatureVersion? Share = null,
+    FeatureVersion? Remote = null);
 
 public sealed record ServerLinks(string? Source, string? Privacy, string? Contact);
 
@@ -125,6 +127,16 @@ public sealed record ServerInfo(
     JsonObject? Limits,
     ServerLinks? Links,
     string ServerTime);
+
+// ---------- Ссылки на свои плейлисты (API §4.11) ----------
+
+public sealed record CreateShareRequest(string Kind, string Name, IReadOnlyList<TrackInput> Tracks);
+
+public sealed record ShareCreated(string ShareId, string Url, string CreatedAt);
+
+public sealed record ShareDto(string ShareId, string Kind, string Name, string Url, IReadOnlyList<TrackDto> Tracks, string CreatedAt);
+
+public sealed record ShareList(IReadOnlyList<ShareDto> Shares);
 
 // ---------- Синхронизация (API §4.7–§4.8) ----------
 
@@ -269,6 +281,9 @@ public sealed record ErrorEnvelope
     public int? MaxLength { get; init; }
     public int? DeviceLimit { get; init; }
     public int? DeviceCount { get; init; }
+
+    /// <summary><c>409 share_limit_reached</c>: сколько ссылок держит сервер (API §4.11).</summary>
+    public int? MaxShares { get; init; }
 
     [JsonExtensionData]
     public Dictionary<string, System.Text.Json.JsonElement>? Extra { get; init; }

@@ -576,22 +576,7 @@ public sealed class LibrarySync : IDisposable
         var array = new JsonArray();
         foreach (var track in tracks)
         {
-            var input = new TrackInput
-            {
-                VideoId = track.VideoId,
-                // Заглушка (название = videoId) — без названия: сервер оставит своё
-                Title = track.Title == track.VideoId ? null : track.Title,
-                ArtistsText = track.ArtistsText,
-                Artists = track.Artists.Count > 0 ? track.Artists.Select(a => new ArtistRefDto(a.Id, a.Name)).ToList() : null,
-                AlbumId = track.AlbumId,
-                AlbumTitle = track.AlbumTitle,
-                DurationMs = track.DurationMs,
-                DurationText = track.DurationText,
-                ThumbnailUrl = track.ThumbnailUrl,
-                Explicit = track.Explicit ? true : null,
-                VideoType = track.VideoType,
-            };
-            array.Add(JsonSerializer.SerializeToNode(input, MelogoldApi.Json));
+            array.Add(JsonSerializer.SerializeToNode(TrackDtos.Input(track), MelogoldApi.Json));
         }
         if (array.Count > 0) o["tracks"] = array;
     }
@@ -740,21 +725,7 @@ public sealed class LibrarySync : IDisposable
         }
     }
 
-    /// <summary>Метаданные трека с сервера; у заглушки их нет.</summary>
-    private static Track? ToTrack(TrackDto dto) => dto.MetadataStub || string.IsNullOrWhiteSpace(dto.Title) ? null : new Track
-    {
-        VideoId = dto.VideoId,
-        Title = dto.Title,
-        ArtistsText = dto.ArtistsText,
-        Artists = dto.Artists?.Select(a => new ArtistRef(a.Id, a.Name)).ToList() ?? [],
-        AlbumId = dto.AlbumId,
-        AlbumTitle = dto.AlbumTitle,
-        DurationMs = dto.DurationMs,
-        DurationText = dto.DurationText,
-        ThumbnailUrl = dto.ThumbnailUrl,
-        Explicit = dto.Explicit,
-        VideoType = dto.VideoType,
-    };
+    private static Track? ToTrack(TrackDto dto) => TrackDtos.ToTrack(dto);
 
     /// <summary>Живые события (API §6): синхронизация на <c>sync.changed</c>, выход на <c>session.invalidated</c>.</summary>
     private async Task FollowLiveEventsAsync(CancellationToken ct)

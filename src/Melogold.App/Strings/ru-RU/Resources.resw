@@ -107,7 +107,7 @@
   <data name="MenuGoToArtist" xml:space="preserve"><value>Открыть исполнителя</value></data>
   <data name="MenuGoToChannel" xml:space="preserve"><value>Открыть канал</value></data>
   <data name="MenuOtherVersions" xml:space="preserve"><value>Другие версии</value></data>
-  <data name="MenuCopyLink" xml:space="preserve"><value>Копировать ссылку</value></data>
+  <data name="MenuCopyLink" xml:space="preserve"><value>Скопировать ссылку</value></data>
   <data name="MenuRemoveFromPlaylist" xml:space="preserve"><value>Убрать из плейлиста</value></data>
   <data name="MenuRemoveFromHistory" xml:space="preserve"><value>Убрать из истории</value></data>
   <data name="MenuRemoveFromQueue" xml:space="preserve"><value>Убрать из очереди</value></data>
@@ -142,7 +142,7 @@
   <data name="TypePlaylist" xml:space="preserve"><value>Плейлист</value></data>
   <data name="Live" xml:space="preserve"><value>В ЭФИРЕ</value></data>
   <data name="LinkUnsupported" xml:space="preserve"><value>Эту ссылку не открыть</value></data>
-  <data name="LinkImportLater" xml:space="preserve"><value>Импорт из других сервисов появится позже</value></data>
+  <data name="LinkImportLater" xml:space="preserve"><value>Импорт плейлистов из других сервисов появится позже</value></data>
   <data name="SeeAll" xml:space="preserve"><value>Все</value></data>
   <data name="PlayAll" xml:space="preserve"><value>Слушать</value></data>
   <data name="Shuffle" xml:space="preserve"><value>Перемешать</value></data>
@@ -764,4 +764,23 @@
   <data name="StatsDayPartMorning" xml:space="preserve"><value>Утро</value></data>
   <data name="StatsDayPartAfternoon" xml:space="preserve"><value>День</value></data>
   <data name="StatsDayPartEvening" xml:space="preserve"><value>Вечер</value></data>
+  <data name="ShareFirstFifty" xml:space="preserve"><value>Ссылка откроет первые 50 треков на YouTube</value></data>
+  <data name="ShareLimitFormat" xml:space="preserve"><value>Ссылок уже {0} — удалите старые в «Мои ссылки»</value></data>
+  <data name="ShareNoTracks" xml:space="preserve"><value>В плейлисте нет треков YouTube — делиться нечем</value></data>
+  <data name="SharedPlaylist" xml:space="preserve"><value>Плейлист по ссылке</value></data>
+  <data name="ShareSaveToLibrary" xml:space="preserve"><value>Сохранить в Библиотеку</value></data>
+  <data name="ShareSavedToLibrary" xml:space="preserve"><value>Сохранено в Библиотеку</value></data>
+  <data name="ShareGone" xml:space="preserve"><value>Ссылка удалена или неверна</value></data>
+  <data name="MyShares" xml:space="preserve"><value>Мои ссылки</value></data>
+  <data name="MySharesText" xml:space="preserve"><value>Ссылки на ваши плейлисты: по ним слушают и сохраняют себе</value></data>
+  <data name="MySharesEmpty" xml:space="preserve"><value>Ссылок пока нет</value></data>
+  <data name="MySharesEmptyHint" xml:space="preserve"><value>Откройте свой плейлист и выберите «Поделиться» в меню</value></data>
+  <data name="ShareDelete" xml:space="preserve"><value>Удалить ссылку</value></data>
+  <data name="ShareDeleteTitleFormat" xml:space="preserve"><value>Удалить ссылку на «{0}»?</value></data>
+  <data name="ShareDeleteText" xml:space="preserve"><value>Ссылка перестанет открываться у всех, кому вы её отправили. Сам плейлист останется.</value></data>
+  <data name="ShareDeleted" xml:space="preserve"><value>Ссылка удалена</value></data>
+  <data name="LinkKindShare" xml:space="preserve"><value>плейлист Melogold</value></data>
+  <data name="ServiceYandexMusic" xml:space="preserve"><value>Яндекс Музыка</value></data>
+  <data name="LinkLookingFormat" xml:space="preserve"><value>Ищем ссылку {0} на YouTube Music…</value></data>
+  <data name="ClipboardLink" xml:space="preserve"><value>Ссылка из буфера обмена</value></data>
 </root>

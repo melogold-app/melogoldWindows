@@ -19,7 +19,8 @@ using Windows.System;
 namespace Melogold.App;
 
 /// <summary>Подсказка поля поиска: недавний запрос, подсказка YouTube Music, трек из библиотеки или ссылка.</summary>
-public sealed record SuggestionVm(string Glyph, string Text, string? Detail = null, Track? Track = null, bool IsLink = false)
+/// <param name="Link">ссылка из буфера (tasks/0016): выбор открывает её, а не текст поля</param>
+public sealed record SuggestionVm(string Glyph, string Text, string? Detail = null, Track? Track = null, bool IsLink = false, string? Link = null)
 {
     public Visibility HasDetail => string.IsNullOrEmpty(Detail) ? Visibility.Collapsed : Visibility.Visible;
 }
@@ -684,17 +685,39 @@ public sealed partial class MainWindow : Window
 
     // ---------- Поиск (§5.4): до ввода — недавние запросы; при вводе — ссылка, «В библиотеке», подсказки ----------
 
-    private void OnSearchGotFocus(object sender, RoutedEventArgs e)
+    private async void OnSearchGotFocus(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(SearchBox.Text)) ShowRecentSearches();
+        if (!string.IsNullOrWhiteSpace(SearchBox.Text)) return;
+        ShowRecentSearches();
+        // Ссылка в буфере (tasks/0016) — первой подсказкой: скопировали в Telegram, открыли поиск, выбрали
+        if (await ClipboardLinkAsync() is { } link && string.IsNullOrWhiteSpace(SearchBox.Text)) ShowRecentSearches(link);
     }
 
-    private void ShowRecentSearches()
+    private void ShowRecentSearches(SuggestionVm? first = null)
     {
         // История поиска на паузе — недавние не показываются
         List<string> recent = _settings.PauseSearchHistory ? [] : App.Services.GetRequiredService<Library>().RecentSearches(8);
-        SearchBox.ItemsSource = recent.Select(q => new SuggestionVm("", q)).ToList();
-        SearchBox.IsSuggestionListOpen = recent.Count > 0;
+        var items = recent.Select(q => new SuggestionVm("", q)).ToList();
+        if (first is not null) items.Insert(0, first);
+        SearchBox.ItemsSource = items;
+        SearchBox.IsSuggestionListOpen = items.Count > 0;
+    }
+
+    /// <summary>Текст буфера, если это ссылка, которую приложение откроет; иначе null. Буфер никуда не уходит.</summary>
+    private static async Task<SuggestionVm?> ClipboardLinkAsync()
+    {
+        try
+        {
+            var content = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+            if (!content.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text)) return null;
+            var text = (await content.GetTextAsync()).Trim();
+            if (text.Length is 0 or > 2000) return null;
+            return LinkRouter.Describe(text) is { } what ? new SuggestionVm("\uE77F", Loc.Get("ClipboardLink"), what, IsLink: true, Link: text) : null;
+        }
+        catch (Exception e) when (e is System.Runtime.InteropServices.COMException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     private async void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
@@ -709,18 +732,9 @@ public sealed partial class MainWindow : Window
         }
         var cts = _suggestions = new CancellationTokenSource();
         var items = new List<SuggestionVm>();
-        var target = YouTubeLinkParser.Parse(text);
-        if (target is not LinkTarget.Search and not LinkTarget.Unsupported)
+        if (LinkRouter.Describe(text) is { } what)
         {
-            var kind = target switch
-            {
-                LinkTarget.Video => "LinkKindVideo",
-                LinkTarget.Playlist => "LinkKindPlaylist",
-                LinkTarget.Album => "LinkKindAlbum",
-                LinkTarget.External => null,
-                _ => "LinkKindChannel",
-            };
-            items.Add(new SuggestionVm("", kind is null ? Loc.Get("LinkImportLater") : Loc.Format("OpenLinkFormat", Loc.Get(kind)), IsLink: true));
+            items.Add(new SuggestionVm("", what, IsLink: true));
             sender.ItemsSource = items;
             return;
         }
@@ -753,6 +767,11 @@ public sealed partial class MainWindow : Window
         if (args.ChosenSuggestion is SuggestionVm { Track: { } track })
         {
             App.Services.GetRequiredService<TrackActions>().Play([track], 0, new TrackContext.Single());
+            return;
+        }
+        if (args.ChosenSuggestion is SuggestionVm { Link: { } link })
+        {
+            App.Services.GetRequiredService<LinkRouter>().OpenText(link);
             return;
         }
         var query = (args.ChosenSuggestion is SuggestionVm { IsLink: false } suggestion ? suggestion.Text : args.QueryText).Trim();

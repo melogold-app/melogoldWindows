@@ -339,6 +339,12 @@ public sealed partial class AccountPage : Page
         what.Margin = new Thickness(1, 4, 0, 0);
         body.Children.Add(what);
 
+        // «Мои ссылки» (tasks/0016): только если сервер делает снимки плейлистов
+        var shares = new ClickableCard { Header = Loc.Get("MyShares"), Description = Loc.Get("MySharesText"), HeaderIcon = new FontIcon { Glyph = "\uE71B" }, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 8, 0, 0) };
+        shares.Activated += (_, _) => Form.Navigator.Open(typeof(MySharesPage));
+        body.Children.Add(shares);
+        Loaded += async (_, _) => shares.Visibility = await _account.SharesAvailableAsync() ? Visibility.Visible : Visibility.Collapsed;
+
         body.Children.Add(Header("AccountDevicesGroup"));
         body.Children.Add(_devices);
         // Вход нового устройства по коду (tasks/0006 §2): часам неудобно набирать пароль

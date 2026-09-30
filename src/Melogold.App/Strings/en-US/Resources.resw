@@ -142,7 +142,7 @@
   <data name="TypePlaylist" xml:space="preserve"><value>Playlist</value></data>
   <data name="Live" xml:space="preserve"><value>LIVE</value></data>
   <data name="LinkUnsupported" xml:space="preserve"><value>This link can't be opened</value></data>
-  <data name="LinkImportLater" xml:space="preserve"><value>Import from other services is coming later</value></data>
+  <data name="LinkImportLater" xml:space="preserve"><value>Importing playlists from other services is coming later</value></data>
   <data name="SeeAll" xml:space="preserve"><value>See all</value></data>
   <data name="PlayAll" xml:space="preserve"><value>Play</value></data>
   <data name="Shuffle" xml:space="preserve"><value>Shuffle</value></data>
@@ -764,4 +764,23 @@
   <data name="StatsDayPartMorning" xml:space="preserve"><value>Morning</value></data>
   <data name="StatsDayPartAfternoon" xml:space="preserve"><value>Afternoon</value></data>
   <data name="StatsDayPartEvening" xml:space="preserve"><value>Evening</value></data>
+  <data name="ShareFirstFifty" xml:space="preserve"><value>The link opens the first 50 tracks on YouTube</value></data>
+  <data name="ShareLimitFormat" xml:space="preserve"><value>You already have {0} links — delete old ones in “My links”</value></data>
+  <data name="ShareNoTracks" xml:space="preserve"><value>There are no YouTube tracks in this playlist to share</value></data>
+  <data name="SharedPlaylist" xml:space="preserve"><value>Shared playlist</value></data>
+  <data name="ShareSaveToLibrary" xml:space="preserve"><value>Save to Library</value></data>
+  <data name="ShareSavedToLibrary" xml:space="preserve"><value>Saved to Library</value></data>
+  <data name="ShareGone" xml:space="preserve"><value>The link was deleted or is wrong</value></data>
+  <data name="MyShares" xml:space="preserve"><value>My links</value></data>
+  <data name="MySharesText" xml:space="preserve"><value>Links to your playlists: people listen and save them</value></data>
+  <data name="MySharesEmpty" xml:space="preserve"><value>No links yet</value></data>
+  <data name="MySharesEmptyHint" xml:space="preserve"><value>Open your playlist and choose “Share” in its menu</value></data>
+  <data name="ShareDelete" xml:space="preserve"><value>Delete link</value></data>
+  <data name="ShareDeleteTitleFormat" xml:space="preserve"><value>Delete the link to “{0}”?</value></data>
+  <data name="ShareDeleteText" xml:space="preserve"><value>The link stops opening for everyone you sent it to. The playlist itself stays.</value></data>
+  <data name="ShareDeleted" xml:space="preserve"><value>Link deleted</value></data>
+  <data name="LinkKindShare" xml:space="preserve"><value>Melogold playlist</value></data>
+  <data name="ServiceYandexMusic" xml:space="preserve"><value>Yandex Music</value></data>
+  <data name="LinkLookingFormat" xml:space="preserve"><value>Looking for the {0} link on YouTube Music…</value></data>
+  <data name="ClipboardLink" xml:space="preserve"><value>Link from the clipboard</value></data>
 </root>

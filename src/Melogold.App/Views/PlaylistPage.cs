@@ -2,6 +2,7 @@ using Melogold.App.Controls;
 using Melogold.App.Services;
 using Melogold.App.ViewModels;
 using Melogold.Core.Data;
+using Melogold.Core.Domain;
 using Melogold.Core.Music;
 using Melogold.InnerTube;
 using Microsoft.Extensions.DependencyInjection;
@@ -66,7 +67,8 @@ public sealed partial class PlaylistPage : CatalogPage
             library.CreatePlaylist(page.Playlist.Title, all, page.Playlist.PlaylistId, page.Playlist.ThumbnailUrl);
             App.Services.GetRequiredService<Snackbar>().Show(Loc.Format("SavedToLibraryFormat", page.Playlist.Title));
         });
-        _header.AddMenu(App.Services.GetRequiredService<CollectionMenu>().Build(AllTracksAsync, $"https://www.youtube.com/playlist?list={page.Playlist.PlaylistId}"));
+        _header.AddMenu(App.Services.GetRequiredService<CollectionMenu>().Build(AllTracksAsync,
+            new ShareTarget(page.Playlist.Title, page.AuthorText, ShareLinks.Playlist(page.Playlist.PlaylistId))));
         _header.Visibility = Visibility.Visible;
 
         var owner = new RowOwner(new TrackContext.List());

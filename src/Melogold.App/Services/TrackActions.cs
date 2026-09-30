@@ -156,13 +156,7 @@ public sealed class TrackActions(PlayerEngine engine, Library library, Navigator
         navigator.Open(typeof(SearchPage), new SearchRequest(string.Join(" ", new[] { clean.Artist, clean.Title }.Where(s => !string.IsNullOrEmpty(s))), SearchScope.YouTube));
     }
 
-    public void CopyLink(Track track)
-    {
-        var package = new DataPackage();
-        package.SetText(track.IsVideo ? $"https://www.youtube.com/watch?v={track.VideoId}" : $"https://music.youtube.com/watch?v={track.VideoId}");
-        Clipboard.SetContent(package);
-        snackbar.Show(Loc.Get("LinkCopied"));
-    }
+    public void CopyLink(Track track) => Share.CopyLink(ShareLinks.Track(track));
 
     // ---------- Меню ----------
 

@@ -14,21 +14,32 @@ public static class Share
     private static DataTransferManager? _manager;
     private static (string Title, Action<DataPackage> Fill)? _pending;
 
-    public static void Track(Track track) =>
-        Link((ViewModels.RowVm.Display?.Invoke(track) ?? track).Title, new Uri(track.IsVideo ? $"https://www.youtube.com/watch?v={track.VideoId}" : $"https://music.youtube.com/watch?v={track.VideoId}"));
-
-    public static void Link(string title, Uri link) => Show(title, data =>
+    public static void Track(Track track)
     {
-        data.SetWebLink(link);
-        data.SetText(link.ToString());
+        var shown = ViewModels.RowVm.Display?.Invoke(track) ?? track;
+        Link(shown.Title, shown.ArtistsText, Melogold.Core.Domain.ShareLinks.Track(track));
+    }
+
+    /// <summary>Ссылка и текст «Название — исполнитель» над ней (tasks/0016): так её видит тот, кому отправили.</summary>
+    public static void Link(string title, string? subtitle, string url) => Show(title, data =>
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var link)) data.SetWebLink(link);
+        data.SetText(Melogold.Core.Domain.ShareLinks.Message(title, subtitle, url));
+        if (!string.IsNullOrWhiteSpace(subtitle)) data.Properties.Description = subtitle;
     }, () =>
     {
-        // Нет окна «Поделиться» (старая Windows, политика) — ссылка в буфер, как «Копировать ссылку»
+        // Нет окна «Поделиться» (старая Windows, политика) — ссылка в буфер, как «Скопировать ссылку»
+        CopyLink(url);
+    });
+
+    /// <summary>«Скопировать ссылку»: только ссылка, «Ссылка скопирована».</summary>
+    public static void CopyLink(string url)
+    {
         var package = new DataPackage();
-        package.SetText(link.ToString());
+        package.SetText(url);
         Clipboard.SetContent(package);
         App.Current?.Window?.Snackbar.Show(Loc.Get("LinkCopied"));
-    });
+    }
 
     /// <summary>Файл — картинка «Итогов года» (tasks/0015); без окна «Поделиться» — <paramref name="fallback"/>.</summary>
     public static void File(string title, Windows.Storage.StorageFile file, Action fallback) => Show(title, data =>

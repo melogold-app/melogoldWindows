@@ -483,8 +483,14 @@ public sealed partial class LocalPlaylistPage : CatalogPage
         var actions = App.Services.GetRequiredService<TrackActions>();
         _header.AddButton(Loc.Get("PlayAll"), "", () => actions.Play(_tracks, 0, new TrackContext.List()), accent: true);
         _header.AddButton(Loc.Get("Shuffle"), "", () => actions.PlayShuffled(_tracks));
-        var menu = App.Services.GetRequiredService<CollectionMenu>().Build(() => Task.FromResult<IReadOnlyList<Track>>(_tracks),
-            _playlist?.BrowseId is { } browse ? $"https://www.youtube.com/playlist?list={browse}" : null);
+        var menu = App.Services.GetRequiredService<CollectionMenu>().Build(() => Task.FromResult<IReadOnlyList<Track>>(_tracks), null);
+        // Ссылка (tasks/0016): снимок на сервере аккаунта или первые 50 видео на YouTube
+        var copy = new MenuFlyoutItem { Text = Loc.Get("MenuCopyLink"), Icon = new FontIcon { Glyph = "\uE71B" } };
+        copy.Click += async (_, _) => await ShareAsync(copyOnly: true);
+        menu.Items.Add(copy);
+        var share = new MenuFlyoutItem { Text = Loc.Get("MenuShare"), Icon = new FontIcon { Glyph = "\uE72D" } };
+        share.Click += async (_, _) => await ShareAsync(copyOnly: false);
+        menu.Items.Add(share);
         menu.Items.Add(new MenuFlyoutSeparator());
         var rename = new MenuFlyoutItem { Text = Loc.Get("Rename"), Icon = new FontIcon { Glyph = "" } };
         rename.Click += async (_, _) =>
@@ -498,6 +504,38 @@ public sealed partial class LocalPlaylistPage : CatalogPage
         delete.Click += (_, _) => DeletePlaylist();
         menu.Items.Add(delete);
         _header.AddMenu(menu);
+    }
+
+    private async Task ShareAsync(bool copyOnly)
+    {
+        if (_playlist is not { } playlist) return;
+        var snackbar = App.Services.GetRequiredService<Snackbar>();
+        // Со своими названиями (tasks/0011); альбом, переименованный своим, — без ссылки на альбом YouTube
+        var tracks = _tracks.Select(t => _library.Override(t.VideoId)?.AlbumTitle is null ? _library.Display(t) : _library.Display(t) with { AlbumId = null }).ToList();
+        var result = await App.Services.GetRequiredService<Melogold.Server.PlaylistSharing>().ShareAsync(playlist.Name, tracks);
+        switch (result)
+        {
+            case Melogold.Server.PlaylistShare.OnServer server:
+                Deliver(server.Url);
+                break;
+            case Melogold.Server.PlaylistShare.OnYouTube youTube:
+                Deliver(youTube.Url);
+                snackbar.Show(Loc.Get("ShareFirstFifty"));
+                break;
+            case Melogold.Server.PlaylistShare.LimitReached limit:
+                snackbar.Show(Loc.Format("ShareLimitFormat", limit.Max), Loc.Get("MyShares"),
+                    () => App.Services.GetRequiredService<Navigator>().Open(typeof(MySharesPage)));
+                break;
+            default:
+                snackbar.Show(Loc.Get("ShareNoTracks"));
+                break;
+        }
+
+        void Deliver(string url)
+        {
+            if (copyOnly) Share.CopyLink(url);
+            else Share.Link(playlist.Name, Loc.Plural("Tracks", tracks.Count), url);
+        }
     }
 
     private void Show()

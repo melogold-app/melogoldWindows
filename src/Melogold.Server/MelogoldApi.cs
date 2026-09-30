@@ -130,6 +130,21 @@ public sealed class MelogoldApi : IDisposable
         }
     }
 
+    // ---------- Ссылки на свои плейлисты (API §4.11, tasks/0016) ----------
+
+    public Task<ShareCreated> CreateShareAsync(string token, CreateShareRequest request, CancellationToken ct = default) =>
+        SendAsync<ShareCreated>(HttpMethod.Post, "/shares", request, token, false, ct);
+
+    public Task<ShareList> SharesAsync(string token, CancellationToken ct = default) =>
+        SendAsync<ShareList>(HttpMethod.Get, "/shares", null, token, false, ct);
+
+    public Task DeleteShareAsync(string token, string shareId, CancellationToken ct = default) =>
+        SendNoContentAsync(HttpMethod.Delete, "/shares/" + Uri.EscapeDataString(shareId), null, token, false, ct);
+
+    /// <summary>Снимок по ссылке — без входа: сервер ссылки часто не тот, где аккаунт.</summary>
+    public Task<ShareDto> ShareAsync(string shareId, CancellationToken ct = default) =>
+        SendAsync<ShareDto>(HttpMethod.Get, "/shares/" + Uri.EscapeDataString(shareId), null, null, false, ct);
+
     // ---------- Сервер (API §4.2) ----------
 
     public Task<ServerInfo> ServerInfoAsync(CancellationToken ct = default) =>

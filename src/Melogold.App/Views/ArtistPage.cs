@@ -1,6 +1,7 @@
 using Melogold.App.Controls;
 using Melogold.App.Services;
 using Melogold.Core.Data;
+using Melogold.Core.Domain;
 using Melogold.Core.Music;
 using Melogold.InnerTube;
 using Microsoft.Extensions.DependencyInjection;
@@ -78,7 +79,7 @@ public sealed partial class ArtistPage : CatalogPage
         if (topTracks.Count > 0)
         {
             _header.AddMenu(App.Services.GetRequiredService<CollectionMenu>().Build(Songs,
-                page.IsChannel ? $"https://www.youtube.com/channel/{_browseId}" : $"https://music.youtube.com/channel/{_browseId}"));
+                new ShareTarget(page.Name, null, ShareLinks.Artist(_browseId, page.IsChannel))));
         }
         _header.Visibility = Visibility.Visible;
 

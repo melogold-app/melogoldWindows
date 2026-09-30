@@ -6,10 +6,16 @@ using Windows.ApplicationModel.DataTransfer;
 
 namespace Melogold.App.Services;
 
-/// <summary>Меню коллекции (REWRITE §3.11.5): «Играть следующим», «В конец очереди», «Добавить в плейлист…», «Включить радио», ссылка.</summary>
+/// <summary>Чем делиться из меню коллекции (tasks/0016): название, подпись («исполнитель») и ссылка.</summary>
+public sealed record ShareTarget(string Title, string? Subtitle, string Url);
+
+/// <summary>
+/// Меню коллекции (REWRITE §3.11.5): «Играть следующим», «В конец очереди», «Добавить в плейлист…», «Включить радио»,
+/// «Скопировать ссылку» и «Поделиться» (tasks/0016).
+/// </summary>
 public sealed class CollectionMenu(PlayerEngine engine, Library library, Snackbar snackbar)
 {
-    public MenuFlyout Build(Func<Task<IReadOnlyList<Track>>> tracks, string? link)
+    public MenuFlyout Build(Func<Task<IReadOnlyList<Track>>> tracks, ShareTarget? share)
     {
         var menu = new MenuFlyout();
 
@@ -49,14 +55,16 @@ public sealed class CollectionMenu(PlayerEngine engine, Library library, Snackba
             var list = await tracks();
             if (list.Count > 0) engine.StartRadio(list[0]);
         });
-        if (link is not null)
+        if (share is not null)
         {
             Add("MenuCopyLink", "", () =>
             {
-                var package = new DataPackage();
-                package.SetText(link);
-                Clipboard.SetContent(package);
-                snackbar.Show(Loc.Get("LinkCopied"));
+                Share.CopyLink(share.Url);
+                return Task.CompletedTask;
+            });
+            Add("MenuShare", "\uE72D", () =>
+            {
+                Share.Link(share.Title, share.Subtitle, share.Url);
                 return Task.CompletedTask;
             });
         }

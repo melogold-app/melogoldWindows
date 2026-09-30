@@ -159,6 +159,25 @@ public sealed class RemoteTests
     }
 
     [Fact]
+    public void ServerFailuresBackOffTwoFourEightSeconds()
+    {
+        var setup = new Setup { Playing = new LocalPlayback(Tracks(2), 0, 0, 200_000, true, 70) };
+        var failures = 3;
+        setup.Server.OnPut = _ => failures-- > 0
+            ? throw new ApiException(503, "server_busy", null)
+            : new PlaybackPutResult(true, 1, null, null, IsoTime.Format(setup.Server.Now));
+        setup.Reporter.Changed();
+        // Первая попытка сразу, повторы — через 2, 4 и 8 с, четвёртая прошла
+        Assert.Equal([2000.0, 4000.0, 8000.0], setup.Waits.Select(w => w.TotalMilliseconds));
+        Assert.Equal(4, setup.Server.Puts.Count);
+        // После удачи — снова не чаще раза в секунду
+        setup.Playing = setup.Playing with { Playing = false };
+        setup.Server.Now += 100;
+        setup.Reporter.Changed();
+        Assert.Equal(900, setup.Waits[^1].TotalMilliseconds);
+    }
+
+    [Fact]
     public void WindowKeepsTheCurrentTrackInside()
     {
         var queue = Tracks(500);

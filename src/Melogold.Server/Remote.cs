@@ -63,6 +63,8 @@ public sealed class PlaybackReporter
     public const int MaxQueue = 200;
     private const long MinIntervalMs = 1000;
     private const long PositionSlackMs = 1500;
+    private const long FirstBackoffMs = 2000;
+    private const long MaxBackoffMs = 60_000;
 
     private readonly IPlaybackServer _server;
     private readonly Func<LocalPlayback?> _snapshot;
@@ -79,6 +81,10 @@ public sealed class PlaybackReporter
     private int _knownVersion = -1;
     private Sent? _last;
     private PlaybackHandoffInput? _handoff;
+
+    /// <summary>После сбоя сервера следующий отчёт — не раньше: 2, 4, 8… до 60 с (как у Apple), а не каждую секунду.</summary>
+    private long _retryAt;
+    private long _backoffMs;
 
     public PlaybackReporter(IPlaybackServer server, Func<LocalPlayback?> snapshot, ServerClock clock, Action<string, Exception?>? log = null, Func<TimeSpan, Task>? delay = null)
     {
@@ -122,7 +128,7 @@ public sealed class PlaybackReporter
 
     private async Task SendSoonAsync()
     {
-        var wait = _lastSentAt + MinIntervalMs - _clock.LocalNow;
+        var wait = Math.Max(_lastSentAt + MinIntervalMs, Interlocked.Read(ref _retryAt)) - _clock.LocalNow;
         if (wait > 0) await _delay(TimeSpan.FromMilliseconds(wait)).ConfigureAwait(false);
         lock (_lock) _scheduled = false;
         await SendAsync().ConfigureAwait(false);
@@ -175,6 +181,8 @@ public sealed class PlaybackReporter
         {
             var result = await _server.PutAsync(put, ct).ConfigureAwait(false);
             _clock.Observe(result.ServerTime);
+            _backoffMs = 0;
+            Interlocked.Exchange(ref _retryAt, 0);
             _last = sent;
             if (result.Applied)
             {
@@ -193,9 +201,17 @@ public sealed class PlaybackReporter
             _knownVersion = -1;
             await PutAsync(window, sent, withQueue: true, ct).ConfigureAwait(false);
         }
+        catch (ApiException e) when (e.IsTransient)
+        {
+            // Нет сети, сервер занят: то же состояние — ещё раз, с растущим отступом
+            _backoffMs = Math.Clamp(_backoffMs * 2, FirstBackoffMs, MaxBackoffMs);
+            Interlocked.Exchange(ref _retryAt, _clock.LocalNow + _backoffMs);
+            _log($"Playback state not sent: {e.Code}; again in {_backoffMs / 1000} s", null);
+            Changed();
+        }
         catch (ApiException e)
         {
-            _log("Playback state not sent: " + e.Code, e.IsTransient ? null : e);
+            _log("Playback state not sent: " + e.Code, e);
         }
     }
 

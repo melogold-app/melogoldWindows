@@ -598,6 +598,79 @@ public sealed class Library(LibraryDatabase db)
     });
 
     /// <summary>
+    /// «Итоги» за период (tasks/0015): события Истории этого периода с фильтром устройств, их треки со своими
+    /// названиями, первые прослушивания (открытия) и время прошлого такого же периода. Всё на устройстве, без сети.
+    /// </summary>
+    public ListeningStats Stats(StatsPeriod period, TimeZoneInfo zone, HistoryDevice? device = null, int top = 50) => ListeningStats.Build(
+        period, zone, this, device ?? HistoryDevice.All, top);
+
+    /// <summary>Первое прослушивание Истории (с фильтром устройств): раньше него «‹» в «Итогах» не листает; null — Истории нет.</summary>
+    public long? FirstPlayAt(HistoryDevice? device = null) => Database.Read(c =>
+    {
+        var (where, parameters) = (device ?? HistoryDevice.All).Where();
+        using var command = c.CreateCommand();
+        command.CommandText = $"SELECT MIN(played_at) FROM play_events WHERE {where}";
+        foreach (var (name, value) in parameters) command.Parameters.AddWithValue(name, value ?? DBNull.Value);
+        return command.ExecuteScalar() is long at ? at : (long?)null;
+    });
+
+    /// <summary>Есть ли прослушивания в периоде — карточка «Итоги 2026 готовы» без подсчёта всех «Итогов».</summary>
+    public bool HasPlays(StatsPeriod period, TimeZoneInfo zone) => Database.Read(c =>
+    {
+        var (from, to) = period.Range(zone);
+        return LibraryDatabase.Scalar(c, "SELECT EXISTS (SELECT 1 FROM play_events WHERE played_at >= $from AND played_at < $to)", ("$from", from), ("$to", to)) is long and not 0;
+    });
+
+    /// <summary>Чтение для <see cref="Stats"/> (отдельно — чтобы подсчёт проверялся без базы).</summary>
+    internal (List<StatsEvent> Events, Dictionary<string, Track> Tracks, Dictionary<string, long> FirstPlayed, long? Previous) StatsInput(
+        StatsPeriod period, TimeZoneInfo zone, HistoryDevice device) => Database.Read(c =>
+    {
+        var (from, to) = period.Range(zone);
+        var (where, parameters) = device.Where();
+        SqliteCommand Command(string sql)
+        {
+            var command = c.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddWithValue("$from", from);
+            command.Parameters.AddWithValue("$to", to);
+            foreach (var (name, value) in parameters) command.Parameters.AddWithValue(name, value ?? DBNull.Value);
+            return command;
+        }
+
+        var events = new List<StatsEvent>();
+        using (var command = Command($"SELECT video_id, played_at, play_time_ms FROM play_events WHERE played_at >= $from AND played_at < $to AND {where}"))
+        using (var r = command.ExecuteReader())
+            while (r.Read()) events.Add(new StatsEvent(r.GetString(0), r.GetInt64(1), r.GetInt64(2)));
+
+        var tracks = new Dictionary<string, Track>(StringComparer.Ordinal);
+        var columns = string.Join(", ", TrackColumns.Split(", ").Select(x => "t." + x));
+        using (var command = Command($"SELECT {columns} FROM tracks t WHERE t.video_id IN (SELECT DISTINCT video_id FROM play_events WHERE played_at >= $from AND played_at < $to AND {where})"))
+        using (var r = command.ExecuteReader())
+            while (r.Read())
+            {
+                var track = ReadTrack(r);
+                tracks[track.VideoId] = track;
+            }
+
+        // Открытия: первое прослушивание трека за всю историю (с тем же фильтром устройств)
+        var first = new Dictionary<string, long>(StringComparer.Ordinal);
+        using (var command = Command($"SELECT video_id, MIN(played_at) FROM play_events WHERE {where} AND video_id IN (SELECT DISTINCT video_id FROM play_events WHERE played_at >= $from AND played_at < $to AND {where}) GROUP BY video_id"))
+        using (var r = command.ExecuteReader())
+            while (r.Read()) first[r.GetString(0)] = r.GetInt64(1);
+
+        long? previous = null;
+        if (period.Kind != StatsPeriodKind.All)
+        {
+            var (prevFrom, prevTo) = period.Previous().Range(zone);
+            using var command = Command($"SELECT COALESCE(SUM(play_time_ms), 0) FROM play_events WHERE played_at >= $pfrom AND played_at < $pto AND {where}");
+            command.Parameters.AddWithValue("$pfrom", prevFrom);
+            command.Parameters.AddWithValue("$pto", prevTo);
+            previous = Convert.ToInt64(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
+        }
+        return (events, tracks, first, previous);
+    });
+
+    /// <summary>
     /// «Очистить историю» на всех устройствах: события удаляются, счётчики остаются, как в ViTune (DESIGN §3.11.5);
     /// синхронизация отправит <c>history.clear</c>.
     /// </summary>

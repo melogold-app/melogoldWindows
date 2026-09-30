@@ -1,6 +1,6 @@
 # Итоги: статистика прослушиваний за неделю, месяц и год (как в Spotify)
 
-Статус: открыто — утверждено пользователем 2026-09-30; сервер не нужен
+Статус: в работе — подсчёт, «Итоги», «Итоги года» и картинка для «Поделиться» готовы, тесты подсчёта зелёные; осталось снять экраны и картинку
 
 Те же задания: `melogoldAndroid/tasks/0016-listening-stats.md`, `melogoldiOSmacOS/tasks/0018-listening-stats.md`, `melogoldLinux/tasks/0009-listening-stats.md`.
 Образец — Android (делается сейчас, `melogoldAndroid/tasks/0016-listening-stats.md`).

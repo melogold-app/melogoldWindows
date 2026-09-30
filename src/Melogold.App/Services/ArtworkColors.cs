@@ -31,14 +31,20 @@ public static class ArtworkColors
     private static readonly Dictionary<string, uint?> Seeds = [];
 
     /// <summary>Палитра для темы; null — обложка серая или не загрузилась.</summary>
-    public static async Task<ArtworkPalette?> PaletteAsync(string key, string? url, bool dark, CancellationToken ct = default)
+    public static async Task<ArtworkPalette?> PaletteAsync(string key, string? url, bool dark, CancellationToken ct = default) =>
+        await SeedOfAsync(key, url, ct) is { } seed ? Palette(seed, dark) : null;
+
+    /// <summary>Главный цвет обложки (фон картинки «Итогов года», tasks/0015); null — обложка серая или не загрузилась.</summary>
+    public static async Task<Color?> MainColorAsync(string key, string? url, CancellationToken ct = default) =>
+        await SeedOfAsync(key, url, ct) is { } seed ? ToColor(seed) : null;
+
+    private static async Task<uint?> SeedOfAsync(string key, string? url, CancellationToken ct)
     {
         if (url is null) return null;
         uint? seed;
         lock (Seeds)
         {
-            if (!Seeds.TryGetValue(key, out seed)) seed = null;
-            else return seed is { } known ? Palette(known, dark) : null;
+            if (Seeds.TryGetValue(key, out seed)) return seed;
         }
         try
         {
@@ -58,7 +64,7 @@ public static class ArtworkColors
             if (Seeds.Count > 32) Seeds.Clear();
             Seeds[key] = seed;
         }
-        return seed is { } value ? Palette(value, dark) : null;
+        return seed;
     }
 
     private static ArtworkPalette Palette(uint seed, bool dark)

@@ -22,6 +22,10 @@ public sealed partial class LibraryPage : CatalogPage
     private readonly StateView _empty = new() { Visibility = Visibility.Collapsed };
     private readonly Button _importFirst = new() { Style = (Style)Application.Current.Resources["AccentButtonStyle"], Margin = new Thickness(0, 0, 0, 16), Visibility = Visibility.Collapsed };
     private readonly Library _library = App.Services.GetRequiredService<Library>();
+
+    /// <summary>«Итоги 2026 готовы» — с 1 декабря по 31 января, если в том году что-то слушали (tasks/0015).</summary>
+    private readonly ClickableCard _recap = new() { HeaderIcon = new FontIcon { Glyph = "\uE9D2" }, Margin = new Thickness(0, 0, 0, 16), Visibility = Visibility.Collapsed };
+    private int _recapYear;
     private bool _dirty = true;
 
     public LibraryPage()
@@ -32,6 +36,8 @@ public sealed partial class LibraryPage : CatalogPage
         _importFirst.Content = Loc.Get("LibraryImport");
         _importFirst.Click += async (_, _) => await ImportFlow.RunAsync(XamlRoot);
         _content.Children.Add(_importFirst);
+        _recap.Activated += (_, _) => Open(typeof(YearRecapPage), _recapYear.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        _content.Children.Add(_recap);
         _content.Children.Add(_collections);
         // Карточки коллекций — во всю ширину: колонок столько, сколько влезает карточек от 248, без пустоты справа
         _content.SizeChanged += (_, e) => FitCollections(e.NewSize.Width);
@@ -102,11 +108,22 @@ public sealed partial class LibraryPage : CatalogPage
     {
         _dirty = false;
         var songs = App.Services.GetRequiredService<Melogold.Playback.SongCache>();
-        var (counts, playlists, plays, allTracks, cached, downloaded) = await Task.Run(() => (_library.Counts(), _library.Playlists(), _library.PlayCount(), _library.AllTracksCount(), songs.CompleteTracks().Count, _library.DownloadIds().Count));
+        var recapYear = StatsPeriod.RecapYear(DateOnly.FromDateTime(DateTime.Now));
+        var (counts, playlists, plays, allTracks, cached, downloaded, recap) = await Task.Run(() => (_library.Counts(), _library.Playlists(), _library.PlayCount(), _library.AllTracksCount(), songs.CompleteTracks().Count, _library.DownloadIds().Count,
+            recapYear is { } year && _library.HasPlays(new StatsPeriod(StatsPeriodKind.Year, new DateOnly(year, 1, 1)), TimeZoneInfo.Local)));
+        if (recap && recapYear is { } ready)
+        {
+            _recapYear = ready;
+            _recap.Header = Loc.Format("StatsRecapReadyFormat", ready);
+            _recap.Description = Loc.Get("StatsRecapReadyText");
+        }
+        _recap.Visibility = recap ? Visibility.Visible : Visibility.Collapsed;
         _importFirst.Visibility = counts is { Likes: 0, Albums: 0, Artists: 0 } && playlists.Count == 0 && plays == 0 ? Visibility.Visible : Visibility.Collapsed;
         _collections.Children.Clear();
         // «Все треки» — первой (tasks/0005): прослушанное, лайкнутое и из плейлистов, как «Песни» в ViTune
         AddCollection("\uE8D6", Loc.Get("AllTracks"), Loc.Plural("Tracks", allTracks), () => Open(typeof(AllTracksPage)));
+        // «Итоги» (tasks/0015): что и сколько слушали за неделю, месяц, год
+        AddCollection("\uE9D2", Loc.Get("Stats"), Loc.Get("StatsHint"), () => Open(typeof(StatsPage)));
         // «Скачанное»: у Windows пока только «В кэше» (tasks/0003)
         AddCollection("\uE896", Loc.Get("Downloads"), downloaded > 0 ? Loc.Format("DownloadsCountFormat", downloaded, cached) : Loc.Format("DownloadsCachedCountFormat", cached), () => Open(typeof(DownloadsPage)));
         AddCollection("", Loc.Get("Favorites"), Loc.Plural("Tracks", counts.Likes), () => Open(typeof(FavoritesPage)));

@@ -84,6 +84,8 @@
   <data name="PlayErrorGeoCountryFormat" xml:space="preserve"><value>Unavailable in {0}: YouTube places you there, and the rights holder closed this track for it. With a VPN, pick a server in another country: YouTube counts some VPN servers as {0} too.</value></data>
   <data name="PlayErrorGeoCountryOpenFormat" xml:space="preserve"><value>Unavailable in {0}: YouTube places you there, and the rights holder opened this track {1}. With a VPN, pick a server in another country: YouTube counts some VPN servers as {0} too.</value></data>
   <data name="GeoOtherCountries_one" xml:space="preserve"><value>in {0} other country</value></data>
+  <data name="GeoOtherCountries_few" xml:space="preserve"><value>in {0} other countries</value></data>
+  <data name="GeoOtherCountries_many" xml:space="preserve"><value>in {0} other countries</value></data>
   <data name="GeoOtherCountries_other" xml:space="preserve"><value>in {0} other countries</value></data>
   <data name="PlayErrorUnavailable" xml:space="preserve"><value>The video was removed or made private</value></data>
   <data name="PlayErrorAge" xml:space="preserve"><value>Age verification is required — not supported yet</value></data>
@@ -694,4 +696,72 @@
   <data name="LinkWaitingNew" xml:space="preserve"><value>Waiting for the new device…</value></data>
   <data name="LinkInviteExpired" xml:space="preserve"><value>The code has expired. Show a new one</value></data>
   <data name="LinkInviteCancelled" xml:space="preserve"><value>The invitation was canceled</value></data>
+  <data name="Stats" xml:space="preserve"><value>Insights</value></data>
+  <data name="StatsHint" xml:space="preserve"><value>Week, month, year</value></data>
+  <data name="StatsWeek" xml:space="preserve"><value>Week</value></data>
+  <data name="StatsMonth" xml:space="preserve"><value>Month</value></data>
+  <data name="StatsYear" xml:space="preserve"><value>Year</value></data>
+  <data name="StatsAllTime" xml:space="preserve"><value>All time</value></data>
+  <data name="StatsPrevious" xml:space="preserve"><value>Previous period</value></data>
+  <data name="StatsNext" xml:space="preserve"><value>Next period</value></data>
+  <data name="StatsListeningTime" xml:space="preserve"><value>Listening time</value></data>
+  <data name="StatsPlays" xml:space="preserve"><value>Plays</value></data>
+  <data name="StatsTracks" xml:space="preserve"><value>Tracks</value></data>
+  <data name="StatsArtists" xml:space="preserve"><value>Artists</value></data>
+  <data name="StatsAlbums" xml:space="preserve"><value>Albums</value></data>
+  <data name="StatsTopTracks" xml:space="preserve"><value>Top tracks</value></data>
+  <data name="StatsTopArtists" xml:space="preserve"><value>Top artists</value></data>
+  <data name="StatsTopAlbums" xml:space="preserve"><value>Top albums</value></data>
+  <data name="StatsWhen" xml:space="preserve"><value>When you listened</value></data>
+  <data name="StatsTimeOfDay" xml:space="preserve"><value>Time of day</value></data>
+  <data name="StatsDiscoveries" xml:space="preserve"><value>Discoveries</value></data>
+  <data name="StatsShowAll" xml:space="preserve"><value>Show all</value></data>
+  <data name="StatsShowLess" xml:space="preserve"><value>Show less</value></data>
+  <data name="StatsEmpty" xml:space="preserve"><value>No plays in this period</value></data>
+  <data name="StatsAllTimeNote" xml:space="preserve"><value>The server keeps the history for 400 days: on a new device you see as much as came from the server</value></data>
+  <data name="StatsPlaysCount_one" xml:space="preserve"><value>{0} play</value></data>
+  <data name="StatsPlaysCount_few" xml:space="preserve"><value>{0} plays</value></data>
+  <data name="StatsPlaysCount_many" xml:space="preserve"><value>{0} plays</value></data>
+  <data name="StatsPlaysCount_other" xml:space="preserve"><value>{0} plays</value></data>
+  <data name="StatsDiscovered_one" xml:space="preserve"><value>{0} new track</value></data>
+  <data name="StatsDiscovered_few" xml:space="preserve"><value>{0} new tracks</value></data>
+  <data name="StatsDiscovered_many" xml:space="preserve"><value>{0} new tracks</value></data>
+  <data name="StatsDiscovered_other" xml:space="preserve"><value>{0} new tracks</value></data>
+  <data name="StatsDiscoveriesText" xml:space="preserve"><value>Heard for the first time in this period</value></data>
+  <data name="StatsChangeFormat" xml:space="preserve"><value>{0}% vs {1}</value></data>
+  <data name="StatsVsLastWeek" xml:space="preserve"><value>last week</value></data>
+  <data name="StatsVsMonthYearFormat" xml:space="preserve"><value>{0} {1}</value></data>
+  <data name="StatsVsYearFormat" xml:space="preserve"><value>{0}</value></data>
+  <data name="StatsMonthsCompare" xml:space="preserve"><value>January|February|March|April|May|June|July|August|September|October|November|December</value></data>
+  <data name="StatsBusiestFormat" xml:space="preserve"><value>Most listening: {0}, {1}</value></data>
+  <data name="StatsHoursBusiestFormat" xml:space="preserve"><value>Most listening around {0}, {1}</value></data>
+  <data name="StatsRecap" xml:space="preserve"><value>Year in review</value></data>
+  <data name="StatsRecapTitleFormat" xml:space="preserve"><value>Insights {0}</value></data>
+  <data name="StatsRecapReadyFormat" xml:space="preserve"><value>Insights {0} are ready</value></data>
+  <data name="StatsRecapReadyText" xml:space="preserve"><value>See what you listened to this year</value></data>
+  <data name="StatsRecapMinutes_one" xml:space="preserve"><value>minute of music this year</value></data>
+  <data name="StatsRecapMinutes_few" xml:space="preserve"><value>minutes of music this year</value></data>
+  <data name="StatsRecapMinutes_many" xml:space="preserve"><value>minutes of music this year</value></data>
+  <data name="StatsRecapMinutes_other" xml:space="preserve"><value>minutes of music this year</value></data>
+  <data name="StatsRecapTrack" xml:space="preserve"><value>Track of the year</value></data>
+  <data name="StatsRecapMonth" xml:space="preserve"><value>Favorite month</value></data>
+  <data name="StatsRecapTime" xml:space="preserve"><value>Favorite time of day</value></data>
+  <data name="StatsRecapPeakFormat" xml:space="preserve"><value>Most listening around {0}</value></data>
+  <data name="StatsRecapNewTracks_one" xml:space="preserve"><value>new track</value></data>
+  <data name="StatsRecapNewTracks_few" xml:space="preserve"><value>new tracks</value></data>
+  <data name="StatsRecapNewTracks_many" xml:space="preserve"><value>new tracks</value></data>
+  <data name="StatsRecapNewTracks_other" xml:space="preserve"><value>new tracks</value></data>
+  <data name="StatsRecapDiscoveries" xml:space="preserve"><value>New this year</value></data>
+  <data name="StatsRecapEmpty" xml:space="preserve"><value>There is nothing to show for this year yet</value></data>
+  <data name="StatsRecapPageFormat" xml:space="preserve"><value>Card {0} of {1}</value></data>
+  <data name="StatsShare" xml:space="preserve"><value>Share</value></data>
+  <data name="StatsSaveAs" xml:space="preserve"><value>Save as…</value></data>
+  <data name="StatsShareWatermarkFormat" xml:space="preserve"><value>Melogold · Insights {0}</value></data>
+  <data name="StatsShareTextFormat" xml:space="preserve"><value>My {0} in Melogold</value></data>
+  <data name="StatsPictureSaved" xml:space="preserve"><value>Picture saved</value></data>
+  <data name="StatsPictureFailed" xml:space="preserve"><value>Couldn't make the picture</value></data>
+  <data name="StatsDayPartNight" xml:space="preserve"><value>Night</value></data>
+  <data name="StatsDayPartMorning" xml:space="preserve"><value>Morning</value></data>
+  <data name="StatsDayPartAfternoon" xml:space="preserve"><value>Afternoon</value></data>
+  <data name="StatsDayPartEvening" xml:space="preserve"><value>Evening</value></data>
 </root>

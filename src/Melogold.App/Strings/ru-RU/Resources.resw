@@ -696,4 +696,72 @@
   <data name="LinkWaitingNew" xml:space="preserve"><value>Ждём новое устройство…</value></data>
   <data name="LinkInviteExpired" xml:space="preserve"><value>Код устарел. Покажите новый</value></data>
   <data name="LinkInviteCancelled" xml:space="preserve"><value>Приглашение отменено</value></data>
+  <data name="Stats" xml:space="preserve"><value>Итоги</value></data>
+  <data name="StatsHint" xml:space="preserve"><value>Неделя, месяц, год</value></data>
+  <data name="StatsWeek" xml:space="preserve"><value>Неделя</value></data>
+  <data name="StatsMonth" xml:space="preserve"><value>Месяц</value></data>
+  <data name="StatsYear" xml:space="preserve"><value>Год</value></data>
+  <data name="StatsAllTime" xml:space="preserve"><value>Всё время</value></data>
+  <data name="StatsPrevious" xml:space="preserve"><value>Предыдущий период</value></data>
+  <data name="StatsNext" xml:space="preserve"><value>Следующий период</value></data>
+  <data name="StatsListeningTime" xml:space="preserve"><value>Время прослушивания</value></data>
+  <data name="StatsPlays" xml:space="preserve"><value>Прослушиваний</value></data>
+  <data name="StatsTracks" xml:space="preserve"><value>Треков</value></data>
+  <data name="StatsArtists" xml:space="preserve"><value>Исполнителей</value></data>
+  <data name="StatsAlbums" xml:space="preserve"><value>Альбомов</value></data>
+  <data name="StatsTopTracks" xml:space="preserve"><value>Лучшие треки</value></data>
+  <data name="StatsTopArtists" xml:space="preserve"><value>Лучшие исполнители</value></data>
+  <data name="StatsTopAlbums" xml:space="preserve"><value>Лучшие альбомы</value></data>
+  <data name="StatsWhen" xml:space="preserve"><value>Когда вы слушали</value></data>
+  <data name="StatsTimeOfDay" xml:space="preserve"><value>Время суток</value></data>
+  <data name="StatsDiscoveries" xml:space="preserve"><value>Открытия</value></data>
+  <data name="StatsShowAll" xml:space="preserve"><value>Показать все</value></data>
+  <data name="StatsShowLess" xml:space="preserve"><value>Свернуть</value></data>
+  <data name="StatsEmpty" xml:space="preserve"><value>За этот период прослушиваний нет</value></data>
+  <data name="StatsAllTimeNote" xml:space="preserve"><value>Сервер хранит историю 400 дней: на новом устройстве видно столько, сколько пришло с сервера</value></data>
+  <data name="StatsPlaysCount_one" xml:space="preserve"><value>{0} прослушивание</value></data>
+  <data name="StatsPlaysCount_few" xml:space="preserve"><value>{0} прослушивания</value></data>
+  <data name="StatsPlaysCount_many" xml:space="preserve"><value>{0} прослушиваний</value></data>
+  <data name="StatsPlaysCount_other" xml:space="preserve"><value>{0} прослушивания</value></data>
+  <data name="StatsDiscovered_one" xml:space="preserve"><value>{0} новый трек</value></data>
+  <data name="StatsDiscovered_few" xml:space="preserve"><value>{0} новых трека</value></data>
+  <data name="StatsDiscovered_many" xml:space="preserve"><value>{0} новых треков</value></data>
+  <data name="StatsDiscovered_other" xml:space="preserve"><value>{0} нового трека</value></data>
+  <data name="StatsDiscoveriesText" xml:space="preserve"><value>Услышаны впервые в этом периоде</value></data>
+  <data name="StatsChangeFormat" xml:space="preserve"><value>{0} % к {1}</value></data>
+  <data name="StatsVsLastWeek" xml:space="preserve"><value>прошлой неделе</value></data>
+  <data name="StatsVsMonthYearFormat" xml:space="preserve"><value>{0} {1}</value></data>
+  <data name="StatsVsYearFormat" xml:space="preserve"><value>{0} году</value></data>
+  <data name="StatsMonthsCompare" xml:space="preserve"><value>январю|февралю|марту|апрелю|маю|июню|июлю|августу|сентябрю|октябрю|ноябрю|декабрю</value></data>
+  <data name="StatsBusiestFormat" xml:space="preserve"><value>Больше всего слушали: {0}, {1}</value></data>
+  <data name="StatsHoursBusiestFormat" xml:space="preserve"><value>Больше всего слушали около {0}, {1}</value></data>
+  <data name="StatsRecap" xml:space="preserve"><value>Итоги года</value></data>
+  <data name="StatsRecapTitleFormat" xml:space="preserve"><value>Итоги {0}</value></data>
+  <data name="StatsRecapReadyFormat" xml:space="preserve"><value>Итоги {0} готовы</value></data>
+  <data name="StatsRecapReadyText" xml:space="preserve"><value>Посмотрите, что вы слушали в этом году</value></data>
+  <data name="StatsRecapMinutes_one" xml:space="preserve"><value>минута музыки за год</value></data>
+  <data name="StatsRecapMinutes_few" xml:space="preserve"><value>минуты музыки за год</value></data>
+  <data name="StatsRecapMinutes_many" xml:space="preserve"><value>минут музыки за год</value></data>
+  <data name="StatsRecapMinutes_other" xml:space="preserve"><value>минуты музыки за год</value></data>
+  <data name="StatsRecapTrack" xml:space="preserve"><value>Трек года</value></data>
+  <data name="StatsRecapMonth" xml:space="preserve"><value>Любимый месяц</value></data>
+  <data name="StatsRecapTime" xml:space="preserve"><value>Любимое время суток</value></data>
+  <data name="StatsRecapPeakFormat" xml:space="preserve"><value>Больше всего слушали около {0}</value></data>
+  <data name="StatsRecapNewTracks_one" xml:space="preserve"><value>новый трек</value></data>
+  <data name="StatsRecapNewTracks_few" xml:space="preserve"><value>новых трека</value></data>
+  <data name="StatsRecapNewTracks_many" xml:space="preserve"><value>новых треков</value></data>
+  <data name="StatsRecapNewTracks_other" xml:space="preserve"><value>нового трека</value></data>
+  <data name="StatsRecapDiscoveries" xml:space="preserve"><value>Новое в этом году</value></data>
+  <data name="StatsRecapEmpty" xml:space="preserve"><value>За этот год пока нечего показать</value></data>
+  <data name="StatsRecapPageFormat" xml:space="preserve"><value>Карточка {0} из {1}</value></data>
+  <data name="StatsShare" xml:space="preserve"><value>Поделиться</value></data>
+  <data name="StatsSaveAs" xml:space="preserve"><value>Сохранить как…</value></data>
+  <data name="StatsShareWatermarkFormat" xml:space="preserve"><value>Melogold · Итоги {0}</value></data>
+  <data name="StatsShareTextFormat" xml:space="preserve"><value>Мой {0} год в Melogold</value></data>
+  <data name="StatsPictureSaved" xml:space="preserve"><value>Картинка сохранена</value></data>
+  <data name="StatsPictureFailed" xml:space="preserve"><value>Не удалось сделать картинку</value></data>
+  <data name="StatsDayPartNight" xml:space="preserve"><value>Ночь</value></data>
+  <data name="StatsDayPartMorning" xml:space="preserve"><value>Утро</value></data>
+  <data name="StatsDayPartAfternoon" xml:space="preserve"><value>День</value></data>
+  <data name="StatsDayPartEvening" xml:space="preserve"><value>Вечер</value></data>
 </root>

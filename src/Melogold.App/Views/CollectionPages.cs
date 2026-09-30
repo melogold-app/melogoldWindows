@@ -307,9 +307,7 @@ public sealed partial class HistoryPage : CatalogPage
     private readonly HashSet<string> _pendingRemoval = [];
 
     /// <summary>Чьи прослушивания показать (tasks/0002 §3.5): виден с аккаунтом, когда есть прослушивания других устройств.</summary>
-    private readonly ComboBox _device = new() { MinWidth = 200, VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed };
-    private HistoryDevice _filter = HistoryDevice.All;
-    private Dictionary<string, Melogold.Server.DeviceDto>? _deviceNames;
+    private readonly HistoryDeviceFilter _device = new();
 
     public HistoryPage()
     {
@@ -322,15 +320,12 @@ public sealed partial class HistoryPage : CatalogPage
         var clear = new Button { Content = Loc.Get("ClearHistory"), VerticalAlignment = VerticalAlignment.Top };
         clear.Click += async (_, _) => await ClearAsync();
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_device, Loc.Get("HistoryDeviceChoose"));
-        ToolTipService.SetToolTip(_device, Loc.Get("HistoryDeviceChoose"));
-        _device.SelectionChanged += (_, _) =>
-        {
-            if (_device.SelectedItem is not ComboBoxItem { Tag: HistoryDevice filter } || filter == _filter) return;
-            _filter = filter;
-            Load();
-        };
+        _device.FilterChanged += Load;
         actions.Children.Add(_device);
+        // «Итоги» (tasks/0015): статистика за неделю, месяц, год
+        var stats = new Button { Content = Loc.Get("Stats"), VerticalAlignment = VerticalAlignment.Top };
+        stats.Click += (_, _) => App.Services.GetRequiredService<Navigator>().Open(typeof(StatsPage));
+        actions.Children.Add(stats);
         actions.Children.Add(clear);
         Grid.SetColumn(actions, 1);
         header.Children.Add(actions);
@@ -357,68 +352,17 @@ public sealed partial class HistoryPage : CatalogPage
 
     private string? CurrentDeviceId => _account.State is Melogold.Server.AccountState.SignedIn signedIn ? signedIn.DeviceId : null;
 
-    /// <summary>
-    /// Фильтр по устройствам: «Все устройства · Это устройство · имя…»; устройство, которого уже нет в аккаунте, —
-    /// «Другое устройство». Без аккаунта или без чужих прослушиваний фильтра нет.
-    /// </summary>
-    private async Task ShowDevicesAsync()
-    {
-        var current = CurrentDeviceId;
-        var others = current is null ? [] : (await Task.Run(_library.HistoryDeviceIds)).Where(id => id != current).ToList();
-        if (others.Count == 0)
-        {
-            _device.Visibility = Visibility.Collapsed;
-            _filter = HistoryDevice.All;
-            return;
-        }
-        if (_deviceNames is null)
-        {
-            try
-            {
-                _deviceNames = (await _account.DevicesAsync()).Devices.ToDictionary(d => d.Id);
-            }
-            catch (Exception e) when (e is Melogold.Server.ApiException or HttpRequestException or TaskCanceledException)
-            {
-                Log.Warn("Device names unavailable", e);
-            }
-        }
-        var options = new List<(string Text, string? Glyph, HistoryDevice Filter)>
-        {
-            (Loc.Get("HistoryDeviceAll"), null, HistoryDevice.All),
-            (Loc.Get("HistoryDeviceThis"), Melogold.Core.Domain.DeviceSymbols.Glyph("windows"), HistoryDevice.This(current)),
-        };
-        options.AddRange(others
-            .Select(id => _deviceNames?.GetValueOrDefault(id) is { } d
-                ? (d.Name, Melogold.Core.Domain.DeviceSymbols.Glyph(d.Platform), HistoryDevice.Other(id))
-                : (Loc.Get("HistoryDeviceOther"), (string?)Melogold.Core.Domain.DeviceSymbols.Glyph(null), HistoryDevice.Other(id)))
-            .OrderBy(o => o.Item1, StringComparer.CurrentCulture));
-        var selected = _filter;
-        _device.Items.Clear();
-        foreach (var (text, glyph, filter) in options)
-        {
-            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            if (glyph is not null) content.Children.Add(new FontIcon { Glyph = glyph, FontSize = 14 });
-            content.Children.Add(new TextBlock { Text = text });
-            var item = new ComboBoxItem { Content = content, Tag = filter };
-            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(item, text);
-            _device.Items.Add(item);
-        }
-        _device.SelectedIndex = Math.Max(0, options.FindIndex(o => o.Filter == selected));
-        _filter = options[_device.SelectedIndex].Filter;
-        _device.Visibility = Visibility.Visible;
-    }
-
     public override void ScrollToTop() => SearchPage.FindScrollViewer(_list)?.ChangeView(null, 0, null);
 
     private bool Recent => (string?)_mode.SelectedItem?.Tag != "top";
 
     private async void Load()
     {
-        await ShowDevicesAsync();
+        await _device.RefreshAsync();
         _period.Visibility = Recent ? Visibility.Collapsed : Visibility.Visible;
         var recent = Recent;
         var days = (int?)_period.SelectedItem?.Tag ?? 30;
-        var filter = _filter;
+        var filter = _device.Filter;
         var tracks = await Task.Run(() => recent
             ? _library.RecentHistory(device: filter).Select(h => h.Track).ToList()
             : _library.MostPlayed(days == 0 ? null : IsoTime.NowMs() - days * 86_400_000L, device: filter).Select(t => t.Track).ToList());
@@ -524,7 +468,7 @@ public sealed partial class LocalPlaylistPage : CatalogPage
             return;
         }
         _playlist = playlist;
-        _list.ListName = playlist?.Name;
+        _list.ListName = playlist.Name;
         _tracks = tracks.Where(t => !_pendingRemoval.Contains(t.VideoId)).ToList();
         var duration = _tracks.Sum(t => t.DurationMs ?? 0);
         _header.Set(playlist.Name, Loc.Plural("Tracks", _tracks.Count), duration > 0 ? Durations.Format(duration) : null,

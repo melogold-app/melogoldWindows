@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
@@ -48,6 +49,11 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         SearchBox.Loaded += (_, _) => AttachSearchLayout();
         AnimateSnackbar();
+        // Плашку слышно и экранному диктору: системное уведомление автоматизации с её текстом и действием
+        Snackbar.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(Snackbar.IsOpen) && Snackbar.IsOpen) AnnounceSnackbar();
+        };
         // Панель выделения — поверх содержимого над плеером; плашка «Отменить» тогда поднимается над ней
         Grid.SetRow(Selection, 1);
         Canvas.SetZIndex(Selection, 9);
@@ -132,8 +138,13 @@ public sealed partial class MainWindow : Window
             Root.KeyboardAccelerators.Add(Accelerator(key, modifiers, action, inText ? null : FocusInTextInput));
         Key(VirtualKey.F, ctrl, FocusSearch);
         Key(VirtualKey.Left, VirtualKeyModifiers.Menu, () => _navigator.GoBack(), inText: false);
-        // Esc сначала снимает выделение в списке, потом — назад
-        Key(VirtualKey.Escape, VirtualKeyModifiers.None, () => { if (!Selection.TryClear()) GoBack(); });
+        // Esc в поле поиска снимает с него фокус (доктрина §4.6), а не уводит со страницы; иначе сначала снимает
+        // выделение в списке, потом — назад
+        Key(VirtualKey.Escape, VirtualKeyModifiers.None, () =>
+        {
+            if (FocusInSearch()) LeaveSearch();
+            else if (!Selection.TryClear()) GoBack();
+        });
         Key(VirtualKey.F11, VirtualKeyModifiers.None, ToggleFullScreen);
         Key(VirtualKey.F1, VirtualKeyModifiers.None, ShowShortcuts);
         Key((VirtualKey)191, ctrl, ShowShortcuts); // Ctrl+/
@@ -318,18 +329,29 @@ public sealed partial class MainWindow : Window
         presenter.PreferredMinimumHeight = (int)Math.Ceiling(MinWindowHeight * scale);
     }
 
-    /// <summary>Плашка всплывает снизу и тает, как уведомление, а не появляется рывком.</summary>
+    private void AnnounceSnackbar()
+    {
+        if ((FrameworkElementAutomationPeer.FromElement(SnackbarText) ?? FrameworkElementAutomationPeer.CreatePeerForElement(SnackbarText)) is not { } peer) return;
+        var text = Snackbar.ActionText is { Length: > 0 } action ? $"{Snackbar.Message}. {action}" : Snackbar.Message;
+        peer.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.ImportantMostRecent, text, "MelogoldSnackbar");
+    }
+
+    /// <summary>
+    /// Плашка всплывает снизу и тает, как уведомление, а не появляется рывком: появление 167 мс с замедлением к концу,
+    /// уход 167 мс — значения движения Windows. «Эффекты анимации» выключены — появляется и исчезает без движения.
+    /// </summary>
     private void AnimateSnackbar()
     {
+        if (!new Windows.UI.ViewManagement.UISettings().AnimationsEnabled) return;
         var compositor = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(SnackbarHost).Compositor;
         Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(SnackbarHost, true);
-        var easing = compositor.CreateCubicBezierEasingFunction(new System.Numerics.Vector2(0.1f, 0.9f), new System.Numerics.Vector2(0.2f, 1f));
+        var easing = compositor.CreateCubicBezierEasingFunction(new System.Numerics.Vector2(0f, 0f), new System.Numerics.Vector2(0f, 1f));
 
         var fadeIn = compositor.CreateScalarKeyFrameAnimation();
         fadeIn.Target = "Opacity";
         fadeIn.InsertKeyFrame(0, 0);
         fadeIn.InsertKeyFrame(1, 1, easing);
-        fadeIn.Duration = TimeSpan.FromMilliseconds(200);
+        fadeIn.Duration = TimeSpan.FromMilliseconds(167);
         var rise = compositor.CreateVector3KeyFrameAnimation();
         rise.Target = "Translation";
         rise.InsertKeyFrame(0, new System.Numerics.Vector3(0, 16, 0));
@@ -343,7 +365,7 @@ public sealed partial class MainWindow : Window
         fadeOut.Target = "Opacity";
         fadeOut.InsertKeyFrame(0, 1);
         fadeOut.InsertKeyFrame(1, 0);
-        fadeOut.Duration = TimeSpan.FromMilliseconds(150);
+        fadeOut.Duration = TimeSpan.FromMilliseconds(167);
 
         Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetImplicitShowAnimation(SnackbarHost, show);
         Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetImplicitHideAnimation(SnackbarHost, fadeOut);
@@ -567,6 +589,21 @@ public sealed partial class MainWindow : Window
     }
 
     private void FocusSearch() => SearchBox.Focus(FocusState.Keyboard);
+
+    private bool FocusInSearch()
+    {
+        for (var element = FocusManager.GetFocusedElement(Content.XamlRoot) as DependencyObject; element is not null; element = VisualTreeHelper.GetParent(element))
+        {
+            if (ReferenceEquals(element, SearchBox)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>Фокус из поля поиска — на первое, что можно нажать на открытой странице; набранное в поле остаётся.</summary>
+    private void LeaveSearch()
+    {
+        if (FocusManager.FindFirstFocusableElement(SectionHost) is UIElement first) first.Focus(FocusState.Programmatic);
+    }
 
     private FrameworkElement? _searchColumn;
 

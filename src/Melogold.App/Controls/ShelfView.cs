@@ -1,7 +1,9 @@
 using Melogold.App.Services;
 using Melogold.App.ViewModels;
 using Melogold.App.Views;
+using Melogold.Core.Domain;
 using Melogold.Core.Music;
+using Melogold.InnerTube;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
@@ -111,6 +113,7 @@ public sealed partial class ShelfView : StackPanel
         ScrollViewer.SetVerticalScrollMode(list, ScrollMode.Disabled);
         ScrollViewer.SetVerticalScrollBarVisibility(list, ScrollBarVisibility.Disabled);
         list.ItemClick += (_, e) => OpenCard((CardVm)e.ClickedItem);
+        AttachMenu(list);
         list.ContainerContentChanging += (_, e) =>
         {
             if (e.ItemContainer is ListViewItem item) item.Padding = new Thickness(0, 0, 16, 8);
@@ -129,7 +132,58 @@ public sealed partial class ShelfView : StackPanel
             IsItemClickEnabled = true,
         };
         grid.ItemClick += (_, e) => OpenCard((CardVm)e.ClickedItem);
+        AttachMenu(grid);
         return grid;
+    }
+
+    /// <summary>
+    /// Правый щелчок, Shift+F10 и клавиша меню по карточке (доктрина §4.3): видео — меню трека, альбом, плейлист и
+    /// исполнитель — меню коллекции, как «…» в их шапке.
+    /// </summary>
+    private static void AttachMenu(ListViewBase list)
+    {
+        list.ContextRequested += (_, e) =>
+        {
+            if (e.OriginalSource is not FrameworkElement target) return;
+            CardVm? card = null;
+            for (var element = (DependencyObject)target; element is not null && card is null; element = VisualTreeHelper.GetParent(element))
+            {
+                if (element is Microsoft.UI.Xaml.Controls.Primitives.SelectorItem container) card = list.ItemFromContainer(container) as CardVm;
+            }
+            if (card is null) return;
+            Windows.Foundation.Point? at = e.TryGetPosition(target, out var point) ? point : null;
+            if (card.Item is Track track)
+            {
+                App.Services.GetRequiredService<TrackActions>().ShowMenu(track, new TrackContext.Single(), target, at);
+                e.Handled = true;
+            }
+            else if (MenuFor(card.Item) is { } menu)
+            {
+                if (at is { } position) menu.ShowAt(target, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions { Position = position });
+                else menu.ShowAt(target);
+                e.Handled = true;
+            }
+        };
+    }
+
+    /// <summary>Меню коллекции для карточки или строки альбома, плейлиста и исполнителя; треки берутся при выборе пункта.</summary>
+    public static MenuFlyout? MenuFor(MusicItem item)
+    {
+        var music = App.Services.GetRequiredService<YouTubeMusic>();
+        var menus = App.Services.GetRequiredService<CollectionMenu>();
+        return item switch
+        {
+            AlbumItem album => menus.Build(
+                async () => (await App.Services.GetRequiredService<CatalogCache>().GetAsync("album:" + album.BrowseId, () => music.AlbumAsync(album.BrowseId))).Tracks,
+                new ShareTarget(album.Title, album.ArtistsText, ShareLinks.Album(album.BrowseId))),
+            PlaylistItem playlist => menus.Build(
+                async () => await music.PlaylistTracksAsync(playlist.PlaylistId, 500),
+                new ShareTarget(playlist.Title, playlist.Subtitle, ShareLinks.Playlist(playlist.PlaylistId))),
+            ArtistItem { IsChannel: false } artist => menus.Build(
+                async () => await ArtistPage.SongsAsync(await ArtistPage.DetailsAsync(artist.BrowseId)),
+                new ShareTarget(artist.Name, null, ShareLinks.Artist(artist.BrowseId, false))),
+            _ => null,
+        };
     }
 
     private static void OpenCard(CardVm card)

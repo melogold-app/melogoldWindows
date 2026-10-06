@@ -222,7 +222,14 @@ public sealed partial class MusicListView : ListView
 
     public static void ShowMenu(RowVm row, FrameworkElement target, Windows.Foundation.Point? at)
     {
-        if (row.Track is not { } track) return;
+        if (row.Track is not { } track)
+        {
+            // Альбом, плейлист, исполнитель строкой (поиск, библиотека) — то же меню коллекции, что у карточки
+            if (ShelfView.MenuFor(row.Item) is not { } menu) return;
+            if (at is { } position) menu.ShowAt(target, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions { Position = position });
+            else menu.ShowAt(target);
+            return;
+        }
         Action? remove = row.Owner.Remove is { } handler ? () => handler(row) : null;
         Actions.ShowMenu(track, row.Owner.Context, target, at, remove);
     }

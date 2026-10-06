@@ -12,13 +12,14 @@ namespace Melogold.App.Controls;
 
 /// <summary>
 /// Три столбика «играет» (docs/PROMPT.md §4): низы, середина, верх — под настоящий звук из <see cref="AudioLevels"/>.
-/// Без захвата звука — спокойное медленное движение, на паузе — неподвижны.
+/// Без захвата звука — спокойное медленное движение, на паузе и без «Эффектов анимации» Windows — неподвижны.
 /// </summary>
 public sealed partial class PlayingBars : Grid
 {
     private static readonly List<WeakReference<PlayingBars>> Instances = [];
     private static DispatcherQueueTimer? _timer;
     private static readonly DateTime Started = DateTime.UtcNow;
+    private static readonly Windows.UI.ViewManagement.UISettings Motion = new();
 
     private readonly Rectangle[] _bars = new Rectangle[3];
 
@@ -82,8 +83,10 @@ public sealed partial class PlayingBars : Grid
         var playing = engine.IsPlaying;
         var volume = engine.OutputVolume;
         float[] values;
+        // «Эффекты анимации» в Windows выключены — столбики стоят, как на паузе (доктрина §4.1): отметка «играет» остаётся
+        if (!Motion.AnimationsEnabled) values = [0.3f, 0.5f, 0.35f];
         // Захват слышит звук после громкости: при заметной громкости уровни поправляются на неё, без звука — спокойно
-        if (levels.IsLive && volume >= 0.02)
+        else if (levels.IsLive && volume >= 0.02)
         {
             var (low, mid, high) = levels.Levels;
             var gain = (float)Math.Clamp(-20 * Math.Log10(volume) / 42, 0, 1);

@@ -120,7 +120,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock VerticalAlignment="Center" Text="{x:Bind Snackbar.Message, Mode=OneWay}" TextWrapping="WrapWholeWords" />
+            <TextBlock x:Name="SnackbarText" VerticalAlignment="Center" Text="{x:Bind Snackbar.Message, Mode=OneWay}" TextWrapping="WrapWholeWords" />
             <Button
                 Grid.Column="1"
                 Content="{x:Bind Snackbar.ActionText, Mode=OneWay}"

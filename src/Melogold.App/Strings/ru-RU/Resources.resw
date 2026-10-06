@@ -147,6 +147,8 @@
   <data name="SavedToLibraryFormat" xml:space="preserve"><value>Сохранено в Библиотеку: „{0}“</value></data>
   <data name="Subscribe" xml:space="preserve"><value>Подписаться</value></data>
   <data name="Subscribed" xml:space="preserve"><value>Вы подписаны</value></data>
+  <data name="ArtistAbout" xml:space="preserve"><value>Об исполнителе</value></data>
+  <data name="ArtistSubscribersFormat" xml:space="preserve"><value>Подписчиков: {0}</value></data>
   <data name="YouTubeChannel" xml:space="preserve"><value>Канал YouTube</value></data>
   <data name="MenuStartRadio" xml:space="preserve"><value>Включить радио</value></data>
   <data name="PlayingNextTracks_one" xml:space="preserve"><value>Играет следующим: {0} трек</value></data>

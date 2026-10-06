@@ -147,6 +147,8 @@
   <data name="SavedToLibraryFormat" xml:space="preserve"><value>Saved to Library: “{0}”</value></data>
   <data name="Subscribe" xml:space="preserve"><value>Subscribe</value></data>
   <data name="Subscribed" xml:space="preserve"><value>Subscribed</value></data>
+  <data name="ArtistAbout" xml:space="preserve"><value>About</value></data>
+  <data name="ArtistSubscribersFormat" xml:space="preserve"><value>Subscribers: {0}</value></data>
   <data name="YouTubeChannel" xml:space="preserve"><value>YouTube channel</value></data>
   <data name="MenuStartRadio" xml:space="preserve"><value>Start radio</value></data>
   <data name="PlayingNextTracks_one" xml:space="preserve"><value>Playing next: {0} track</value></data>

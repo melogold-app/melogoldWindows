@@ -126,6 +126,15 @@ public sealed record ArtistDetails
     public bool IsChannel { get; init; }
     public IReadOnlyList<Shelf> Shelves { get; init; } = [];
 
+    /// <summary>«14,3 млн слушателей в месяц» — как прислал YouTube Music, уже на языке приложения.</summary>
+    public string? MonthlyListenersText { get; init; }
+
+    /// <summary>Число подписчиков без подписи: «739 тыс.».</summary>
+    public string? SubscriberCount { get; init; }
+
+    /// <summary>«Просмотров: 751 013 381» — подзаголовок полки «Об исполнителе».</summary>
+    public string? ViewsText { get; init; }
+
     /// <summary>Плейлист «Все треки» исполнителя, если YouTube его дал.</summary>
     public string? SongsPlaylistId { get; init; }
 

@@ -25,7 +25,8 @@ public sealed partial class ShelfView : StackPanel
         </DataTemplate>
         """);
 
-    public ShelfView(Shelf shelf, TrackContext context, int maxRows = 5, Action? onMore = null, string? moreLabel = null)
+    /// <param name="columns">треки — в несколько колонок на широком окне (популярные треки исполнителя)</param>
+    public ShelfView(Shelf shelf, TrackContext context, int maxRows = 5, Action? onMore = null, string? moreLabel = null, bool columns = false)
     {
         Spacing = 4;
         MaxRows = maxRows;
@@ -54,6 +55,7 @@ public sealed partial class ShelfView : StackPanel
         if (shelf.Items.All(i => i is Track) && shelf.Items.Count > 0 && !IsVideoCarousel(shelf))
         {
             var list = new MusicListView();
+            if (columns) list.UseColumns();
             var owner = new RowOwner(context);
             list.SetItems(shelf.Items.Take(maxRows), owner);
             // Весь список полки играет с выбранного трека, даже если видны не все строки

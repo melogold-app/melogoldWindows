@@ -97,7 +97,47 @@ public sealed partial class MusicListView : ListView
     public List<Track> SelectedTracks()
     {
         var selected = SelectedItems.OfType<RowVm>().ToHashSet();
-        return Rows.Where(selected.Contains).Select(r => r.Track).OfType<Track>().ToList();
+        return (_ranked ?? Rows).Where(selected.Contains).Select(r => r.Track).OfType<Track>().ToList();
+    }
+
+    // ---------- Колонки ----------
+
+    private static readonly ItemsPanelTemplate WrapPanel = (ItemsPanelTemplate)XamlReader.Load(
+        """
+        <ItemsPanelTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+            <ItemsWrapGrid Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+        """);
+
+    private bool _columns;
+    private int _columnCount;
+    private List<RowVm>? _ranked;
+
+    /// <summary>
+    /// Строки в несколько колонок — популярные треки исполнителя (tasks/0024): шире 640 — две, шире 1040 — три. Места
+    /// идут вниз по колонке (<see cref="GridOrder.ColumnMajor"/>); выделение и «играть с этого трека» — по порядку мест,
+    /// стрелка вниз — к следующему месту. Для списка, заданного один раз через <see cref="SetItems"/>.
+    /// </summary>
+    public void UseColumns()
+    {
+        _columns = true;
+        ItemsPanel = WrapPanel;
+        SizeChanged += (_, e) => LayOutColumns(e.NewSize.Width);
+        Loaded += (_, _) => LayOutColumns(ActualWidth);
+    }
+
+    private void LayOutColumns(double width)
+    {
+        if (!_columns || width <= 0 || ItemsPanelRoot is not ItemsWrapGrid grid) return;
+        var inner = width - Padding.Left - Padding.Right;
+        var columns = inner >= 1040 ? 3 : inner >= 640 ? 2 : 1;
+        grid.ItemWidth = Math.Floor(inner / columns);
+        if (columns == _columnCount) return;
+        _columnCount = columns;
+        _ranked ??= Rows.ToList();
+        var order = GridOrder.ColumnMajor(_ranked.Count, columns);
+        Entries.Clear();
+        foreach (var index in order) Entries.Add(_ranked[index]);
     }
 
     /// <summary>«Выбрать все» — все треки списка.</summary>
@@ -118,6 +158,11 @@ public sealed partial class MusicListView : ListView
         Entries.Clear();
         AppendItems(items, owner, showType);
         ItemsSource = Entries;
+        if (_columns)
+        {
+            (_ranked, _columnCount) = (null, 0);
+            LayOutColumns(ActualWidth);
+        }
     }
 
     public void AppendItems(IEnumerable<MusicItem> items, RowOwner owner, bool showType = false)

@@ -12,6 +12,9 @@ public static partial class Thumbnails
     [GeneratedRegex(@"^https?://i\.ytimg\.com/vi(_webp)?/([A-Za-z0-9_-]{11})/")]
     private static partial Regex YtImg();
 
+    [GeneratedRegex(@"=w(\d+)-h(\d+)")]
+    private static partial Regex Size();
+
     public static string? Sized(string? url, int px)
     {
         if (string.IsNullOrEmpty(url)) return url;
@@ -29,6 +32,28 @@ public static partial class Thumbnails
             return px <= 320 ? $"https://i.ytimg.com/vi/{id}/mqdefault.jpg" : $"https://i.ytimg.com/vi/{id}/hq720.jpg";
         }
         return url;
+    }
+
+    /// <summary>
+    /// Широкое фото шапки исполнителя (<c>musicImmersiveHeaderRenderer</c>, 2,4 : 1) шириной <paramref name="width"/>
+    /// с теми же пропорциями: <see cref="Sized"/> сделал бы из баннера квадрат. Пропорций в адресе нет — как
+    /// <see cref="Sized"/>.
+    /// </summary>
+    public static string? Wide(string? url, int width)
+    {
+        if (Aspect(url) is not { } aspect) return Sized(url, width);
+        var eq = url!.LastIndexOf('=');
+        return $"{url[..eq]}=w{width}-h{(int)Math.Round(width / aspect)}-p-l90-rj";
+    }
+
+    /// <summary>Ширина к высоте по хвосту <c>=w…-h…</c> адреса googleusercontent; null — не указаны.</summary>
+    public static double? Aspect(string? url)
+    {
+        if (string.IsNullOrEmpty(url) || !(url.Contains("googleusercontent.com", StringComparison.Ordinal) || url.Contains("ggpht.com", StringComparison.Ordinal))) return null;
+        var eq = url.LastIndexOf('=');
+        if (eq < 0 || Size().Match(url, eq) is not { Success: true } match) return null;
+        var (w, h) = (double.Parse(match.Groups[1].ValueSpan, System.Globalization.CultureInfo.InvariantCulture), double.Parse(match.Groups[2].ValueSpan, System.Globalization.CultureInfo.InvariantCulture));
+        return w > 0 && h > 0 ? w / h : null;
     }
 
     /// <summary>Обложка видео по его id, когда своей нет.</summary>

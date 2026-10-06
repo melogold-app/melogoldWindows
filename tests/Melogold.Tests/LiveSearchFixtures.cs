@@ -28,6 +28,23 @@ public class LiveSearchFixtures
         }
     }
 
+    /// <summary>Страницы исполнителей (tasks/0024): папка <c>Fixtures/artist</c> рядом с <c>search</c>. Два запроса <c>browse</c>.</summary>
+    [Fact]
+    public async Task SaveArtistResponses()
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1" && Environment.GetEnvironmentVariable("MELOGOLD_SAVE_FIXTURES") is { Length: > 0 }, "MELOGOLD_LIVE=1, MELOGOLD_SAVE_FIXTURES");
+        var folder = Path.Combine(Environment.GetEnvironmentVariable("MELOGOLD_SAVE_FIXTURES")!, "..", "artist");
+        Directory.CreateDirectory(folder);
+        var client = new InnerTubeClient();
+        (client.Language, client.Region) = InnerTubeClient.LocaleFrom(new CultureInfo("ru-RU"));
+        foreach (var (name, browseId) in new[] { ("kino", "UCL9NQ06h7I0CRUcGxPWMtkQ"), ("michael-jackson", "UCoIOOL7QKuBhQHVKL8y7BEQ") })
+        {
+            var response = await client.PostAsync(ClientProfile.WebRemix, "browse", new JsonObject { ["browseId"] = browseId }, TestContext.Current.CancellationToken);
+            Strip(response);
+            await File.WriteAllTextAsync(Path.Combine(folder, name + ".json"), response.ToJsonString(new JsonSerializerOptions { WriteIndented = false }), TestContext.Current.CancellationToken);
+        }
+    }
+
     /// <summary>
     /// Без идентификатора посетителя (<c>responseContext.visitorData</c>) и полей отслеживания: в репозитории только
     /// выдача, по которой проверяется разбор.

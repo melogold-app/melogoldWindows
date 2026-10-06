@@ -297,24 +297,28 @@ public sealed class YouTubeMusic(InnerTubeClient client)
     public async Task<ArtistDetails> ArtistAsync(string browseId, CancellationToken ct = default)
     {
         var response = await Music("browse", new JsonObject { ["browseId"] = browseId }, ct).ConfigureAwait(false);
+        if (ParseArtist(browseId, response) is { } artist) return artist;
+        var channel = await ChannelAsync(browseId, ct).ConfigureAwait(false);
+        return new ArtistDetails
+        {
+            BrowseId = browseId,
+            Name = channel.Name,
+            ThumbnailUrl = channel.ThumbnailUrl,
+            SubscribersText = channel.SubscribersText,
+            Description = channel.Description,
+            IsChannel = true,
+            Shelves = channel.Videos.Count > 0 ? [new Shelf(null, channel.Videos)] : [],
+        };
+    }
+
+    /// <summary>Разбор страницы исполнителя YTM; null — музыкального профиля нет (тогда это канал YouTube).</summary>
+    public static ArtistDetails? ParseArtist(string browseId, JsonNode response)
+    {
         var header = response.At("header", "musicImmersiveHeaderRenderer") ?? response.At("header", "musicVisualHeaderRenderer")
                      ?? response.At("header", "musicHeaderRenderer");
         var sections = response.At("contents", "singleColumnBrowseResultsRenderer", "tabs", 0, "tabRenderer", "content", "sectionListRenderer", "contents");
         var shelves = sections is null ? [] : MusicParsers.Shelves(sections);
-        if (header is null || shelves.Count == 0)
-        {
-            var channel = await ChannelAsync(browseId, ct).ConfigureAwait(false);
-            return new ArtistDetails
-            {
-                BrowseId = browseId,
-                Name = channel.Name,
-                ThumbnailUrl = channel.ThumbnailUrl,
-                SubscribersText = channel.SubscribersText,
-                Description = channel.Description,
-                IsChannel = true,
-                Shelves = channel.Videos.Count > 0 ? [new Shelf(null, channel.Videos)] : [],
-            };
-        }
+        if (header is null || shelves.Count == 0) return null;
 
         var songsShelf = sections.Items().Select(s => s.At("musicShelfRenderer")).FirstOrDefault(s => s is not null);
         var songsBrowse = songsShelf.At("title", "runs", 0, "navigationEndpoint", "browseEndpoint", "browseId")
@@ -328,6 +332,9 @@ public sealed class YouTubeMusic(InnerTubeClient client)
             ThumbnailUrl = header.At("thumbnail", "musicThumbnailRenderer", "thumbnail", "thumbnails").BestThumbnail(),
             SubscribersText = header.At("subscriptionButton", "subscribeButtonRenderer", "longSubscriberCountText").Text()
                               ?? header.At("monthlyListenerCount").Text(),
+            MonthlyListenersText = header.At("monthlyListenerCount").Text(),
+            SubscriberCount = header.At("subscriptionButton", "subscribeButtonRenderer", "subscriberCountText").Text(),
+            ViewsText = sections.Items().Select(s => s.At("musicDescriptionShelfRenderer", "subheader").Text()).FirstOrDefault(t => !string.IsNullOrWhiteSpace(t)),
             Shelves = shelves,
             SongsPlaylistId = songsPlaylist,
             RadioPlaylistId = header.Str("startRadioButton", "buttonRenderer", "navigationEndpoint", "watchPlaylistEndpoint", "playlistId")

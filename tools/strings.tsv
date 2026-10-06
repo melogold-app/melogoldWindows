@@ -151,6 +151,8 @@ SaveAsPlaylist	Сохранить	Save
 SavedToLibraryFormat	Сохранено в Библиотеку: „{0}“	Saved to Library: “{0}”
 Subscribe	Подписаться	Subscribe
 Subscribed	Вы подписаны	Subscribed
+ArtistAbout	Об исполнителе	About
+ArtistSubscribersFormat	Подписчиков: {0}	Subscribers: {0}
 YouTubeChannel	Канал YouTube	YouTube channel
 MenuStartRadio	Включить радио	Start radio
 PlayingNextTracks_one	Играет следующим: {0} трек	Playing next: {0} track

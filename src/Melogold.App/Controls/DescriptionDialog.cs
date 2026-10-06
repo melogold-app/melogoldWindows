@@ -72,7 +72,7 @@ public static class DescriptionDialog
     }
 
     /// <summary>«Источник: Википедия · Лицензия: Creative Commons …» — обе части ссылками, если адрес можно открыть.</summary>
-    private static StackPanel SourceLinks(DescriptionSource source, Brush secondary)
+    internal static StackPanel SourceLinks(DescriptionSource source, Brush secondary)
     {
         var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         row.Children.Add(new TextBlock { Text = Loc.Get("DescriptionSource"), Foreground = secondary, VerticalAlignment = VerticalAlignment.Center });

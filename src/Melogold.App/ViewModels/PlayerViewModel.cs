@@ -55,7 +55,12 @@ public sealed partial class PlayerViewModel : ObservableObject
             SaveQueue();
         };
         engine.QueueChanged += SaveQueue;
-        engine.Skipped += error => Notice = Loc.Format("SkippedFormat", error.Track.Title, NoticeText(error));
+        engine.Skipped += error =>
+        {
+            Log.Warn($"Skipped {error.Track.VideoId}: {error.Kind} {error.Message}");
+            Notice = Loc.Format("SkippedFormat", error.Track.Title, NoticeText(error));
+        };
+        engine.Recovering += (error, attempt) => Log.Warn($"Reopening {error.Track.VideoId} at {engine.Position:mm\\:ss} (attempt {attempt}): {error.Kind} {error.Message}");
         library.Changed += change =>
         {
             if (change.HasFlag(LibraryChange.Likes)) DispatcherQueue.GetForCurrentThread()?.TryEnqueue(RefreshLike);

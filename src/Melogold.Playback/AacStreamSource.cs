@@ -149,6 +149,8 @@ public sealed class AacStreamSource : IDisposable
                         tail.CopyTo(data, inHead);
                         loaded.Ready = inHead + tail.Length;
                     });
+                    // Ошибку догрузки увидит чтение кадра (NextSampleAsync); трек могли и не дослушать — тогда её некому ждать
+                    _ = loaded.Rest.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
                     return loaded;
                 }
             }

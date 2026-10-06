@@ -5,13 +5,20 @@ namespace Melogold.Playback;
 
 /// <summary>
 /// Чтение диапазонов адреса потока (docs/PROMPT.md §4, грабли §8.1): 403 и истёкший адрес — не пропуск трека, а свежий
-/// адрес и повтор (до двух раз подряд); сетевая ошибка — повтор через 1 и 3 с. Короткие диапазоны googlevideo не душит.
+/// адрес и повтор: до четырёх раз подряд, со второго — через 1,5, 4 и 8 с. Адрес googlevideo привязан к IP: после смены
+/// сети или сервера VPN посреди песни свежий адрес, взятый в ту же секунду, ещё получает 403 — пауза даёт переключению
+/// закончиться (пользователь 2026-10-06: песня обрывалась на середине). Сетевая ошибка — повтор через 1 и 3 с. Короткие
+/// диапазоны googlevideo не душит.
 /// Параллельные чтения (текущий фрагмент и упреждающие) получают 403 на один и тот же истёкший адрес разом: адрес
 /// обновляет первое из них, остальные просто повторяют со свежим и не тратят попытки. С <paramref name="cache"/> —
 /// сначала кэш песен: что уже на диске, в сеть не ходит, прочитанное из сети ложится туда.
 /// </summary>
-public sealed class HttpRangeReader(HttpClient http, StreamInfo info, Func<CancellationToken, Task<StreamInfo>> refresh, SongCacheEntry? cache = null)
+/// <param name="refreshPauses">паузы перед свежими адресами подряд (тестам — нулевые); их число — сколько адресов пробовать</param>
+public sealed class HttpRangeReader(HttpClient http, StreamInfo info, Func<CancellationToken, Task<StreamInfo>> refresh, SongCacheEntry? cache = null,
+    IReadOnlyList<TimeSpan>? refreshPauses = null)
 {
+    private static readonly TimeSpan[] DefaultRefreshPauses = [TimeSpan.Zero, TimeSpan.FromSeconds(1.5), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8)];
+    private readonly IReadOnlyList<TimeSpan> _pauses = refreshPauses ?? DefaultRefreshPauses;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private int _refreshes;
 
@@ -52,8 +59,11 @@ public sealed class HttpRangeReader(HttpClient http, StreamInfo info, Func<Cance
                         // Адрес уже обновило другое чтение — повторить с ним
                         if (ReferenceEquals(Info, current))
                         {
-                            if (++_refreshes > 2)
-                                throw new StreamException(StreamErrorKind.Extractor, $"googlevideo {(int)response.StatusCode} after fresh URLs");
+                            if (_refreshes >= _pauses.Count)
+                                throw new StreamException(StreamErrorKind.Extractor,
+                                    $"googlevideo {(int)response.StatusCode} after {_pauses.Count} fresh URLs at byte {start} of {TotalLength?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "?"} ({current.Source})");
+                            var pause = _pauses[_refreshes++];
+                            if (pause > TimeSpan.Zero) await Task.Delay(pause, ct).ConfigureAwait(false);
                             Info = await refresh(ct).ConfigureAwait(false);
                         }
                     }

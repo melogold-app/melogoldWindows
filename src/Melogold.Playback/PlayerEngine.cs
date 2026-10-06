@@ -373,7 +373,7 @@ public sealed class PlayerEngine : IDisposable
                 stream.Failed += error => Post(() =>
                 {
                     if (ReferenceEquals(_stream, stream))
-                        SkipAfterError(error is StreamException s ? new PlayerError(s.Kind, s.Message, track, s.Country, s.OpenCountries) : new PlayerError(StreamErrorKind.Network, error.Message, track));
+                        RecoverOrSkip(error is StreamException s ? new PlayerError(s.Kind, s.Message, track, s.Country, s.OpenCountries) : new PlayerError(StreamErrorKind.Network, error.Message, track));
                 });
                 var source = MediaSource.CreateFromMediaStreamSource(stream.CreateMediaStreamSource());
                 var item = new MediaPlaybackItem(source);
@@ -455,16 +455,41 @@ public sealed class PlayerEngine : IDisposable
     private void OnFailed(MediaPlayerFailedEventArgs e)
     {
         if (Current is not { } track) return;
-        // Поток уже прочитал и повторил сам; сюда доходит то, что не лечится повтором — пробуем свежий адрес один раз
-        _resolver.Invalidate(track.VideoId);
-        var position = (long)Position.TotalMilliseconds;
-        if (Error is null && _stream is not null)
+        // Поток уже прочитал и повторил сам; сюда доходит то, что не лечится повтором — переоткрыть со свежим адресом
+        RecoverOrSkip(new PlayerError(StreamErrorKind.Extractor, e.ErrorMessage ?? e.Error.ToString(), track));
+    }
+
+    private const int MaxRecoveries = 2;
+    private string? _recoveryVideoId;
+    private int _recoveries;
+
+    /// <summary>Трек оборвался посреди и переоткрывается с того же места: ошибка и номер попытки — в журнал приложения.</summary>
+    public event Action<PlayerError, int>? Recovering;
+
+    /// <summary>
+    /// Поток оборвался посреди трека (403 и после свежих адресов, сеть): переоткрыть трек с того же места со свежим адресом —
+    /// после смены сети или сервера VPN он снова играет. Не вышло дважды за трек — пропуск, как раньше. Проверка на бота
+    /// и причина в самом видео (страна, возраст, удалён) не лечатся — сразу <see cref="SkipAfterError"/>.
+    /// </summary>
+    private void RecoverOrSkip(PlayerError error)
+    {
+        if (Current is { } track && error.Kind is not (StreamErrorKind.BotCheck or StreamErrorKind.Geo or StreamErrorKind.Unavailable or StreamErrorKind.Age))
         {
-            Error = new PlayerError(StreamErrorKind.Network, e.ErrorMessage, track);
-            _ = LoadCurrentAsync(play: _playWhenReady, position);
-            return;
+            if (_recoveryVideoId != track.VideoId)
+            {
+                _recoveryVideoId = track.VideoId;
+                _recoveries = 0;
+            }
+            if (_recoveries < MaxRecoveries)
+            {
+                _recoveries++;
+                Recovering?.Invoke(error, _recoveries);
+                _resolver.Invalidate(track.VideoId);
+                _ = LoadCurrentAsync(play: _playWhenReady, (long)Position.TotalMilliseconds);
+                return;
+            }
         }
-        SkipAfterError(new PlayerError(StreamErrorKind.Extractor, e.ErrorMessage ?? e.Error.ToString(), track));
+        SkipAfterError(error);
     }
 
     private void OnEnded()

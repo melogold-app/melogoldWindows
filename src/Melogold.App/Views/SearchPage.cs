@@ -27,6 +27,7 @@ public sealed partial class SearchPage : CatalogPage
     private readonly SelectorBar _filters = new() { Margin = new Thickness(0, 4, 0, 0) };
     private readonly InfoBar _note = new() { IsClosable = false, Severity = InfoBarSeverity.Informational, Margin = new Thickness(0, 12, 0, 0) };
     private readonly StateView _state = new();
+    private readonly ContentControl _top = new() { HorizontalContentAlignment = HorizontalAlignment.Stretch, IsTabStop = false };
     private string _query = "";
     private SearchScope _scope;
     private string? _continuation;
@@ -56,6 +57,7 @@ public sealed partial class SearchPage : CatalogPage
         header.Children.Add(_filters);
         header.Children.Add(_note);
         header.Children.Add(_state);
+        header.Children.Add(_top);
         _note.IsOpen = false;
         _list.Header = header;
         _list.Loaded += (_, _) =>
@@ -102,6 +104,7 @@ public sealed partial class SearchPage : CatalogPage
     private void Load(int filter)
     {
         _list.Clear();
+        _top.Content = null;
         _note.IsOpen = false;
         _continuation = null;
         _more = null;
@@ -123,19 +126,20 @@ public sealed partial class SearchPage : CatalogPage
         if (ytm is null && web is null) throw error!;
 
         var hidden = App.Services.GetRequiredService<Library>().HiddenTracks();
-        var ytmItems = new List<MusicItem>();
-        if (ytm?.TopResult is { } top) ytmItems.Add(top);
-        ytmItems.AddRange((ytm?.Items ?? []).Where(i => !Same(i, ytm?.TopResult)));
-        ytmItems = ytmItems.Where(i => i is not Track t || !hidden.Contains(t.VideoId)).Take(8).ToList();
+        // Лучший результат — крупной карточкой над выдачей (tasks/0023) и строкой ниже не повторяется
+        var top = ytm is null ? null : SearchTopResult.Pick(ytm, query);
+        if (top is Track { VideoId: var topId } && hidden.Contains(topId)) top = null;
+        var ytmItems = (ytm?.Items ?? []).Where(i => !SearchTopResult.Same(i, top) && (i is not Track t || !hidden.Contains(t.VideoId))).Take(8).ToList();
         var known = ytmItems.OfType<Track>().Select(t => t.VideoId).ToHashSet();
         var videos = (web?.Items ?? []).OfType<Track>().Where(t => !known.Contains(t.VideoId) && !hidden.Contains(t.VideoId)).Take(6).ToList();
 
-        if (ytmItems.Count == 0 && videos.Count == 0)
+        if (top is not null) _top.Content = new TopResultCard(top);
+        if (top is null && ytmItems.Count == 0 && videos.Count == 0)
         {
             _state.ShowEmpty("", Loc.Get("ResultsNothing"));
             throw new StateShownException();
         }
-        if (ytmItems.Count == 0)
+        if (top is null && ytmItems.Count == 0)
         {
             _note.Message = Loc.Get("ResultsNothingInCatalog");
             _note.IsOpen = true;
@@ -147,22 +151,13 @@ public sealed partial class SearchPage : CatalogPage
             _list.AppendItems(videos, _owner, showType: false);
         }
         if (ytmItems.Count == 0) AddYouTube();
-        if (ytmItems.Count > 0)
+        else
         {
             _list.AddSection("YouTube Music", () => Show(SearchScope.Music, 0));
             _list.AppendItems(ytmItems, _owner, showType: true);
             AddYouTube();
         }
     }
-
-    private static bool Same(MusicItem a, MusicItem? b) => b is not null && (a, b) switch
-    {
-        (Track x, Track y) => x.VideoId == y.VideoId,
-        (AlbumItem x, AlbumItem y) => x.BrowseId == y.BrowseId,
-        (ArtistItem x, ArtistItem y) => x.BrowseId == y.BrowseId,
-        (PlaylistItem x, PlaylistItem y) => x.PlaylistId == y.PlaylistId,
-        _ => false,
-    };
 
     private async Task LoadFilteredAsync(int filter, CancellationToken ct)
     {
@@ -213,7 +208,7 @@ public sealed partial class SearchPage : CatalogPage
             var page = await more(token, CancellationToken.None);
             if (token != _continuation) return;
             var known = _list.Rows.Select(r => r.Item).ToList();
-            _list.AppendItems(page.Items.Where(i => !known.Any(k => Same(i, k))), _owner);
+            _list.AppendItems(page.Items.Where(i => !known.Any(k => SearchTopResult.Same(i, k))), _owner);
             _continuation = page.Continuation == token ? null : page.Continuation;
         }
         catch (Exception e) when (e is YouTubeException or HttpRequestException)

@@ -121,6 +121,7 @@
   <data name="ResultsChannels" xml:space="preserve"><value>Каналы</value></data>
   <data name="ResultsLive" xml:space="preserve"><value>Трансляции</value></data>
   <data name="ResultsTopResult" xml:space="preserve"><value>Лучший результат</value></data>
+  <data name="ResultsOpen" xml:space="preserve"><value>Открыть</value></data>
   <data name="ResultsMore" xml:space="preserve"><value>Ещё</value></data>
   <data name="DescriptionSource" xml:space="preserve"><value>Источник:</value></data>
   <data name="DescriptionWikipedia" xml:space="preserve"><value>Википедия</value></data>

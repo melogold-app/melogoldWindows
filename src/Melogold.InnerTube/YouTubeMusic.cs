@@ -61,9 +61,12 @@ public sealed class YouTubeMusic(InnerTubeClient client)
     // ---------- Поиск ----------
 
     /// <summary>YTM без фильтра: лучший результат и смешанная выдача (секция «Всё», REWRITE §4.8.5).</summary>
-    public async Task<SearchSummary> SearchSummaryAsync(string query, CancellationToken ct = default)
+    public async Task<SearchSummary> SearchSummaryAsync(string query, CancellationToken ct = default) =>
+        ParseSearchSummary(await Music("search", new JsonObject { ["query"] = query }, ct).ConfigureAwait(false));
+
+    /// <summary>Разбор ответа <c>search</c> без фильтра: карточка лучшего результата (<c>musicCardShelfRenderer</c>) и выдача.</summary>
+    public static SearchSummary ParseSearchSummary(JsonNode response)
     {
-        var response = await Music("search", new JsonObject { ["query"] = query }, ct).ConfigureAwait(false);
         var sections = response.At("contents", "tabbedSearchResultsRenderer", "tabs", 0, "tabRenderer", "content", "sectionListRenderer", "contents");
         MusicItem? top = null;
         var items = new List<MusicItem>();

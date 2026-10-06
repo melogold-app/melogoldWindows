@@ -1,6 +1,6 @@
 # Поиск: лучший результат первым, крупной карточкой
 
-Статус: открыто
+Статус: в работе — код готов: разбор `musicCardShelfRenderer` (`YouTubeMusic.ParseSearchSummary`), правило `SearchTopResult.Pick` (карточка, иначе исполнитель с именем запроса), карточка `Controls/TopResultCard` над выдачей «Всё» без повтора строкой ниже; тесты на пяти сохранённых ответах (`Fixtures/search`, с карточкой и без). Осталось посмотреть в окне «Кино», «Michael Jackson», трек и альбом
 
 Те же задания: `melogoldiOSmacOS/tasks/0023-search-top-result.md`, `melogoldAndroid/tasks/0021-search-top-result.md`, `melogoldLinux/tasks/0018-search-top-result.md`.
 

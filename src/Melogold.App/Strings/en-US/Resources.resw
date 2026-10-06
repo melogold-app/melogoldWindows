@@ -121,6 +121,7 @@
   <data name="ResultsChannels" xml:space="preserve"><value>Channels</value></data>
   <data name="ResultsLive" xml:space="preserve"><value>Live</value></data>
   <data name="ResultsTopResult" xml:space="preserve"><value>Top result</value></data>
+  <data name="ResultsOpen" xml:space="preserve"><value>Open</value></data>
   <data name="ResultsMore" xml:space="preserve"><value>More</value></data>
   <data name="DescriptionSource" xml:space="preserve"><value>Source:</value></data>
   <data name="DescriptionWikipedia" xml:space="preserve"><value>Wikipedia</value></data>

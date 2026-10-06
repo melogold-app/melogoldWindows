@@ -45,28 +45,12 @@ public sealed partial class ArtistPage : CatalogPage
 
     private async Task LoadAsync(CancellationToken ct)
     {
-        var music = App.Services.GetRequiredService<YouTubeMusic>();
-        var page = await App.Services.GetRequiredService<CatalogCache>().GetAsync("artist:" + _browseId, () => music.ArtistAsync(_browseId, ct));
+        var page = await DetailsAsync(_browseId, ct);
         ct.ThrowIfCancellationRequested();
         var library = App.Services.GetRequiredService<Library>();
         var actions = App.Services.GetRequiredService<TrackActions>();
-        var topTracks = page.Shelves.FirstOrDefault(s => s.Items.Count > 0 && s.Items.All(i => i is Track))?.Tracks.ToList() ?? [];
-
-        async Task<IReadOnlyList<Track>> Songs()
-        {
-            if (page.SongsPlaylistId is { } songs)
-            {
-                try
-                {
-                    return await music.PlaylistTracksAsync(songs, 500);
-                }
-                catch (YouTubeException e)
-                {
-                    Log.Warn("Artist songs failed", e);
-                }
-            }
-            return topTracks;
-        }
+        var topTracks = TopTracks(page);
+        Task<IReadOnlyList<Track>> Songs() => SongsAsync(page);
 
         _header.Set(page.Name, page.IsChannel ? Loc.Get("YouTubeChannel") : null, page.SubscribersText, Thumbnails.Sized(page.ThumbnailUrl, 400), round: true, description: page.Description);
         if (topTracks.Count > 0)
@@ -90,5 +74,29 @@ public sealed partial class ArtistPage : CatalogPage
             Action? more = isTop && page.SongsPlaylistId is { } id ? () => App.Services.GetRequiredService<Navigator>().Open(typeof(PlaylistPage), id) : null;
             _shelves.Children.Add(new ShelfView(shelf, new TrackContext.List(), page.IsChannel ? 50 : 5, more));
         }
+    }
+
+    /// <summary>Страница исполнителя из кэша каталога — её же берёт «Слушать» у лучшего результата поиска.</summary>
+    internal static Task<ArtistDetails> DetailsAsync(string browseId, CancellationToken ct = default) =>
+        App.Services.GetRequiredService<CatalogCache>().GetAsync("artist:" + browseId, () => App.Services.GetRequiredService<YouTubeMusic>().ArtistAsync(browseId, ct));
+
+    private static List<Track> TopTracks(ArtistDetails page) =>
+        page.Shelves.FirstOrDefault(s => s.Items.Count > 0 && s.Items.All(i => i is Track))?.Tracks.ToList() ?? [];
+
+    /// <summary>«Слушать» исполнителя: все его песни, не вышло — популярные треки со страницы.</summary>
+    internal static async Task<IReadOnlyList<Track>> SongsAsync(ArtistDetails page)
+    {
+        if (page.SongsPlaylistId is { } songs)
+        {
+            try
+            {
+                return await App.Services.GetRequiredService<YouTubeMusic>().PlaylistTracksAsync(songs, 500);
+            }
+            catch (YouTubeException e)
+            {
+                Log.Warn("Artist songs failed", e);
+            }
+        }
+        return TopTracks(page);
     }
 }

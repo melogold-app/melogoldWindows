@@ -57,7 +57,8 @@ public sealed partial class TopResultCard : Grid
             VerticalAlignment = VerticalAlignment.Stretch,
             Background = (Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"],
             BorderBrush = (Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"],
-            CornerRadius = new CornerRadius(8),
+            // Элемент внутри страницы — скругление элементов управления (4), не окон и всплывающих (8)
+            CornerRadius = (CornerRadius)Application.Current.Resources["ControlCornerRadius"],
         };
         AutomationProperties.SetName(surface, $"{Loc.Get("ResultsTopResult")}: {title}, {kind}");
         surface.Click += (_, _) => Activate();

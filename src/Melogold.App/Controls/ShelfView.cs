@@ -25,7 +25,7 @@ public sealed partial class ShelfView : StackPanel
         </DataTemplate>
         """);
 
-    /// <param name="columns">треки — в несколько колонок на широком окне (популярные треки исполнителя)</param>
+    /// <param name="columns">треки — в две-три колонки на широком окне (популярные треки исполнителя)</param>
     public ShelfView(Shelf shelf, TrackContext context, int maxRows = 5, Action? onMore = null, string? moreLabel = null, bool columns = false)
     {
         Spacing = 4;

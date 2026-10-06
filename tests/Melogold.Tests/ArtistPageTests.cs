@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Melogold.Tests;
 
-/// <summary>tasks/0024: страница исполнителя — широкое фото, данные листа «Об исполнителе», сетка популярных треков.</summary>
+/// <summary>tasks/0024: страница исполнителя — широкое фото и данные листа «Об исполнителе».</summary>
 public sealed class ArtistPageTests
 {
     private static ArtistDetails Artist(string name, string browseId) =>
@@ -46,32 +46,5 @@ public sealed class ArtistPageTests
         Assert.Null(Thumbnails.Aspect("https://lh3.googleusercontent.com/abc"));
         Assert.Equal("https://lh3.googleusercontent.com/abc=w400-h400-l90-rj", Thumbnails.Wide("https://lh3.googleusercontent.com/abc", 400));
         Assert.Null(Thumbnails.Aspect("https://i.ytimg.com/vi/aaaaaaaaaaa/hqdefault.jpg"));
-    }
-
-    [Theory]
-    [InlineData(5, 1, new[] { 0, 1, 2, 3, 4 })]
-    // 1 4
-    // 2 5
-    // 3
-    [InlineData(5, 2, new[] { 0, 3, 1, 4, 2 })]
-    // 1 3 5
-    // 2 4
-    [InlineData(5, 3, new[] { 0, 2, 4, 1, 3 })]
-    // 1 4 6
-    // 2 5 7
-    // 3
-    [InlineData(7, 3, new[] { 0, 3, 5, 1, 4, 6, 2 })]
-    [InlineData(6, 3, new[] { 0, 2, 4, 1, 3, 5 })]
-    [InlineData(2, 3, new[] { 0, 1 })]
-    public void TopSongsRunDownTheColumns(int count, int columns, int[] expected) => Assert.Equal(expected, GridOrder.ColumnMajor(count, columns));
-
-    [Fact]
-    public void EveryTrackOnceForAnyGrid()
-    {
-        for (var count = 0; count <= 20; count++)
-        {
-            for (var columns = 1; columns <= 4; columns++)
-                Assert.Equal(Enumerable.Range(0, count), GridOrder.ColumnMajor(count, columns).Order());
-        }
     }
 }

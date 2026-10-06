@@ -119,7 +119,8 @@ public sealed partial class ArtistHero : Grid
         button.Padding = new Thickness(0);
         button.CornerRadius = new CornerRadius(size / 2);
         button.VerticalAlignment = VerticalAlignment.Center;
-        button.Content = new FontIcon { Glyph = glyph, FontSize = size >= 56 ? 22 : 16 };
+        // Размеры значков Segoe Fluent Icons — из ряда 16, 20, 24
+        button.Content = new FontIcon { Glyph = glyph, FontSize = size >= 56 ? 24 : 16 };
         if (label.Length > 0)
         {
             ToolTipService.SetToolTip(button, label);

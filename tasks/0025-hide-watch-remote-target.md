@@ -1,6 +1,6 @@
 # Пульт: часы не показывать среди устройств, на которые можно включить музыку
 
-Статус: открыто
+Статус: сделано — `RemoteController.DevicesAsync` отдаёт только устройства, которые могут играть (`CanPlay`: не `watchos`); тест «Mac и Apple Watch → только Mac». Вручную с часами не проверено: часов в аккаунте нет
 
 Те же задания: `melogoldAndroid/tasks/0023-hide-watch-remote-target.md`, `melogoldLinux/tasks/0020-hide-watch-remote-target.md`; Apple сделано в ветке `apple/ui-fixes` (`RemoteControl.canPlay`).
 

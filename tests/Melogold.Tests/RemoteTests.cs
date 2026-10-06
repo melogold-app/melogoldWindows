@@ -34,7 +34,9 @@ public sealed class RemoteTests
 
         public Task<PlaybackStateResponse> StateAsync(CancellationToken ct) => Task.FromResult(new PlaybackStateResponse(State, IsoTime.Format(Now)));
 
-        public Task<RemoteDeviceList> DevicesAsync(CancellationToken ct) => Task.FromResult(new RemoteDeviceList([], IsoTime.Format(Now)));
+        public List<RemoteDevice> Devices { get; } = [];
+
+        public Task<RemoteDeviceList> DevicesAsync(CancellationToken ct) => Task.FromResult(new RemoteDeviceList(Devices, IsoTime.Format(Now)));
 
         public Task<RemoteCommandResult> CommandAsync(RemoteCommand command, CancellationToken ct)
         {
@@ -271,6 +273,16 @@ public sealed class RemoteTests
         Assert.False(await remote.NextAsync());
         Assert.Null(remote.Target);
         Assert.Equal((failure, "MacBook Air"), failed);
+    }
+
+    [Fact]
+    public async Task WatchIsNotARemoteTarget()
+    {
+        var server = new FakeServer();
+        server.Devices.Add(Mac());
+        server.Devices.Add(new RemoteDevice("watch", "Apple Watch", "watchos", false, false, null, null));
+        var remote = new RemoteController(server, new ServerClock(() => server.Now));
+        Assert.Equal(["MacBook Air"], (await remote.DevicesAsync()).Select(d => d.Name));
     }
 
     [Fact]

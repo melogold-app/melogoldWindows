@@ -268,12 +268,19 @@ public sealed class RemoteController(IPlaybackServer server, ServerClock clock, 
     /// <summary>Пульт отключился сам: цель ушла из сети или запретила управление.</summary>
     public event Action<RemoteFailure, string>? Failed;
 
+    /// <summary>
+    /// Устройства, на которые можно включить музыку. Часов в списке нет (tasks/0025, доктрина §4.8): звук на часах играет
+    /// только приложение, открытое на самих часах, — включать его удалённо бессмысленно.
+    /// </summary>
     public async Task<IReadOnlyList<RemoteDevice>> DevicesAsync(CancellationToken ct = default)
     {
         var list = await server.DevicesAsync(ct).ConfigureAwait(false);
         clock.Observe(list.ServerTime);
-        return list.Devices;
+        return list.Devices.Where(CanPlay).ToList();
     }
+
+    /// <summary>Может ли устройство играть по команде пульта: всё, кроме часов.</summary>
+    public static bool CanPlay(RemoteDevice device) => !string.Equals(device.Platform, "watchos", StringComparison.OrdinalIgnoreCase);
 
     public async Task ConnectAsync(RemoteDevice device, CancellationToken ct = default)
     {

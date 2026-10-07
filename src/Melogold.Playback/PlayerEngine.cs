@@ -66,6 +66,19 @@ public sealed class PlayerEngine : IDisposable
     private readonly Dictionary<string, Task<AacStreamSource>> _preloaded = [];
     private AacStreamSource? _stream;
     private int _skipsInRow;
+
+    /// <summary>Паузы между повторами трека, который ждёт сеть (tasks/0030); последняя — дальше без роста. Тесты ставят короче.</summary>
+    internal TimeSpan[] NetworkWaitDelays { get; init; } =
+        [TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30)];
+
+    /// <summary>Сколько трек ждёт сеть, прежде чем плеер встанет с ошибкой (очередь не двигается).</summary>
+    internal TimeSpan NetworkWaitLimit { get; init; } = TimeSpan.FromMinutes(10);
+
+    private sealed record NetworkWait(string VideoId, DateTime Since, int Attempt, long PositionMs);
+
+    private NetworkWait? _waitingNetwork;
+    private bool _networkRetry;
+    private int _networkWaitGeneration;
     private bool _autoplayLoading;
     private int _autoplaySeedsWithoutNew;
     private string? _autoplayContinuation;
@@ -132,6 +145,24 @@ public sealed class PlayerEngine : IDisposable
         _player.PlaybackSession.PlaybackStateChanged += (_, _) => Post(OnSessionStateChanged);
         Queue.Changed += () => QueueChanged?.Invoke();
         ApplyVolume();
+        // Трек, ждущий сеть (tasks/0030), пробуется сразу, как система сообщила о сети или смене адреса (VPN)
+        System.Net.NetworkInformation.NetworkChange.NetworkAvailabilityChanged += OnNetworkAvailabilityChanged;
+        System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += OnNetworkAddressChanged;
+    }
+
+    private void OnNetworkAvailabilityChanged(object? sender, System.Net.NetworkInformation.NetworkAvailabilityEventArgs e)
+    {
+        if (e.IsAvailable) Post(NotifyNetworkAvailable);
+    }
+
+    private void OnNetworkAddressChanged(object? sender, EventArgs e) => Post(NotifyNetworkAvailable);
+
+    /// <summary>Сеть появилась: трек, ждущий её, пробуется сразу, не дожидаясь паузы.</summary>
+    internal void NotifyNetworkAvailable()
+    {
+        if (_waitingNetwork is null) return;
+        Trace.WriteLine("Network is back: retrying the waiting track now");
+        RetryAfterNetwork();
     }
 
     public PlayQueue Queue { get; } = new();
@@ -345,6 +376,8 @@ public sealed class PlayerEngine : IDisposable
         var track = Current;
         if (track is null) return;
 
+        if (!_networkRetry) _waitingNetwork = null;
+        _networkRetry = false;
         if (startMs == 0 && _pendingStartMs > 0) startMs = _pendingStartMs;
         _pendingStartMs = 0;
         _playWhenReady = play;
@@ -406,7 +439,9 @@ public sealed class PlayerEngine : IDisposable
                     if (cts.IsCancellationRequested) return;
                     continue;
                 }
-                SkipAfterError(new PlayerError(e.Kind, e.Message, track, e.Country, e.OpenCountries));
+                var failure = new PlayerError(e.Kind, e.Message, track, e.Country, e.OpenCountries);
+                if (IsNetwork(e.Kind)) WaitForNetwork(track, failure, startMs);
+                else SkipAfterError(failure);
                 return;
             }
             catch (Exception e) when (e is IOException or HttpRequestException or TaskCanceledException)
@@ -418,10 +453,59 @@ public sealed class PlayerEngine : IDisposable
                     if (cts.IsCancellationRequested) return;
                     continue;
                 }
-                SkipAfterError(new PlayerError(StreamErrorKind.Network, e.Message, track));
+                WaitForNetwork(track, new PlayerError(StreamErrorKind.Network, e.Message, track), startMs);
                 return;
             }
         }
+    }
+
+    private static bool IsNetwork(StreamErrorKind kind) => kind is StreamErrorKind.Network or StreamErrorKind.Timeout;
+
+    /// <summary>
+    /// Нет сети (tasks/0030): трек не пропускается, а ждёт её на той же позиции. Повтор — сразу, как система сообщила о сети
+    /// (<see cref="NotifyNetworkAvailable"/>), иначе через <see cref="NetworkWaitDelays"/>. Через <see cref="NetworkWaitLimit"/> —
+    /// ошибка «нет соединения» и «Повторить», очередь стоит. 07.10.2026 на Android туннель VPN 30 с не пропускал трафик, и
+    /// плеер пропустил трек, хотя через секунду сеть вернулась.
+    /// </summary>
+    private void WaitForNetwork(Track track, PlayerError error, long positionMs)
+    {
+        var now = DateTime.UtcNow;
+        var wait = _waitingNetwork is { } current && current.VideoId == track.VideoId ? current : new NetworkWait(track.VideoId, now, 0, positionMs);
+        _load?.Cancel();
+        _player.Pause();
+        _player.Source = null;
+        var old = _stream;
+        _stream = null;
+        old?.Dispose();
+        if (now - wait.Since >= NetworkWaitLimit)
+        {
+            Trace.WriteLine($"No network for {NetworkWaitLimit.TotalMinutes:0} min: stopping on {track.VideoId}: {error.Message}");
+            _waitingNetwork = null;
+            Error = error;
+            _playWhenReady = false;
+            SetStatus(PlayerStatus.Error);
+            StateChanged?.Invoke();
+            return;
+        }
+        var delay = NetworkWaitDelays[Math.Min(wait.Attempt, NetworkWaitDelays.Length - 1)];
+        Trace.WriteLine($"No network: {track.VideoId} waits at {positionMs / 1000} s, retry in {delay.TotalSeconds:0} s: {error.Message}");
+        _waitingNetwork = wait with { Attempt = wait.Attempt + 1, PositionMs = positionMs };
+        SetStatus(PlayerStatus.Buffering);
+        StateChanged?.Invoke();
+        var generation = ++_networkWaitGeneration;
+        _ = Task.Delay(delay).ContinueWith(_ => Post(() =>
+        {
+            if (generation == _networkWaitGeneration && _waitingNetwork is not null) RetryAfterNetwork();
+        }), TaskScheduler.Default);
+    }
+
+    /// <summary>Повтор трека, ждущего сеть, с той же позиции; время ожидания продолжает идти.</summary>
+    private void RetryAfterNetwork()
+    {
+        if (_waitingNetwork is not { } wait) return;
+        _networkWaitGeneration++;
+        _networkRetry = true;
+        _ = LoadCurrentAsync(play: _playWhenReady, wait.PositionMs);
     }
 
     /// <summary>
@@ -473,6 +557,11 @@ public sealed class PlayerEngine : IDisposable
     /// </summary>
     private void RecoverOrSkip(PlayerError error)
     {
+        if (Current is { } waiting && IsNetwork(error.Kind))
+        {
+            WaitForNetwork(waiting, error, (long)Position.TotalMilliseconds);
+            return;
+        }
         if (Current is { } track && error.Kind is not (StreamErrorKind.BotCheck or StreamErrorKind.Geo or StreamErrorKind.Unavailable or StreamErrorKind.Age))
         {
             if (_recoveryVideoId != track.VideoId)
@@ -570,7 +659,11 @@ public sealed class PlayerEngine : IDisposable
             MediaPlaybackState.Paused => PlayerStatus.Paused,
             _ => Status,
         });
-        if (state == MediaPlaybackState.Playing) Error = null;
+        if (state == MediaPlaybackState.Playing)
+        {
+            Error = null;
+            _waitingNetwork = null;
+        }
     }
 
     // ---------- SMTC ----------
@@ -851,6 +944,8 @@ public sealed class PlayerEngine : IDisposable
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, true)) return;
+        System.Net.NetworkInformation.NetworkChange.NetworkAvailabilityChanged -= OnNetworkAvailabilityChanged;
+        System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
         FinishListening();
         _sleepTimer?.Dispose();
         _load?.Cancel();

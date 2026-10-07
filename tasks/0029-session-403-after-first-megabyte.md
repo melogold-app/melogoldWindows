@@ -1,6 +1,6 @@
 # Плеер: песня обрывается на первом мегабайте — свежий адрес брать в новом сеансе YouTube
 
-Статус: сделано в ветке `fix/stream-403-new-session` (не выпущено, не собрано — правка с Linux, .NET там нет) —
+Статус: сделано в ветке `fix/stream-403-new-session` (не выпущено; собрано и проверено тестами `HttpRangeReaderTests` в Windows 11 в виртуалке на ThinkPad 07.10) —
 `StreamResolver.RenewSession()`, его зовут обработчики свежего адреса `HttpRangeReader` в `PlayerEngine` и
 `TrackDownloads`. Защита из 0021 Windows (паузы, переоткрытие с того же места) остаётся.
 Проверить: `dotnet test`, затем послушать подряд — в журнале «Stream URL refused: next URL with a fresh visitorData».

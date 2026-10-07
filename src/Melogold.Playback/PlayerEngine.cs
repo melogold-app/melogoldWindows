@@ -271,7 +271,8 @@ public sealed class PlayerEngine : IDisposable
         if (Current is null) return;
         if (Status is PlayerStatus.Error or PlayerStatus.Idle || _player.Source is null)
         {
-            _ = LoadCurrentAsync(play: true, (long)Position.TotalMilliseconds);
+            // Восстановленная после перезапуска очередь продолжается с запомненного места — только отсюда
+            _ = LoadCurrentAsync(play: true, _pendingStartMs > 0 ? _pendingStartMs : (long)Position.TotalMilliseconds);
             return;
         }
         _playWhenReady = true;
@@ -366,6 +367,9 @@ public sealed class PlayerEngine : IDisposable
 
     private long _pendingStartMs;
 
+    /// <summary>С какой позиции начата последняя загрузка трека, мс (для тестов).</summary>
+    internal long LastLoadStartMs { get; private set; }
+
     // ---------- Загрузка трека ----------
 
     private async Task LoadCurrentAsync(bool play, long startMs = 0)
@@ -378,8 +382,10 @@ public sealed class PlayerEngine : IDisposable
 
         if (!_networkRetry) _waitingNetwork = null;
         _networkRetry = false;
-        if (startMs == 0 && _pendingStartMs > 0) startMs = _pendingStartMs;
+        // Запомненная позиция восстановленной очереди достаётся только «Продолжить» (Play): трек, включённый нажатием в
+        // списке, начинается с нуля (07.10.2026: на Linux God's Plan с 11-й секунды после перезапуска — та же схема)
         _pendingStartMs = 0;
+        LastLoadStartMs = startMs;
         _playWhenReady = play;
         Error = null;
         _player.Pause();

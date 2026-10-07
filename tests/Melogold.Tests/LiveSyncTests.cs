@@ -649,7 +649,7 @@ public class LiveSyncTests(ITestOutputHelper output)
 
         public void SetVolume(int volume) => Done.Enqueue($"volume {volume}");
 
-        public void PlayQueue(IReadOnlyList<Track> tracks, int index) => Done.Enqueue($"play_queue {tracks[index].VideoId}");
+        public void PlayQueue(IReadOnlyList<Track> tracks, int index, long startMs = 0) => Done.Enqueue($"play_queue {tracks[index].VideoId}");
 
         public void Stop() => Done.Enqueue("stop");
     }

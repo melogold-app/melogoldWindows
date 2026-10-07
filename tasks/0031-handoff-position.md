@@ -1,8 +1,9 @@
 # Пульт: перенос воспроизведения на другое устройство с той же секунды (как AirPlay)
 
-Статус: открыто. Сервер — `melogoldServer` задание 0005 (ветка `feat/handoff-position`: `positionMs` у `play_queue`).
-Образец — Linux, задание 0027 (ветка `feat/handoff-position`): отправитель в списке устройств шлёт `play_queue` с
-очередью и позицией, если здесь играет; получатель начинает трек `index` с `positionMs`.
+Статус: сделано в ветке `feat/handoff-position` (не выпущено) — `RemotePlayback.ConnectAsync` (выбор устройства в
+`PlayerBar`), `RemoteController.PlayQueueAsync(…, positionMs)`, `RemoteCommandHandler` → `PlayList(…, startMs)`; тесты
+`RemoteTests` проходят в Windows 11 (виртуалка на ThinkPad). Нужен сервер с заданием 0005 (`melogoldServer`, ветка
+`feat/handoff-position`): старый сервер позицию у `play_queue` выбрасывает — трек начнётся с начала.
 
 ## Что нужно пользователю (07.10.2026)
 

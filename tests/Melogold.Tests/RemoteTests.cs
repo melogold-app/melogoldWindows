@@ -296,6 +296,19 @@ public sealed class RemoteTests
         Assert.Equal("play_queue", command.Action);
         Assert.Equal(200, command.Queue?.Count);
         Assert.Equal("video000120", command.Queue![command.Index!.Value].VideoId);
+        Assert.Null(command.PositionMs);
+    }
+
+    /// <summary>tasks/0031: перенос «как AirPlay» — очередь уходит на цель с той же секунды.</summary>
+    [Fact]
+    public async Task HandoffSendsTheQueueWithThePosition()
+    {
+        var server = new FakeServer();
+        var remote = new RemoteController(server, new ServerClock(() => server.Now));
+        await remote.ConnectAsync(Mac());
+        await remote.PlayQueueAsync(Tracks(3), 1, positionMs: 83_000);
+        var command = server.Commands[^1];
+        Assert.Equal(("play_queue", 1, 83_000L), (command.Action, command.Index, command.PositionMs));
     }
 
     private sealed class FakePlayer : IRemotePlayer
@@ -316,7 +329,8 @@ public sealed class RemoteTests
 
         public void SetVolume(int volume) => Done.Add($"volume {volume}");
 
-        public void PlayQueue(IReadOnlyList<Track> tracks, int index) => Done.Add($"play_queue {tracks.Count} {tracks[index].VideoId}");
+        public void PlayQueue(IReadOnlyList<Track> tracks, int index, long startMs = 0) =>
+            Done.Add(startMs > 0 ? $"play_queue {tracks.Count} {tracks[index].VideoId} {startMs}" : $"play_queue {tracks.Count} {tracks[index].VideoId}");
 
         public void Stop() => Done.Add("stop");
     }
@@ -344,12 +358,13 @@ public sealed class RemoteTests
         Assert.True(handler.Execute(Command("seek", position: 42_000)));
         Assert.True(handler.Execute(Command("volume", volume: 150)));
         Assert.True(handler.Execute(Command("play_queue", queue: queue, index: 1)));
+        Assert.True(handler.Execute(Command("play_queue", position: 83_000, queue: queue, index: 0)));
         Assert.True(handler.Execute(Command("stop")));
         // Без своих полей и незнакомое — ничего
         Assert.False(handler.Execute(Command("seek")));
         Assert.False(handler.Execute(Command("volume")));
         Assert.False(handler.Execute(Command("dance")));
-        Assert.Equal(["play", "pause", "toggle", "next", "previous", "seek 42000", "volume 100", "play_queue 2 video000001", "stop"], player.Done);
+        Assert.Equal(["play", "pause", "toggle", "next", "previous", "seek 42000", "volume 100", "play_queue 2 video000001", "play_queue 2 video000000 83000", "stop"], player.Done);
         Assert.Equal(["Pixel 7 Pro"], notices);
         now += 30_000;
         handler.Execute(Command("next"));

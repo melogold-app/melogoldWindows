@@ -363,12 +363,15 @@ public sealed class RemoteController(IPlaybackServer server, ServerClock clock, 
 
     public Task<bool> SetVolumeAsync(int volume) => SendAsync("volume", volume: Math.Clamp(volume, 0, 100));
 
-    /// <summary>Нажатие по треку в списке, пока пульт включён: этот список на цели с этого трека.</summary>
-    public Task<bool> PlayQueueAsync(IReadOnlyList<Track> tracks, int index)
+    /// <summary>
+    /// Нажатие по треку в списке, пока пульт включён: этот список на цели с этого трека. <paramref name="positionMs"/> —
+    /// с какой секунды начать трек: очередь переезжает на цель с той же секунды, как AirPlay (tasks/0031).
+    /// </summary>
+    public Task<bool> PlayQueueAsync(IReadOnlyList<Track> tracks, int index, long? positionMs = null)
     {
         if (tracks.Count == 0) return Task.FromResult(false);
         var (window, start) = PlaybackReporter.Window(tracks, index);
-        return SendAsync("play_queue", queue: window, index: start);
+        return SendAsync("play_queue", positionMs: positionMs is > 0 ? positionMs : null, queue: window, index: start);
     }
 
     public async Task<bool> SendAsync(string action, long? positionMs = null, int? volume = null, IReadOnlyList<Track>? queue = null, int? index = null, CancellationToken ct = default)
@@ -470,7 +473,8 @@ public interface IRemotePlayer
     /// <summary>Громкость плеера приложения 0..100.</summary>
     void SetVolume(int volume);
 
-    void PlayQueue(IReadOnlyList<Track> tracks, int index);
+    /// <summary>Очередь с трека <paramref name="index"/>; <paramref name="startMs"/> — с какой секунды (перенос, tasks/0031).</summary>
+    void PlayQueue(IReadOnlyList<Track> tracks, int index, long startMs = 0);
 
     void Stop();
 }
@@ -512,7 +516,7 @@ public sealed class RemoteCommandHandler(IRemotePlayer player, Action<string> an
                 player.SetVolume(Math.Clamp(volume, 0, 100));
                 break;
             case "play_queue" when command.Queue is { Count: > 0 } queue && command.Index is { } index:
-                player.PlayQueue(queue.Select(TrackDtos.ToTrackOrStub).ToList(), Math.Clamp(index, 0, queue.Count - 1));
+                player.PlayQueue(queue.Select(TrackDtos.ToTrackOrStub).ToList(), Math.Clamp(index, 0, queue.Count - 1), Math.Max(0, command.PositionMs ?? 0));
                 break;
             case "stop":
                 player.Stop();

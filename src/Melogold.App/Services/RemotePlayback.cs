@@ -95,6 +95,28 @@ public sealed class RemotePlayback : IRemotePlayer
     private LocalPlayback? Snapshot() =>
         _latest is { } latest && latest.Playing ? latest with { PositionMs = latest.PositionMs + Math.Max(0, IsoTime.NowMs() - _capturedAt) } : _latest;
 
+    /// <summary>
+    /// Выбрано другое устройство (tasks/0031). Здесь играет — очередь переезжает туда с той же секунды, как AirPlay, здесь
+    /// пауза; здесь не играет — просто управлять им, как раньше. Раньше выбор всегда открывал пустой пульт, и песню на
+    /// другом устройстве приходилось выбирать заново.
+    /// </summary>
+    public async Task ConnectAsync(RemoteDevice device)
+    {
+        var order = _engine.Queue.PlayOrder;
+        var items = _engine.Queue.Ordered;
+        var index = order.ToList().IndexOf(_engine.Queue.Current);
+        var handoff = _engine.IsPlaying && items.Count > 0 && index >= 0
+            ? (Tracks: items.Select(i => i.Track).ToList(), Index: index, PositionMs: (long)_engine.Position.TotalMilliseconds)
+            : default;
+        if (handoff.Tracks is not null) _engine.Pause();
+        await Remote.ConnectAsync(device);
+        if (handoff.Tracks is not null)
+        {
+            Log.Info($"Handoff to {device.Name}: {handoff.Tracks[handoff.Index].VideoId} at {handoff.PositionMs / 1000} s");
+            await Remote.PlayQueueAsync(handoff.Tracks, handoff.Index, handoff.PositionMs);
+        }
+    }
+
     /// <summary>«Слушать здесь»: очередь цели с того же места — здесь, цель ставит паузу сама (<c>handoffFrom</c>).</summary>
     public async Task ListenHereAsync()
     {
@@ -142,7 +164,7 @@ public sealed class RemotePlayback : IRemotePlayer
         if (volume > 0) _settings.Muted = false;
     }
 
-    public void PlayQueue(IReadOnlyList<Track> tracks, int index) => _engine.PlayList(tracks, index);
+    public void PlayQueue(IReadOnlyList<Track> tracks, int index, long startMs = 0) => _engine.PlayList(tracks, index, startMs: startMs);
 
     public void Stop() => _engine.Pause();
 }

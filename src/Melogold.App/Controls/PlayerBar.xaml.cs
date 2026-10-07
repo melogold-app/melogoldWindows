@@ -131,7 +131,7 @@ public sealed partial class PlayerBar : UserControl
             list.Children.Add(DeviceRow(DeviceSymbols.Glyph(device.Platform), device.Name, string.Join(" · ", details), chosen, device.Online && device.Controllable, () =>
             {
                 flyout.Hide();
-                _ = remote.ConnectAsync(device);
+                _ = ViewModel.Remote.ConnectAsync(device);
             }));
         }
     }

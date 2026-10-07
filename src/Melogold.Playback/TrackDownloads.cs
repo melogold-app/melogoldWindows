@@ -322,7 +322,7 @@ public sealed class TrackDownloads
         {
             var reader = new HttpRangeReader(_http, info, async token =>
             {
-                resolver.Invalidate(videoId);
+                resolver.RenewSession();
                 return await ResolveAsync(videoId, token, false).ConfigureAwait(false);
             }, entry);
             long position = 0;

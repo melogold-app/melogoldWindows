@@ -198,6 +198,19 @@ public sealed class StreamResolver(InnerTubeClient client, Action<string>? log =
         }
     }
 
+    /// <summary>
+    /// Новый сеанс YouTube перед свежим адресом (403 при чтении): забыть <c>visitorData</c> и все адреса. «Помеченному»
+    /// сеансу googlevideo отдаёт только первый мегабайт, дальше — 403, и так на каждом свежем адресе того же сеанса
+    /// (07.10.2026, Linux, задание 0025: три свежих адреса сеанса — 403 403 403, три с новым <c>visitorData</c> —
+    /// 206 206 206). Истёкшему адресу новый сеанс не мешает: один лёгкий запрос лишний.
+    /// </summary>
+    public void RenewSession()
+    {
+        client.VisitorData = null;
+        lock (_lock) _cache.Clear();
+        log?.Invoke("Stream URL refused: next URL with a fresh visitorData");
+    }
+
     /// <summary>Сеть сменилась: адреса привязаны к IP, сбрасываются все; новый адрес может быть и не закрыт.</summary>
     public void InvalidateAll()
     {

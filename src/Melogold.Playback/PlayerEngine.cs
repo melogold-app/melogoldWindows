@@ -655,7 +655,8 @@ public sealed class PlayerEngine : IDisposable
         {
             return await AacStreamSource.OpenAsync(_http, info, async token =>
             {
-                _resolver.Invalidate(videoId);
+                // Свежий адрес — в новом сеансе YouTube: в «помеченном» он тоже обрывается на первом мегабайте
+                _resolver.RenewSession();
                 return await _resolver.ResolveAsync(videoId, token).ConfigureAwait(false);
             }, ct, cache).ConfigureAwait(false);
         }

@@ -18,6 +18,21 @@ jobs:
         with:
           global-json-file: global.json
 
+      # Шейдер фона «Сейчас играет» (tasks/0035) собирается в приложении при первом показе (D3DCompile); здесь тот же fxc
+      # проверяет, что HLSL вообще компилируется, чтобы ошибка не доехала до пользователя запасным фоном
+      - name: Шейдер фона (fxc)
+        if: matrix.platform == 'x64'
+        shell: pwsh
+        run: |
+          $fxc = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter fxc.exe |
+            Where-Object { $_.FullName -like '*\x64\fxc.exe' } | Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $fxc) { throw 'fxc.exe not found in Windows SDK' }
+          Write-Host $fxc.FullName
+          foreach ($stage in @(@('vs_main', 'vs_4_0'), @('ps_main', 'ps_4_0'))) {
+            & $fxc.FullName /nologo /O3 /E $stage[0] /T $stage[1] /Fo "$env:RUNNER_TEMP\$($stage[0]).cso" src\Melogold.App\Shaders\fluid.hlsl
+            if ($LASTEXITCODE -ne 0) { throw "fxc failed for $($stage[0])" }
+          }
+
       - name: Сборка приложения (${{ matrix.platform }})
         run: dotnet build src/Melogold.App/Melogold.App.csproj -c Release -p:Platform=${{ matrix.platform }}
 

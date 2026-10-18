@@ -40,10 +40,19 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
     <!-- GaussianBlurEffect для размытой обложки за «Сейчас играет» (tasks/0034); рисует Composition, Win2D нужен только для описания эффекта -->
     <PackageReference Include="Microsoft.Graphics.Win2D" />
+    <!-- Шейдер фона «Сейчас играет» (tasks/0035) на Direct3D 11 в SwapChainPanel: Win2D PixelShaderEffect не читает мип-уровень
+         (textureLod), а зеркальный повтор и трилинейную выборку тут задаёт сам сэмплер -->
+    <PackageReference Include="Vortice.Direct3D11" />
+    <PackageReference Include="Vortice.DXGI" />
+    <PackageReference Include="Vortice.D3DCompiler" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="MaterialColorUtilities" />
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Shaders\fluid.hlsl" LogicalName="Melogold.Shaders.fluid.hlsl" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,6 +1,16 @@
 # «Сейчас играет»: живой фон под музыку — жидкая обложка, лава-лампа, пульс на бас
 
-Статус: открыто
+Статус: сделано — `Melogold.Core.Visualizer`: `SpectrumAnalyzer` (БПФ 2048 / шаг 512, Хэмминг, 48 полос, §2), `SpectrumTimeline` (измерения по времени
+звука, выбираются по позиции плеера) и `PlaybackClock` (позиция плеера ↔ часы захвата), `FluidAnalysis` (огибающие, удар, §3), `FluidMotion`
+(вариант 1, §4) и `FluidLook` (постоянные), `FluidVisualizer` (кадр целиком), `FluidTexture` (256×256 + мипы, §1), `BackdropCover.FluidPixels`;
+`Services/AudioLevels` кормит анализатор теми же сэмплами захвата своего процесса (делит на громкость плеера: спектр до регулятора);
+`Shaders/fluid.hlsl` — `fluid.frag` один в один; `Controls/FluidRenderer` (Direct3D 11 через Vortice: трилинейная выборка 9 мипов,
+`MIRROR`, `SampleLevel` вместо `textureLod`), `Controls/SwapChainPanelInterop`, `BackdropView` (шейдер в `SwapChainPanel`, кадр по
+`CompositionTarget.Rendering`; запасной путь — слои 0034; §6: пауза, «Живой фон», анимации, высокая контрастность). Тесты —
+`tests/Melogold.Tests/FluidTests.cs` (синус 1 кГц, тишина, времена измерений, очередь, удар, огибающие, движение, мипы), в CI — `fxc`
+по `fluid.hlsl`. Выбрано не Win2D `PixelShaderEffect`, а Direct3D 11 напрямую: у D2D-шейдера нет `textureLod`/мипов и контроля
+над адресацией, а здесь сэмплер задаёт всё как в GL.
+Что осталось: проверить глазами на Windows (см. «Проверка»): частота кадров на 144 Гц, пауза, «Живой фон» выключен, запасной фон.
 
 Эталон и источник этого текста — `melogoldLinux/tasks/0032-now-playing-fluid-visualizer.md`; шейдер — `melogoldLinux/crates/melogold-gtk/resources/shaders/fluid.{vert,frag}`.
 

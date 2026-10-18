@@ -4,6 +4,10 @@
     <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" />
     <PackageVersion Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
+    <!-- Direct3D 11 для шейдера фона «Сейчас играет» (tasks/0035): устройство, swap chain, D3DCompile -->
+    <PackageVersion Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageVersion Include="Vortice.DXGI" Version="3.8.3" />
+    <PackageVersion Include="Vortice.D3DCompiler" Version="3.8.3" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />

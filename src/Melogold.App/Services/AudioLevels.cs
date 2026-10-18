@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Melogold.Core.Visualizer;
 
 namespace Melogold.App.Services;
 
@@ -6,7 +8,9 @@ namespace Melogold.App.Services;
 /// Уровни звука для столбиков «играет» (docs/PROMPT.md §4: низы, середина, верх — под реальный звук, как
 /// <c>service/AudioLevels.kt</c> Android). Источник — захват звука своего процесса (process loopback, Windows 11 и
 /// Windows Server 2022+): то, что Melogold отдаёт в систему, после громкости и «без звука». Где захвата нет —
-/// <see cref="IsLive"/> = false, и столбики двигаются спокойно, не притворяясь звуком.
+/// <see cref="IsLive"/> = false, и столбики двигаются спокойно, не притворяясь звуком. Те же сэмплы кормят фон «Сейчас играет»
+/// (tasks/0035): <see cref="SpectrumAnalyzer"/> считает 48 полос, каждое измерение метится временем звука по <see cref="Clock"/>
+/// и ждёт в <see cref="Spectrum"/>, пока позиция плеера до него дойдёт.
 /// </summary>
 public sealed class AudioLevels : IDisposable
 {
@@ -17,6 +21,42 @@ public sealed class AudioLevels : IDisposable
     private Thread? _thread;
     private volatile bool _running;
     private float _low, _mid, _high;
+    private volatile float _volume = 1;
+    private volatile bool _spectrumWanted;
+
+    /// <summary>
+    /// Задержка между захватом звука и звуком из динамика (буфер вывода Windows), с. Измерение метится временем, когда оно
+    /// зазвучит, а не когда его сняли; значение — оценка для проводного вывода, проверяется на глаз.
+    /// </summary>
+    private const double OutputLatencySeconds = 0.03;
+
+    /// <summary>Измерения спектра по времени звука (tasks/0035 §2): наполняет поток захвата, забирает кадр фона.</summary>
+    public SpectrumTimeline Spectrum { get; } = new();
+
+    /// <summary>Позиция плеера ↔ часы: их обновляет кадр фона (<see cref="SetPlayback"/>), читает поток захвата.</summary>
+    public PlaybackClock Clock { get; } = new();
+
+    /// <summary>
+    /// Нужен ли спектр: фон «Сейчас играет» на экране и живой. Без него БПФ не считается, а накопленное не копится.
+    /// </summary>
+    public bool SpectrumWanted
+    {
+        get => _spectrumWanted;
+        set => _spectrumWanted = value;
+    }
+
+    /// <summary>
+    /// Кадр фона сообщает позицию плеера и громкость (0..1, 0 — «без звука»). Захват берёт звук после регулятора громкости,
+    /// а спектр должен быть до него (tasks/0035 §2), поэтому сэмплы делятся на громкость (но не больше чем в 20 раз).
+    /// </summary>
+    /// <summary>Позиция плеера по <see cref="Clock"/> сейчас (сглаженная); null — кадр фона ещё не сообщал.</summary>
+    public double? CurrentPosition() => Clock.Estimate(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
+
+    public void SetPlayback(double positionSeconds, bool playing, double volume)
+    {
+        Clock.Update(positionSeconds, Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency, playing);
+        _volume = (float)Math.Clamp(volume, 0, 1);
+    }
 
     /// <summary>Захват работает: столбики показывают настоящий звук.</summary>
     public bool IsLive { get; private set; }
@@ -67,6 +107,9 @@ public sealed class AudioLevels : IDisposable
             Log.Info("Audio levels: process loopback");
 
             var filters = new BandFilters(SampleRate);
+            var analyzer = new SpectrumAnalyzer(SampleRate);
+            var frames = new List<SpectrumFrame>();
+            var mono = new float[SampleRate / 10];
             var buffer = new float[SampleRate / 10 * Channels];
             while (_running)
             {
@@ -75,22 +118,29 @@ public sealed class AudioLevels : IDisposable
                 var count = 0;
                 while (capture.GetNextPacketSize() is var size && size > 0)
                 {
-                    capture.GetBuffer(out var data, out var frames, out var flags, out _, out _);
+                    capture.GetBuffer(out var data, out var packetFrames, out var flags, out _, out var qpc);
                     const int silent = 0x2;
-                    if ((flags & silent) == 0 && frames > 0)
+                    var wantSpectrum = _spectrumWanted;
+                    if (wantSpectrum && mono.Length < packetFrames) mono = new float[packetFrames * 2];
+                    if ((flags & silent) == 0 && packetFrames > 0)
                     {
-                        if (buffer.Length < frames * Channels) buffer = new float[frames * Channels * 2];
-                        Marshal.Copy(data, buffer, 0, frames * Channels);
-                        for (var i = 0; i < frames; i++)
+                        if (buffer.Length < packetFrames * Channels) buffer = new float[packetFrames * Channels * 2];
+                        Marshal.Copy(data, buffer, 0, packetFrames * Channels);
+                        var gain = 1 / Math.Max(_volume, 0.05f);
+                        for (var i = 0; i < packetFrames; i++)
                         {
-                            var (l, m, h) = filters.Next((buffer[i * 2] + buffer[i * 2 + 1]) * 0.5f);
+                            var sample = (buffer[i * 2] + buffer[i * 2 + 1]) * 0.5f;
+                            var (l, m, h) = filters.Next(sample);
                             low += l * l;
                             mid += m * m;
                             high += h * h;
+                            if (wantSpectrum) mono[i] = sample * gain;
                         }
                     }
-                    count += frames;
-                    capture.ReleaseBuffer(frames);
+                    else if (wantSpectrum && packetFrames > 0) Array.Clear(mono, 0, packetFrames);
+                    if (wantSpectrum && packetFrames > 0) PushSpectrum(analyzer, frames, mono.AsSpan(0, packetFrames), qpc);
+                    count += packetFrames;
+                    capture.ReleaseBuffer(packetFrames);
                 }
                 Publish(count == 0 ? 0 : Math.Sqrt(low / count), count == 0 ? 0 : Math.Sqrt(mid / count), count == 0 ? 0 : Math.Sqrt(high / count), count > 0);
             }
@@ -105,6 +155,23 @@ public sealed class AudioLevels : IDisposable
         {
             if (client is not null) Marshal.ReleaseComObject(client);
         }
+    }
+
+    /// <summary>
+    /// Сэмплы пакета — в анализатор. Время звука первого сэмпла: когда пакет снят (<paramref name="qpc"/>, 100 нс, часы
+    /// <c>QueryPerformanceCounter</c>, те же у <c>Stopwatch</c>) → позиция плеера по <see cref="Clock"/> + задержка вывода.
+    /// Позиция неизвестна (кадр фона ещё не сообщил) — пакет пропускается.
+    /// </summary>
+    private void PushSpectrum(SpectrumAnalyzer analyzer, List<SpectrumFrame> frames, ReadOnlySpan<float> mono, long qpc)
+    {
+        var now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
+        var wall = qpc > 0 ? qpc / 1e7 : now;
+        // Не верим отметке, если она из другого времени
+        if (wall > now + 0.05 || wall < now - 1) wall = now;
+        if (Clock.Estimate(wall) is not { } position) return;
+        frames.Clear();
+        analyzer.Push(mono, position + OutputLatencySeconds, frames);
+        foreach (var frame in frames) Spectrum.Push(frame);
     }
 
     /// <summary>RMS полосы → 0…1 по шкале −50…−8 дБ; вверх быстро, вниз плавно.</summary>

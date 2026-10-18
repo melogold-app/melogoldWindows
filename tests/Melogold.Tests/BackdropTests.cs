@@ -169,6 +169,15 @@ public class BackdropTests
     }
 
     [Fact]
+    public void The_backdrop_is_live_when_the_window_is_visible_and_the_setting_and_animations_allow()
+    {
+        Assert.True(BackdropClock.IsLive(windowVisible: true, liveBackground: true, animationsEnabled: true));
+        Assert.False(BackdropClock.IsLive(false, true, true));
+        Assert.False(BackdropClock.IsLive(true, false, true));
+        Assert.False(BackdropClock.IsLive(true, true, false));
+    }
+
+    [Fact]
     public void The_clock_runs_only_when_everything_allows_and_a_pause_keeps_the_time()
     {
         Assert.True(BackdropClock.ShouldRun(playing: true, windowVisible: true, liveBackground: true, animationsEnabled: true));

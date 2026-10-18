@@ -43,7 +43,14 @@ public sealed class BackdropClock
 
     /// <summary>Часы должны идти.</summary>
     public static bool ShouldRun(bool playing, bool windowVisible, bool liveBackground, bool animationsEnabled) =>
-        playing && windowVisible && liveBackground && animationsEnabled;
+        playing && IsLive(windowVisible, liveBackground, animationsEnabled);
+
+    /// <summary>
+    /// Фон может двигаться (tasks/0035 §6): окно видно, «Живой фон» включён, анимации системы не выключены. Двигается, если ещё и
+    /// играет трек; на паузе шейдер гасит силы и замирает. Иначе — замерший кадр.
+    /// </summary>
+    public static bool IsLive(bool windowVisible, bool liveBackground, bool animationsEnabled) =>
+        windowVisible && liveBackground && animationsEnabled;
 
     /// <summary>Прошло <paramref name="elapsed"/>; <paramref name="running"/> — см. <see cref="ShouldRun"/>. Возвращает новое время.</summary>
     public double Advance(TimeSpan elapsed, bool running)

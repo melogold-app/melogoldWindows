@@ -77,7 +77,12 @@ public sealed partial class NowPlayingView : Grid
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-        // Фон — во всю область, под всем остальным
+        // Фон — во всю область, под всем остальным. Шейдер (tasks/0035) берёт звук из захвата своего процесса, позицию и громкость —
+        // у плеера: так он рисует то, что звучит сейчас
+        var levels = App.Services.GetRequiredService<AudioLevels>();
+        _backdrop.Audio = levels;
+        _backdrop.Position = () => PlayerSeconds();
+        _backdrop.Volume = () => _engine.OutputVolume;
         SetRowSpan(_backdrop, 2);
         Children.Add(_backdrop);
 
@@ -362,10 +367,24 @@ public sealed partial class NowPlayingView : Grid
     private void UpdateBackdropClock()
     {
         var showing = IsOpen && _lyrics.Active;
-        var run = showing && BackdropClock.ShouldRun(_engine.IsPlaying, WindowVisible, _settings.LiveBackground, _ui.AnimationsEnabled);
-        _backdrop.Running = run;
+        // Высокая контрастность — фона нет вовсе. Живой — шейдер рисует кадры; не живой — замерший кадр
+        var live = showing && !_highContrast && BackdropClock.IsLive(WindowVisible, _settings.LiveBackground, _ui.AnimationsEnabled);
+        _backdrop.SetMotion(live, _engine.IsPlaying);
         if (showing && !_watch.IsRunning) _watch.Start();
         else if (!showing) _watch.Stop();
+    }
+
+    /// <summary>Позиция плеера, секунды; null — плеер закрыт или позиции нет.</summary>
+    private double? PlayerSeconds()
+    {
+        try
+        {
+            return _engine.Position.TotalSeconds;
+        }
+        catch (System.Runtime.InteropServices.COMException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Окно на экране: не скрыто (открыт мини-плеер) и не свёрнуто.</summary>

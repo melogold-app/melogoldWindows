@@ -20,9 +20,10 @@ public sealed class BackdropCover
     /// <summary>Насыщенность матрицы цвета.</summary>
     public const double Saturation = 1.6;
 
-    private BackdropCover(byte[] pixels, double luma, uint backdrop, IReadOnlyList<ColorShare> shares)
+    private BackdropCover(byte[] pixels, double luma, uint backdrop, IReadOnlyList<ColorShare> shares, byte[]? fluid)
     {
         Pixels = pixels;
+        FluidPixels = fluid;
         Luma = luma;
         Base = backdrop;
         Shares = shares;
@@ -39,6 +40,12 @@ public sealed class BackdropCover
 
     /// <summary><c>blurred</c>: 24 × 24 RGBA после размытия, непрозрачная, без матрицы цвета.</summary>
     public byte[] Pixels { get; }
+
+    /// <summary>
+    /// Обложка для шейдера фона (tasks/0035 §1): 256 × 256 RGBA, уменьшенная усреднением по клеткам, без размытия и без матрицы
+    /// цвета (их делает шейдер). null — картинка кривая. Мипы — <see cref="Visualizer.FluidTexture.Mips"/>.
+    /// </summary>
+    public byte[]? FluidPixels { get; }
 
     /// <summary>Яркость <c>k</c> матрицы цвета: светлую обложку приглушаем, тёмную не трогаем.</summary>
     public double Brightness => BrightnessFor(Luma);
@@ -95,7 +102,7 @@ public sealed class BackdropCover
         var shares = ArtworkShares.Shares(rgba, width, height, stride);
         // Нет цветов (обложка пустая) — почти чёрная подложка
         var dominant = shares.Count > 0 ? shares[0].Rgb : 0x101010u;
-        return new BackdropCover(pixels, luma, ArtworkShares.DarkBackdrop(dominant), shares);
+        return new BackdropCover(pixels, luma, ArtworkShares.DarkBackdrop(dominant), shares, Visualizer.FluidTexture.Downscale(rgba, width, height, stride));
     }
 
     /// <summary>Размытие «коробкой» 5 × 5, края — повтор крайнего пикселя.</summary>

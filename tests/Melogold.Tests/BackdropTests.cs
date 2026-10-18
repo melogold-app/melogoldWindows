@@ -227,9 +227,20 @@ public class BackdropTests
     }
 
     [Fact]
-    public void The_wide_cover_side_is_the_smaller_of_half_the_height_and_38_percent_of_the_width()
+    public void The_wide_layout_is_one_block_in_the_middle_with_a_bigger_cover()
     {
-        Assert.Equal(400, NowPlayingMetrics.WideCoverSide(2000, 800), 9);
-        Assert.Equal(0.38 * 1000, NowPlayingMetrics.WideCoverSide(1000, 800), 9);
+        // 1920×1080: между строкой заголовка и панелью 889, текст 39 — обложка 587 (было 469), блок посередине с полями ~300
+        var font = NowPlayingMetrics.LyricsFontSize(937);
+        var (cover, lyrics) = NowPlayingMetrics.WideLayout(1920, 889, font);
+        Assert.Equal(587, cover);
+        Assert.Equal(Math.Round(NowPlayingMetrics.LyricsMaxWidth(font)), lyrics);
+        var edge = (1920 - cover - NowPlayingMetrics.WideGap - lyrics) / 2;
+        Assert.InRange(edge, 250, 350);
+        // Узкая высота: под обложкой остаётся место для названия
+        Assert.Equal(400 - 150, NowPlayingMetrics.WideLayout(1920, 400, 18).Cover);
+        // Узкое широкое окно: текст не уже 240, уступает обложка, поля не меньше 48
+        var (smallCover, smallLyrics) = NowPlayingMetrics.WideLayout(900, 900, 40);
+        Assert.True(smallLyrics >= 240);
+        Assert.True(smallCover + NowPlayingMetrics.WideGap + smallLyrics <= 900 - 2 * NowPlayingMetrics.WideEdge);
     }
 }

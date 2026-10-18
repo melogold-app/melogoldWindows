@@ -24,8 +24,8 @@ namespace Melogold.App.Controls;
 /// «Сейчас играет» (docs/PROMPT.md §5.2): страница поверх окна, Esc закрывает её. Фон — размытая обложка с виньеткой
 /// (<see cref="BackdropView"/>, tasks/0034), которая движется, пока играет трек и включён «Живой фон»; текст и кнопки
 /// поверх него всегда светлые: палитра — тёмная схема цвета обложки (Material Color Utilities, как на Android), какая бы
-/// ни была тема приложения. В широком окне — как в Linux: окно пополам, обложка с названием посередине левой половины
-/// (сторона — min(0,50 · H, 0,38 · W)), текст — во всю правую; в узком — переключатель «Обложка · Текст».
+/// ни была тема приложения. В широком окне обложка с названием и текст — одним блоком посередине окна
+/// (<see cref="NowPlayingMetrics.WideLayout"/>); в узком — переключатель «Обложка · Текст».
 /// Фон лежит под всем окном — и под строкой заголовка, и под панелью воспроизведения: они поверх него прозрачные и
 /// светлые (<see cref="Insets"/> — их место). Управление остаётся в панели воспроизведения внизу.
 /// </summary>
@@ -489,6 +489,9 @@ public sealed partial class NowPlayingView : Grid
     /// <summary>Высота области вместе со строкой заголовка, как у страницы Linux с её шапкой, но без панели воспроизведения.</summary>
     private double AreaHeight => Math.Max(0, ActualHeight - _insets.Bottom);
 
+    /// <summary>Высота между строкой заголовка и панелью воспроизведения — там стоят обложка и текст.</summary>
+    private double ContentHeight => Math.Max(0, ActualHeight - _insets.Top - _insets.Bottom);
+
     private void Arrange()
     {
         var (width, height) = (AreaWidth, AreaHeight);
@@ -498,15 +501,15 @@ public sealed partial class NowPlayingView : Grid
         double side;
         if (wide)
         {
-            // Как в Linux (now_playing.rs): окно пополам; слева колонка не шире стороны обложки + 2 × 28 посередине половины,
-            // справа текст во всю половину (поле справа 12). Сторона обложки — min(0,50 · H, 0,38 · W) (tasks/0034)
-            _body.Padding = new Thickness(0, 16, 12, 24);
-            var half = width / 2;
-            side = Math.Max(120, Math.Min(NowPlayingMetrics.WideCoverSide(width, height), half - 2 * 28));
-            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            _body.HorizontalAlignment = HorizontalAlignment.Stretch;
-            _artPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            // Обложка и текст — одним блоком посередине окна, обложка крупная, текст колонкой по ширине длинной строки
+            var (cover, lyrics) = NowPlayingMetrics.WideLayout(width, ContentHeight, NowPlayingMetrics.LyricsFontSize(height));
+            side = cover;
+            _body.Padding = new Thickness(0, 16, 0, 24);
+            _body.ColumnSpacing = NowPlayingMetrics.WideGap;
+            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(cover) });
+            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(lyrics) });
+            _body.HorizontalAlignment = HorizontalAlignment.Center;
+            _artPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             _artPanel.MaxWidth = double.PositiveInfinity;
             // Ширина — ровно обложка: длинное название переносится под ней
             _artPanel.Width = side;
@@ -517,6 +520,7 @@ public sealed partial class NowPlayingView : Grid
         else
         {
             _body.Padding = new Thickness(48, 16, 48, 24);
+            _body.ColumnSpacing = 0;
             var available = width - 96;
             side = Math.Max(120, Math.Min(Math.Min(available, 480), height - 220));
             _body.HorizontalAlignment = HorizontalAlignment.Stretch;

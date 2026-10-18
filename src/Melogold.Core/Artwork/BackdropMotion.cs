@@ -75,8 +75,27 @@ public static class NowPlayingMetrics
     /// </summary>
     public static double LyricsMaxWidth(double fontSize) => 28 * 0.55 * fontSize + 32 * fontSize / 28;
 
-    /// <summary>Сторона обложки в широкой раскладке: <c>min(0,50 · H, 0,38 · W)</c>.</summary>
-    public static double WideCoverSide(double width, double height) => Math.Min(0.50 * height, 0.38 * width);
+    /// <summary>Поле от края окна до блока «обложка + текст» в широкой раскладке, не меньше.</summary>
+    public const double WideEdge = 48;
+
+    /// <summary>Промежуток между обложкой и текстом в широкой раскладке.</summary>
+    public const double WideGap = 72;
+
+    /// <summary>
+    /// Широкая раскладка одним блоком посередине окна (пользователь 2026-10-19: «альбом и лирика не по середине окна —
+    /// меньший отступ от краёв, чтобы были больше, и посередине»). Обложка — <c>min(0,66 · h, h − 150, 0,36 · W)</c>, где
+    /// h — высота между строкой заголовка и панелью воспроизведения (под обложкой ещё название и исполнитель); текст —
+    /// колонкой по ширине длинной строки (<see cref="LyricsMaxWidth"/>), но не шире оставшегося; узко для текста
+    /// (меньше 240) — уступает обложка. Блок ставится посередине, поля по краям — не меньше <see cref="WideEdge"/>.
+    /// </summary>
+    public static (double Cover, double Lyrics) WideLayout(double width, double contentHeight, double fontSize)
+    {
+        var room = Math.Max(0, width - 2 * WideEdge - WideGap);
+        var cover = Math.Max(120, Math.Min(Math.Min(0.66 * contentHeight, contentHeight - 150), 0.36 * width));
+        if (room - cover < 240) cover = Math.Max(120, room - 240);
+        var lyrics = Math.Max(0, Math.Min(LyricsMaxWidth(fontSize), room - cover));
+        return (Math.Round(cover), Math.Round(lyrics));
+    }
 }
 
 /// <summary>

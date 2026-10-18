@@ -11,7 +11,8 @@
   Публикация атомарна: черновик → файлы → «последний релиз»; update.json не появится раньше установщиков.
 
   Версия — одна, в Directory.Build.props (MelogoldVersion). «Что нового»: release-notes/<версия>.ru.md и .en.md.
-  Публикация — через API GitHub с токеном из Git Credential Manager. Подписи кода нет.
+  Публикация — через API GitHub: токен из GH_TOKEN или GITHUB_TOKEN (так выпуск идёт из GitHub Actions, .github/workflows/release.yml),
+  а если их нет — из Git Credential Manager (тот же, которым делается push). Подписи кода нет.
 #>
 param(
     [switch]$Publish,
@@ -153,16 +154,20 @@ if (-not (git branch -r --contains $commit)) { throw "Push $commit first: the re
 $tag = "v$version"
 $notesText = (@($notes.ru, $notes.en) | Where-Object { $_ }) -join "`n`n"
 
-# API GitHub, токен — из Git Credential Manager (тот же, которым делается push). Запрос — из файла: конвейер Windows
-# PowerShell портит ввод, и git отвечает «missing protocol field»
-$request = New-TemporaryFile
-[System.IO.File]::WriteAllText($request, "protocol=https`nhost=github.com`n`n", (New-Object System.Text.UTF8Encoding $false))
-$credential = cmd /c "git credential fill < `"$request`""
-Remove-Item $request
-$token = ($credential | Where-Object { $_ -like "password=*" }) -replace "^password=", ""
-if (-not $token) { throw "No GitHub token: sign in to Git Credential Manager" }
+# API GitHub. Токен — из GH_TOKEN или GITHUB_TOKEN (GitHub Actions), иначе из Git Credential Manager (тот же, которым делается
+# push). Запрос к нему — из файла: конвейер Windows PowerShell портит ввод, и git отвечает «missing protocol field»
+$token = if ($env:GH_TOKEN) { $env:GH_TOKEN } elseif ($env:GITHUB_TOKEN) { $env:GITHUB_TOKEN } else { "" }
+if (-not $token) {
+    $request = New-TemporaryFile
+    [System.IO.File]::WriteAllText($request, "protocol=https`nhost=github.com`n`n", (New-Object System.Text.UTF8Encoding $false))
+    $credential = cmd /c "git credential fill < `"$request`""
+    Remove-Item $request
+    $token = ($credential | Where-Object { $_ -like "password=*" }) -replace "^password=", ""
+}
+if (-not $token) { throw "No GitHub token: set GH_TOKEN or GITHUB_TOKEN, or sign in to Git Credential Manager" }
+$repository = if ($env:GITHUB_REPOSITORY) { $env:GITHUB_REPOSITORY } else { "melogold-app/melogoldWindows" }
 $headers = @{ Authorization = "Bearer $token"; Accept = "application/vnd.github+json"; "X-GitHub-Api-Version" = "2022-11-28" }
-$api = "https://api.github.com/repos/melogold-app/melogoldWindows/releases"
+$api = "https://api.github.com/repos/$repository/releases"
 
 Step "Upload"
 $body = @{ tag_name = $tag; target_commitish = $commit; name = "Melogold $version"; body = $notesText; draft = $true } | ConvertTo-Json
@@ -178,7 +183,7 @@ $uploads = @()
 foreach ($file in (Get-ChildItem $dist -Filter "*.exe") + (Get-Item (Join-Path $dist "update.json"))) {
     $content = New-Object System.Net.Http.StreamContent([System.IO.File]::OpenRead($file.FullName))
     $content.Headers.ContentType = New-Object System.Net.Http.Headers.MediaTypeHeaderValue($(if ($file.Extension -eq ".json") { "application/json" } else { "application/octet-stream" }))
-    $uri = "https://uploads.github.com/repos/melogold-app/melogoldWindows/releases/$($release.id)/assets?name=$([uri]::EscapeDataString($file.Name))"
+    $uri = "https://uploads.github.com/repos/$repository/releases/$($release.id)/assets?name=$([uri]::EscapeDataString($file.Name))"
     $uploads += [pscustomobject]@{ Name = $file.Name; Task = $http.PostAsync($uri, $content) }
 }
 foreach ($upload in $uploads) {

@@ -1,0 +1,47 @@
+name: Release
+
+# Выпуск Windows (scripts/release.ps1): x64 и ARM64 → установщики Inno Setup → dist/update.json → релиз vX.Y.Z на GitHub (--latest).
+# Версия — Directory.Build.props, «Что нового» — release-notes/<версия>.ru.md и .en.md. Запускается руками: Actions › Release › Run workflow,
+# после зелёного CI на этом коммите (тесты здесь не повторяются). Токен — GITHUB_TOKEN, вместо Git Credential Manager.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Скрипт проверяет, что коммит релиза уже есть на GitHub (git branch -r --contains)
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) {
+            choco install innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup install failed' }
+          }
+          else { Write-Host "Inno Setup: $iscc" }
+
+      - name: Выпуск
+        shell: powershell
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/release.ps1 -Publish -SkipTests
+
+      - name: Журналы сборки
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-logs
+          path: artifacts/logs
+          if-no-files-found: ignore

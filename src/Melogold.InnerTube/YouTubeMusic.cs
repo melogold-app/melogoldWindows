@@ -184,9 +184,77 @@ public sealed class YouTubeMusic(InnerTubeClient client)
 
     // ---------- Страницы ----------
 
+    /// <summary>Альбом — с песнями, а не с клипами (см. <see cref="PreferAlbumAudio"/>).</summary>
     public async Task<AlbumDetails> AlbumAsync(string browseId, CancellationToken ct = default)
     {
         var response = await Music("browse", new JsonObject { ["browseId"] = browseId }, ct).ConfigureAwait(false);
+        var details = ParseAlbum(browseId, response);
+        // Второй запрос — только когда в списке есть клипы: у большинства альбомов их нет.
+        if (details.Tracks.Any(t => t.VideoType == "video") && details.Album.PlaylistId is { } playlistId)
+        {
+            try
+            {
+                var audio = await PlaylistTracksAsync(playlistId, details.Tracks.Count + 50, ct).ConfigureAwait(false);
+                details = details with { Tracks = PreferAlbumAudio(details.Tracks, audio) };
+            }
+            // Без плейлиста альбом всё равно открывается — с клипами, как раньше.
+            catch (Exception error) when (error is not OperationCanceledException)
+            {
+            }
+        }
+        return details;
+    }
+
+    /// <summary>
+    /// Клипы в списке альбома — на песни из плейлиста альбома.
+    ///
+    /// YouTube Music отдаёт в списке альбома клип (<c>MUSIC_VIDEO_TYPE_OMV</c>) везде, где у песни есть
+    /// официальное видео или визуализатор, а длительность в строке — песни. 18.10.2026 так у Tyler, The
+    /// Creator в «CALL ME IF YOU GET LOST» все 16 строк оказались клипами: LEMONHEAD показывал 2:11, а
+    /// играл клип на 1:25 с другим сведением, и синхронный текст песни расходился со звуком. Плейлист
+    /// альбома (<c>OLAK5uy_…</c>) несёт сами песни (<c>MUSIC_VIDEO_TYPE_ATV</c>) — оттуда же берёт треки
+    /// альбома Android-клиент.
+    ///
+    /// Сопоставление — по месту в списке и названию; если место не сошлось, то по первому свободному
+    /// треку с тем же названием. Песни альбома и строки без пары не трогаются.
+    /// </summary>
+    public static List<Track> PreferAlbumAudio(IReadOnlyList<Track> tracks, IReadOnlyList<Track> audio)
+    {
+        static string Key(string title) =>
+            string.Join(' ', title.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
+        var used = new bool[audio.Count];
+        var result = new List<Track>(tracks.Count);
+        for (var index = 0; index < tracks.Count; index++)
+        {
+            var track = tracks[index];
+            if (track.VideoType != "video")
+            {
+                result.Add(track);
+                continue;
+            }
+            var wanted = Key(track.Title);
+            bool Fits(int i) => !used[i] && audio[i].VideoType == "song" && Key(audio[i].Title) == wanted;
+            var found = index < audio.Count && Fits(index) ? index : Enumerable.Range(0, audio.Count).Where(Fits).DefaultIfEmpty(-1).First();
+            if (found < 0)
+            {
+                result.Add(track);
+                continue;
+            }
+            used[found] = true;
+            var song = audio[found];
+            result.Add(track with
+            {
+                VideoId = song.VideoId,
+                VideoType = "song",
+                DurationMs = track.DurationMs ?? song.DurationMs,
+                DurationText = track.DurationText ?? song.DurationText,
+            });
+        }
+        return result;
+    }
+
+    public static AlbumDetails ParseAlbum(string browseId, JsonNode response)
+    {
         var header = response.At("contents", "twoColumnBrowseResultsRenderer", "tabs", 0, "tabRenderer", "content", "sectionListRenderer", "contents", 0, "musicResponsiveHeaderRenderer");
         var secondary = response.At("contents", "twoColumnBrowseResultsRenderer", "secondaryContents", "sectionListRenderer", "contents");
         if (header is null || secondary is null) throw new YouTubeException(YouTubeErrorKind.Parser, $"Album {browseId} has no header");
@@ -240,13 +308,18 @@ public sealed class YouTubeMusic(InnerTubeClient client)
     {
         var browseId = playlistId.StartsWith("VL", StringComparison.Ordinal) ? playlistId : "VL" + playlistId;
         var response = await Music("browse", new JsonObject { ["browseId"] = browseId }, ct).ConfigureAwait(false);
+        return ParsePlaylist(browseId, response);
+    }
+
+    public static PlaylistDetails ParsePlaylist(string browseId, JsonNode response)
+    {
         var header = response.At("contents", "twoColumnBrowseResultsRenderer", "tabs", 0, "tabRenderer", "content", "sectionListRenderer", "contents", 0, "musicResponsiveHeaderRenderer")
                      ?? response.At("contents", "twoColumnBrowseResultsRenderer", "tabs", 0, "tabRenderer", "content", "sectionListRenderer", "contents", 0, "musicEditablePlaylistDetailHeaderRenderer", "header", "musicResponsiveHeaderRenderer")
                      ?? response.At("header", "musicDetailHeaderRenderer");
         var secondary = response.At("contents", "twoColumnBrowseResultsRenderer", "secondaryContents", "sectionListRenderer", "contents")
                         ?? response.At("contents", "singleColumnBrowseResultsRenderer", "tabs", 0, "tabRenderer", "content", "sectionListRenderer", "contents");
         var shelf = secondary.Items().Select(s => s.At("musicPlaylistShelfRenderer") ?? s.At("musicShelfRenderer")).FirstOrDefault(s => s is not null);
-        if (header is null && shelf is null) throw new YouTubeException(YouTubeErrorKind.Parser, $"Playlist {playlistId} has no content");
+        if (header is null && shelf is null) throw new YouTubeException(YouTubeErrorKind.Parser, $"Playlist {browseId} has no content");
 
         var id = browseId[2..];
         var title = header.At("title").Text() ?? "";

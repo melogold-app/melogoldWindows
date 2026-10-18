@@ -72,13 +72,10 @@ public sealed partial class SyncedLyricsView : Grid
     private readonly Canvas _pillHost = new() { IsHitTestVisible = false };
     private readonly StackPanel _lines = new() { Spacing = 4 };
     /// <summary>Полоса затухания у верха: под ней встаёт текущая строка (tasks/0013).</summary>
-    private const double TopFade = 24;
-
-    private readonly Microsoft.UI.Xaml.Shapes.Rectangle _topFade = new() { Height = TopFade, VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false };
+    private const double TopFade = LyricsEdgeFade.Top;
 
     /// <summary>Высота в области текста, на которой стоит середина текущей строки; null — строка у самого верха.</summary>
     private double? _anchor;
-    private readonly Microsoft.UI.Xaml.Shapes.Rectangle _bottomFade = new() { Height = 72, VerticalAlignment = VerticalAlignment.Bottom, IsHitTestVisible = false };
     private readonly Button _jump = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 16), Visibility = Visibility.Collapsed };
     private readonly DispatcherQueueTimer _clock;
     private readonly DispatcherQueueTimer _resume;
@@ -110,9 +107,8 @@ public sealed partial class SyncedLyricsView : Grid
         _content.Children.Add(_lines);
         _scroller.Content = _content;
         Children.Add(_scroller);
-        // Строки уходят в фон у краёв, а не обрезаются
-        Children.Add(_topFade);
-        Children.Add(_bottomFade);
+        // Строки уходят в прозрачность у краёв (UpdateEdges), а не обрезаются и не закрываются полосами цвета: фон за
+        // текстом живой, полоса одного цвета на нём читалась бы полосой
         _jump.Content = Loc.Get("LyricsJumpToLine");
         _jump.Click += (_, _) => Resume();
         Children.Add(_jump);
@@ -156,6 +152,13 @@ public sealed partial class SyncedLyricsView : Grid
                 if (_follow) ScrollToActive(animated: false);
             });
         };
+        // Строки встали по-другому (размер, перенос, проигрыш развернулся или свернулся) — прозрачность у краёв пересчитать
+        _lines.SizeChanged += (_, _) =>
+        {
+            _edgeDirty = true;
+            UpdateEdges();
+        };
+        _scroller.ViewChanged += (_, _) => UpdateEdges();
         _content.SizeChanged += (_, _) =>
         {
             if (_pillVisual is not null) _pillVisual.Size = new Vector2((float)_content.ActualWidth, (float)_content.ActualHeight);
@@ -176,26 +179,15 @@ public sealed partial class SyncedLyricsView : Grid
     /// <summary>Перемотка к строке (позиция звука, мс).</summary>
     public Action<long>? Seek { get; set; }
 
-    /// <summary>Цвета текста, подложки и фона под текстом (из обложки на «Сейчас играет»).</summary>
-    public void SetColors(Color text, Color pill, Color background)
+    /// <summary>Цвета текста и подложки (из обложки на «Сейчас играет»).</summary>
+    public void SetColors(Color text, Color pill)
     {
         _text = text;
         _pill = pill;
-        _topFade.Fill = Fade(background, top: true);
-        _bottomFade.Fill = Fade(background, top: false);
         if (_pillBrush is not null) _pillBrush.Color = pill;
         foreach (var row in _rowViews) row.ApplyColor(text);
         _active = -2;
         Tick();
-    }
-
-    private static LinearGradientBrush Fade(Color background, bool top)
-    {
-        var clear = Color.FromArgb(0, background.R, background.G, background.B);
-        var brush = new LinearGradientBrush { StartPoint = new Windows.Foundation.Point(0, 0), EndPoint = new Windows.Foundation.Point(0, 1) };
-        brush.GradientStops.Add(new GradientStop { Color = top ? background : clear, Offset = 0 });
-        brush.GradientStops.Add(new GradientStop { Color = top ? clear : background, Offset = 1 });
-        return brush;
     }
 
     public void SetLyrics(IReadOnlyList<LyricRow> rows, long offsetMs)
@@ -204,6 +196,7 @@ public sealed partial class SyncedLyricsView : Grid
         _offset = offsetMs;
         if (same) return;
         _rows = rows;
+        _edgeDirty = true;
         _lines.Children.Clear();
         _rowViews.Clear();
         foreach (var row in rows)
@@ -288,6 +281,39 @@ public sealed partial class SyncedLyricsView : Grid
             MovePill(immediate: false);
         }
         if (index >= 0) _rowViews[index].Update(position, IsPlaying(), _animations, _text);
+        UpdateEdges();
+    }
+
+    private bool _edgeDirty = true;
+    private double[] _rowTops = [];
+    private double[] _rowBottoms = [];
+
+    /// <summary>
+    /// Затухание у краёв области: прозрачность строки — по её положению (<see cref="LyricsEdgeFade.Opacity"/>), как маска
+    /// у Linux (24 px сверху, 72 снизу), только на строку целиком. Положения строк в тексте считаются, когда раскладка
+    /// сменилась; при каждом кадре и прокрутке — только вычитание смещения.
+    /// </summary>
+    private void UpdateEdges()
+    {
+        var height = _scroller.ActualHeight;
+        if (height <= 0 || _rowViews.Count == 0) return;
+        if (_edgeDirty)
+        {
+            _rowTops = new double[_rowViews.Count];
+            _rowBottoms = new double[_rowViews.Count];
+            for (var i = 0; i < _rowViews.Count; i++)
+            {
+                var element = _rowViews[i].Element;
+                _rowTops[i] = element.TransformToVisual(_content).TransformPoint(default).Y;
+                _rowBottoms[i] = _rowTops[i] + element.ActualHeight;
+            }
+            _edgeDirty = false;
+        }
+        var offset = _scroller.VerticalOffset;
+        for (var i = 0; i < _rowViews.Count; i++)
+            _rowViews[i].ApplyEdge(LyricsEdgeFade.Opacity(_rowTops[i] - offset, _rowBottoms[i] - offset, height));
+        // Подложка активной строки гаснет вместе с ней
+        _pillHost.Opacity = _active >= 0 && _active < _rowViews.Count ? _rowViews[_active].Edge : 1;
     }
 
     /// <summary>
@@ -436,6 +462,16 @@ public sealed partial class SyncedLyricsView : Grid
         public FrameworkElement Body { get; }
 
         public bool IsInterlude => _interlude is not null;
+
+        /// <summary>Прозрачность от положения у края области (<see cref="LyricsEdgeFade"/>); вместе с прозрачностью состояния строки её не задевает: та стоит на <see cref="Element"/>, эта — на <see cref="Body"/>.</summary>
+        public double Edge { get; private set; } = 1;
+
+        public void ApplyEdge(double edge)
+        {
+            if (Math.Abs(edge - Edge) < 0.004) return;
+            Edge = edge;
+            Body.Opacity = edge;
+        }
 
         private RowView(FrameworkElement element, FrameworkElement body, SyncedLine line, TextBlock main) : this(element, body)
         {

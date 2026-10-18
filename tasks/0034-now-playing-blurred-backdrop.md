@@ -6,6 +6,7 @@
 радиальным градиентом, наплыв 400 мс, часы), `NowPlayingView` (тёмная палитра, часы по условиям, размеры), `SyncedLyricsView.AreaHeight`;
 `SettingsStore.LiveBackground` и карточка «Живой фон» в «Настройках». Тесты — `tests/Melogold.Tests/BackdropTests.cs`
 (радуга на чёрном, белый→серый, красный остаётся красным, круговой Lab, однотонная 24×24 и luma, размытие, матрица цвета, слои, часы, размеры).
+Затухание текста у краёв — прозрачностью строк (`LyricsEdgeFade.Opacity`, `SyncedLyricsView.UpdateEdges`), без полос цвета подложки.
 Что осталось: проверить глазами на Windows (см. «Проверка»).
 
 Эталон и источник этого текста — `melogoldLinux/tasks/0031-now-playing-blurred-backdrop.md`.

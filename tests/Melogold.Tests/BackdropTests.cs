@@ -194,6 +194,23 @@ public class BackdropTests
     }
 
     [Fact]
+    public void Lyrics_rows_fade_linearly_over_the_top_24_and_the_bottom_72_pixels()
+    {
+        // Область высотой 600: середина — непрозрачно
+        Assert.Equal(1, LyricsEdgeFade.Opacity(24, 80, 600), 9);
+        Assert.Equal(1, LyricsEdgeFade.Opacity(300, 360, 600), 9);
+        Assert.Equal(1, LyricsEdgeFade.Opacity(400, 528, 600), 9);
+        // Сверху: верх строки 12 px от края — наполовину; на краю и выше — совсем нет
+        Assert.Equal(0.5, LyricsEdgeFade.Opacity(12, 70, 600), 9);
+        Assert.Equal(0, LyricsEdgeFade.Opacity(0, 60, 600), 9);
+        Assert.Equal(0, LyricsEdgeFade.Opacity(-30, 20, 600), 9);
+        // Снизу: низ строки на 36 px от края — наполовину; на краю и ниже — совсем нет
+        Assert.Equal(0.5, LyricsEdgeFade.Opacity(500, 564, 600), 9);
+        Assert.Equal(0, LyricsEdgeFade.Opacity(560, 600, 600), 9);
+        Assert.Equal(0, LyricsEdgeFade.Opacity(590, 650, 600), 9);
+    }
+
+    [Fact]
     public void The_lyrics_column_is_about_28_characters_wide_and_grows_with_the_font()
     {
         Assert.Equal(28 * 0.55 * 28 + 32, NowPlayingMetrics.LyricsMaxWidth(28), 9);

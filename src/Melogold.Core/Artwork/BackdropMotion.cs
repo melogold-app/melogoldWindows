@@ -71,3 +71,23 @@ public static class NowPlayingMetrics
     /// <summary>Сторона обложки в широкой раскладке: <c>min(0,50 · H, 0,38 · W)</c>.</summary>
     public static double WideCoverSide(double width, double height) => Math.Min(0.50 * height, 0.38 * width);
 }
+
+/// <summary>
+/// Затухание строк текста песни у краёв области прокрутки (tasks/0034): как маска у Linux — 24 px сверху и 72 снизу, линейно;
+/// у Windows на строку целиком, по её положению: <c>clamp(верх / 24, 0, 1)</c> у верха и <c>clamp((H − низ) / 72, 0, 1)</c> у низа.
+/// </summary>
+public static class LyricsEdgeFade
+{
+    /// <summary>Высота полосы затухания сверху, px.</summary>
+    public const double Top = 24;
+
+    /// <summary>Высота полосы затухания снизу, px.</summary>
+    public const double Bottom = 72;
+
+    /// <summary>
+    /// Прозрачность строки: <paramref name="top"/> и <paramref name="bottom"/> — её верх и низ в области высотой
+    /// <paramref name="height"/> (0 — верх области). Строка целиком в середине — 1, ушла за край — 0.
+    /// </summary>
+    public static double Opacity(double top, double bottom, double height) =>
+        Math.Min(Math.Clamp(top / Top, 0, 1), Math.Clamp((height - bottom) / Bottom, 0, 1));
+}

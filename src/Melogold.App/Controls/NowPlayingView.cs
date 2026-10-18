@@ -69,8 +69,6 @@ public sealed partial class NowPlayingView : Grid
     private CancellationTokenSource? _paletteLoad;
     private bool _highContrast;
 
-    /// <summary>Подложка обложки на экране: цветом подложки рисуются затухания текста у краёв.</summary>
-    private Color? _backdropBase;
 
     public NowPlayingView()
     {
@@ -339,7 +337,6 @@ public sealed partial class NowPlayingView : Grid
         var url = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 226);
         // Высокая контрастность: цвета системы, без обложки и без оттенка
         _highContrast = new Windows.UI.ViewManagement.AccessibilitySettings().HighContrast;
-        if (_highContrast) _backdropBase = null;
         _backdrop.Visibility = _highContrast ? Visibility.Collapsed : Visibility.Visible;
         if (!_highContrast) _ = LoadBackdropAsync(track.VideoId, url, cancel.Token);
         var palette = _highContrast
@@ -356,10 +353,6 @@ public sealed partial class NowPlayingView : Grid
         var cover = await ArtworkColors.BackdropAsync(key, url, ct);
         if (ct.IsCancellationRequested || cover is null) return;
         await _backdrop.ShowAsync(key, cover, animate: IsOpen && AnimationsEnabled);
-        if (ct.IsCancellationRequested) return;
-        // Затухание текста у краёв рисуется подложкой обложки
-        _backdropBase = Color.FromArgb(255, (byte)(cover.Base >> 16), (byte)(cover.Base >> 8), (byte)cover.Base);
-        if (_palette is { } palette) _synced.SetColors(palette.Text, palette.Pill, _backdropBase.Value);
     }
 
     /// <summary>
@@ -406,7 +399,7 @@ public sealed partial class NowPlayingView : Grid
         _plain.Foreground = new SolidColorBrush(_palette.Text);
         foreach (var text in _secondaryTexts) text.Foreground = new SolidColorBrush(_palette.SecondaryText);
         foreach (var text in _message.Children.OfType<TextBlock>()) text.Foreground = new SolidColorBrush(_palette.Text);
-        _synced.SetColors(_palette.Text, _palette.Pill, _backdropBase ?? _palette.Background);
+        _synced.SetColors(_palette.Text, _palette.Pill);
     }
 
     /// <summary>Текст, который нажимается: без подчёркивания и цвета ссылки, цвет — от обложки.</summary>

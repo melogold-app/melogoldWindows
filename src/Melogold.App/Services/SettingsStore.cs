@@ -87,6 +87,12 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     [ObservableProperty]
     public partial bool PreferSyncedLyrics { get; set; } = true;
 
+    /// <summary>
+    /// «Живой фон» (tasks/0034): размытая обложка за «Сейчас играет» медленно движется, пока играет трек. Выключен — фон
+    /// тот же, но неподвижный. Только на этом устройстве, на другие не синхронизируется.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool LiveBackground { get; set; } = true;
 
     /// <summary>«Максимальный размер» кэша изображений, МБ (Android <c>coilDiskCacheMaxSize</c>, 128 МБ).</summary>
     [ObservableProperty]
@@ -141,6 +147,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             ServerUrl = data.ServerUrl;
             LastUpdateCheck = data.LastUpdateCheck;
             PreferSyncedLyrics = data.PreferSyncedLyrics;
+            LiveBackground = data.LiveBackground;
             PauseSearchHistory = data.PauseSearchHistory;
             Sorts = data.Sorts ?? [];
             ImageCacheMaxMb = Math.Max(1, data.ImageCacheMaxMb);
@@ -170,7 +177,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             {
                 Theme = Theme, LastSection = LastSection, Volume = Volume, Muted = Muted, Speed = Speed, NormalizeVolume = NormalizeVolume,
                 Repeat = Repeat, Shuffle = Shuffle, Autoplay = Autoplay, PauseHistory = PauseHistory, ServerUrl = ServerUrl,
-                LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, PauseSearchHistory = PauseSearchHistory, Sorts = Sorts,
+                LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, LiveBackground = LiveBackground, PauseSearchHistory = PauseSearchHistory, Sorts = Sorts,
                 ImageCacheMaxMb = ImageCacheMaxMb, SongCacheMaxMb = SongCacheMaxMb, SongCacheSizeChosen = SongCacheSizeChosen, UpdateAnnouncedVersion = UpdateAnnouncedVersion,
                 WindowPlacement = WindowPlacement, MiniPlayerPosition = MiniPlayerPosition, LastRunVersion = LastRunVersion,
             };
@@ -204,6 +211,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         public string? ServerUrl { get; set; }
         public long LastUpdateCheck { get; set; }
         public bool PreferSyncedLyrics { get; set; } = true;
+        public bool LiveBackground { get; set; } = true;
         public bool PauseSearchHistory { get; set; }
         public Dictionary<string, string>? Sorts { get; set; }
         public long ImageCacheMaxMb { get; set; } = 128;

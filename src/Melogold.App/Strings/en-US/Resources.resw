@@ -29,6 +29,8 @@
   <data name="ThemeSystem.Content" xml:space="preserve"><value>System default</value></data>
   <data name="ThemeLight.Content" xml:space="preserve"><value>Light</value></data>
   <data name="ThemeDark.Content" xml:space="preserve"><value>Dark</value></data>
+  <data name="SettingsLiveBackground.Header" xml:space="preserve"><value>Live background</value></data>
+  <data name="SettingsLiveBackground.Description" xml:space="preserve"><value>The blurred cover behind Now playing slowly moves while music plays</value></data>
   <data name="SettingsAbout.Text" xml:space="preserve"><value>About</value></data>
   <data name="SettingsVersion.Header" xml:space="preserve"><value>Melogold</value></data>
   <data name="VersionFormat" xml:space="preserve"><value>Version {0}</value></data>

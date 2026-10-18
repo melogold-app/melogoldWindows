@@ -49,6 +49,12 @@
                     <ComboBoxItem x:Uid="ThemeDark" Content="Dark" Tag="Dark" />
                 </ComboBox>
             </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="SettingsLiveBackground" Header="Live background" Description="The blurred cover behind Now playing slowly moves while music plays">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE91B;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="LiveBackgroundSwitch" Toggled="OnLiveBackgroundToggled" />
+            </toolkit:SettingsCard>
 
             <!-- Воспроизведение: скорость для всех треков, нормализация, сведения о потоке (§5.4) -->
             <TextBlock x:Uid="SettingsPlayback" Style="{StaticResource SettingsSectionHeaderStyle}" Text="Playback" />

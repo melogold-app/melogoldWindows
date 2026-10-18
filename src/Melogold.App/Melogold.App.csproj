@@ -38,6 +38,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <!-- GaussianBlurEffect для размытой обложки за «Сейчас играет» (tasks/0034); рисует Composition, Win2D нужен только для описания эффекта -->
+    <PackageReference Include="Microsoft.Graphics.Win2D" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="MaterialColorUtilities" />
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />

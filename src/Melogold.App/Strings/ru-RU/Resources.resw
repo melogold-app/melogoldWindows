@@ -29,6 +29,8 @@
   <data name="ThemeSystem.Content" xml:space="preserve"><value>Как в системе</value></data>
   <data name="ThemeLight.Content" xml:space="preserve"><value>Светлая</value></data>
   <data name="ThemeDark.Content" xml:space="preserve"><value>Тёмная</value></data>
+  <data name="SettingsLiveBackground.Header" xml:space="preserve"><value>Живой фон</value></data>
+  <data name="SettingsLiveBackground.Description" xml:space="preserve"><value>Размытая обложка за «Сейчас играет» медленно движется, пока играет музыка</value></data>
   <data name="SettingsAbout.Text" xml:space="preserve"><value>О приложении</value></data>
   <data name="SettingsVersion.Header" xml:space="preserve"><value>Melogold</value></data>
   <data name="VersionFormat" xml:space="preserve"><value>Версия {0}</value></data>

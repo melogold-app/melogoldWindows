@@ -28,6 +28,8 @@ SettingsTheme.Header	Тема	Theme
 ThemeSystem.Content	Как в системе	System default
 ThemeLight.Content	Светлая	Light
 ThemeDark.Content	Тёмная	Dark
+SettingsLiveBackground.Header	Живой фон	Live background
+SettingsLiveBackground.Description	Размытая обложка за «Сейчас играет» медленно движется, пока играет музыка	The blurred cover behind Now playing slowly moves while music plays
 SettingsAbout.Text	О приложении	About
 SettingsVersion.Header	Melogold	Melogold
 VersionFormat	Версия {0}	Version {0}

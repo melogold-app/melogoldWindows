@@ -1,5 +1,6 @@
 using System.Numerics;
 using Melogold.App.Services;
+using Melogold.Core.Artwork;
 using Melogold.Core.Lyrics;
 using Microsoft.UI;
 using Microsoft.UI.Composition;
@@ -41,11 +42,30 @@ public sealed partial class SyncedLyricsView : Grid
     private const double BaseFontSize = 28;
 
     /// <summary>
-    /// Размер текста по области: растёт с окном (колонка 760 и высокое окно — около 44), в маленьком окне не меньше 24,
-    /// больше 56 не бывает.
+    /// Высота области, от которой считается размер строки (<see cref="NowPlayingMetrics.LyricsFontSize"/>): у «Сейчас играет»
+    /// это вся область, а не колонка текста, поэтому размер не зависит от ширины и раскладки (tasks/0034). 0 — своя высота
+    /// (предпросмотр в редакторе текста).
     /// </summary>
-    public static double FontSizeFor(double width, double height) =>
-        Math.Round(Math.Clamp(Math.Min(width * 0.058, height * 0.06), 24, 56));
+    public double AreaHeight
+    {
+        get => _areaHeight;
+        set
+        {
+            if (Math.Abs(_areaHeight - value) < 0.5) return;
+            _areaHeight = value;
+            ApplyFontSize(NowPlayingMetrics.LyricsFontSize(_areaHeight > 0 ? _areaHeight : _scroller.ActualHeight));
+            ApplyMargins();
+            // Строки стали другого размера: текущая строка и подложка встают на место по новой раскладке
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                _scroller.UpdateLayout();
+                MovePill(immediate: true);
+                if (_follow) ScrollToActive(animated: false);
+            });
+        }
+    }
+
+    private double _areaHeight;
 
     private readonly ScrollViewer _scroller = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden };
     private readonly Grid _content = new();
@@ -127,7 +147,7 @@ public sealed partial class SyncedLyricsView : Grid
         };
         _scroller.SizeChanged += (_, _) =>
         {
-            ApplyFontSize(FontSizeFor(_scroller.ActualWidth, _scroller.ActualHeight));
+            ApplyFontSize(NowPlayingMetrics.LyricsFontSize(_areaHeight > 0 ? _areaHeight : _scroller.ActualHeight));
             ApplyMargins();
             DispatcherQueue.TryEnqueue(() =>
             {

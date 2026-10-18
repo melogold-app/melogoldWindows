@@ -1,6 +1,12 @@
 # «Сейчас играет»: фон — размытая обложка, текст песни по высоте окна, «Живой фон»
 
-Статус: открыто
+Статус: сделано — `Melogold.Core.Artwork`: `ArtworkShares` (`Shares`, `DarkBackdrop`, Lab), `BackdropCover` (`Prepare`: 24×24, luma, три прохода
+размытия; `Tinted`/`ApplyColorMatrix`), `BackdropMotion` (слои, виньетка, наплыв), `BackdropClock`, `NowPlayingMetrics`;
+`Services/ArtworkColors.BackdropAsync`; `Controls/BackdropView` (Composition: `SpriteVisual` со слоем и `GaussianBlurEffect` из Win2D, виньетка
+радиальным градиентом, наплыв 400 мс, часы), `NowPlayingView` (тёмная палитра, часы по условиям, размеры), `SyncedLyricsView.AreaHeight`;
+`SettingsStore.LiveBackground` и карточка «Живой фон» в «Настройках». Тесты — `tests/Melogold.Tests/BackdropTests.cs`
+(радуга на чёрном, белый→серый, красный остаётся красным, круговой Lab, однотонная 24×24 и luma, размытие, матрица цвета, слои, часы, размеры).
+Что осталось: проверить глазами на Windows (см. «Проверка»).
 
 Эталон и источник этого текста — `melogoldLinux/tasks/0031-now-playing-blurred-backdrop.md`.
 

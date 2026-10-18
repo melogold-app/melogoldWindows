@@ -1,5 +1,6 @@
 using System.Numerics;
 using Melogold.App.Services;
+using Melogold.Core.Artwork;
 using Melogold.Core.Data;
 using Melogold.Core.Domain;
 using Melogold.Core.Music;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Text;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -19,9 +21,11 @@ using Windows.UI;
 namespace Melogold.App.Controls;
 
 /// <summary>
-/// «Сейчас играет» (docs/PROMPT.md §5.2): страница поверх окна, Esc закрывает её. Фон — мягкий оттенок по цвету
-/// обложки (Material Color Utilities, как на Android), размытой обложки нет. В широком окне обложка слева, текст
-/// справа; в узком — переключатель «Обложка · Текст». Управление остаётся в панели воспроизведения внизу.
+/// «Сейчас играет» (docs/PROMPT.md §5.2): страница поверх окна, Esc закрывает её. Фон — размытая обложка с виньеткой
+/// (<see cref="BackdropView"/>, tasks/0034), которая движется, пока играет трек и включён «Живой фон»; текст и кнопки
+/// поверх него всегда светлые: палитра — тёмная схема цвета обложки (Material Color Utilities, как на Android), какая бы
+/// ни была тема приложения. В широком окне обложка слева, текст справа; в узком — переключатель «Обложка · Текст».
+/// Управление остаётся в панели воспроизведения внизу.
 /// </summary>
 public sealed partial class NowPlayingView : Grid
 {
@@ -29,7 +33,11 @@ public sealed partial class NowPlayingView : Grid
 
     private readonly PlayerEngine _engine = App.Services.GetRequiredService<PlayerEngine>();
     private readonly LyricsService _lyrics = App.Services.GetRequiredService<LyricsService>();
+    private readonly SettingsStore _settings = App.Services.GetRequiredService<SettingsStore>();
     private readonly SolidColorBrush _background = new(Colors.Transparent);
+    private readonly BackdropView _backdrop = new();
+    private readonly Windows.UI.ViewManagement.UISettings _ui = new();
+    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _watch;
     private readonly Grid _body = new() { ColumnSpacing = 64 };
     private readonly Grid _artPanel = new() { RowSpacing = 16, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 480 };
     private readonly Grid _lyricsPanel = new();
@@ -59,6 +67,10 @@ public sealed partial class NowPlayingView : Grid
     /// </summary>
     private bool _wideArtwork;
     private CancellationTokenSource? _paletteLoad;
+    private bool _highContrast;
+
+    /// <summary>Подложка обложки на экране: цветом подложки рисуются затухания текста у краёв.</summary>
+    private Color? _backdropBase;
 
     public NowPlayingView()
     {
@@ -67,9 +79,15 @@ public sealed partial class NowPlayingView : Grid
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
+        // Фон — во всю область, под всем остальным
+        SetRowSpan(_backdrop, 2);
+        Children.Add(_backdrop);
+
         // Верх: переключатель «Обложка · Текст» в узком окне. Закрывают «Назад» в заголовке окна и Esc — своей
         // стрелки нет (пользователь: два одинаковых действия друг над другом); меню текста — в «…» панели плеера
-        var top = new Grid { Padding = new Thickness(16, 8, 16, 0) };
+        // Текст и кнопки поверх размытой обложки светлые при любой теме приложения: тёмная тема стоит на верхней строке и
+        // на теле «Сейчас играет», а не на редакторе текста поверх них (он остаётся в теме приложения)
+        var top = new Grid { Padding = new Thickness(16, 8, 16, 0), RequestedTheme = ElementTheme.Dark };
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -102,13 +120,6 @@ public sealed partial class NowPlayingView : Grid
         _lyricsPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         _lyricsPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _plainScroller.Content = _plain;
-        // Обычный текст растёт с окном так же, как синхронный
-        _lyricsPanel.SizeChanged += (_, e) =>
-        {
-            var size = SyncedLyricsView.FontSizeFor(e.NewSize.Width, e.NewSize.Height);
-            _plain.FontSize = size * 22 / 28;
-            _plain.LineHeight = size * 34 / 28;
-        };
         _lyricsPanel.Children.Add(_synced);
         _lyricsPanel.Children.Add(_plainScroller);
         _lyricsPanel.Children.Add(_message);
@@ -123,6 +134,7 @@ public sealed partial class NowPlayingView : Grid
             if (!_engine.IsPlaying) _engine.Play();
         };
 
+        _body.RequestedTheme = ElementTheme.Dark;
         _body.Padding = new Thickness(48, 16, 48, 24);
         _body.Children.Add(_artPanel);
         _body.Children.Add(_lyricsPanel);
@@ -133,6 +145,16 @@ public sealed partial class NowPlayingView : Grid
         {
             _resizedAt = DateTime.UtcNow;
             Arrange();
+        };
+        // Часы фона: идут, только пока играет трек, окно видно, «Живой фон» включён и в Windows не выключены эффекты
+        // анимации. Окно и системная настройка событий не дают — раз в секунду проверяем, пока «Сейчас играет» открыт
+        _watch = DispatcherQueue.CreateTimer();
+        _watch.Interval = TimeSpan.FromSeconds(1);
+        _watch.Tick += (_, _) => UpdateBackdropClock();
+        _engine.StateChanged += () => DispatcherQueue.TryEnqueue(UpdateBackdropClock);
+        _settings.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsStore.LiveBackground)) DispatcherQueue.TryEnqueue(UpdateBackdropClock);
         };
         // Обложка сдвинулась (размер окна, кадр видео вместо квадрата, перенос названия) — текущая строка за ней
         _artwork.SizeChanged += (_, _) => DispatcherQueue.TryEnqueue(AnchorLyrics);
@@ -176,10 +198,11 @@ public sealed partial class NowPlayingView : Grid
             OpenChanged?.Invoke(true);
         }
         _lyrics.Active = true;
-        if (_palette is null) ApplyPalette(ThemePalette(ActualTheme == ElementTheme.Dark), animate: false);
+        if (_palette is null) ApplyPalette(ThemePalette(), animate: false);
         ShowTrack();
         ShowLyrics();
         _synced.Start();
+        UpdateBackdropClock();
         if (flight is not null)
         {
             // После раскладки: большая обложка должна знать своё место
@@ -201,6 +224,7 @@ public sealed partial class NowPlayingView : Grid
         }
         _lyrics.Active = false;
         _synced.Stop();
+        UpdateBackdropClock();
         Animate(opening: false);
         OpenChanged?.Invoke(false);
     }
@@ -295,33 +319,66 @@ public sealed partial class NowPlayingView : Grid
         Arrange();
     }
 
-    /// <summary>Цвета темы: пока цвет по обложке не посчитан и у серой обложки.</summary>
-    private static ArtworkPalette ThemePalette(bool dark) => dark
-        ? new ArtworkPalette(Color.FromArgb(255, 0x20, 0x20, 0x20), Colors.White, Color.FromArgb(255, 0xC5, 0xC5, 0xC5), Color.FromArgb(255, 0x3A, 0x3A, 0x3A))
-        : new ArtworkPalette(Color.FromArgb(255, 0xF3, 0xF3, 0xF3), Color.FromArgb(255, 0x1A, 0x1A, 0x1A), Color.FromArgb(255, 0x5C, 0x5C, 0x5C), Color.FromArgb(255, 0xE0, 0xE0, 0xE0));
+    /// <summary>Цвета тёмной темы: пока цвет по обложке не посчитан и у серой обложки. Фон «Сейчас играет» тёмный всегда.</summary>
+    private static ArtworkPalette ThemePalette() =>
+        new(Color.FromArgb(255, 0x20, 0x20, 0x20), Colors.White, Color.FromArgb(255, 0xC5, 0xC5, 0xC5), Color.FromArgb(255, 0x3A, 0x3A, 0x3A));
 
     /// <summary>
-    /// Фон и цвета текста по обложке; у серой обложки — цвета темы. Фон никогда не прозрачный: пока цвет считается, стоят
-    /// цвета темы, а готовый цвет наплывает за 0,3 с (пользователь: «фон появлялся дольше, чем наполнение»).
+    /// Цвета текста по обложке и сам фон. Палитра — тёмная схема цвета обложки, какая бы ни была тема приложения; у серой
+    /// обложки — тёмная тема. Фон никогда не прозрачный: пока обложка считается, стоит тёмная заливка, готовая размытая
+    /// обложка наплывает за 0,4 с (пользователь: «фон появлялся дольше, чем наполнение»).
     /// </summary>
     private async Task LoadPaletteAsync(bool force)
     {
         if (_engine.Current is not { } track) return;
         if (!force && _paletteKey == track.VideoId) return;
         _paletteKey = track.VideoId;
-        if (_palette is null) ApplyPalette(ThemePalette(ActualTheme == ElementTheme.Dark), animate: false);
+        if (_palette is null) ApplyPalette(ThemePalette(), animate: false);
         _paletteLoad?.Cancel();
         var cancel = _paletteLoad = new CancellationTokenSource();
-        var dark = ActualTheme == ElementTheme.Dark;
         var url = Thumbnails.Sized(track.ThumbnailUrl ?? Thumbnails.ForVideo(track.VideoId), 226);
-        // Высокая контрастность: цвета системы, без оттенка обложки
-        var palette = new Windows.UI.ViewManagement.AccessibilitySettings().HighContrast
+        // Высокая контрастность: цвета системы, без обложки и без оттенка
+        _highContrast = new Windows.UI.ViewManagement.AccessibilitySettings().HighContrast;
+        if (_highContrast) _backdropBase = null;
+        _backdrop.Visibility = _highContrast ? Visibility.Collapsed : Visibility.Visible;
+        if (!_highContrast) _ = LoadBackdropAsync(track.VideoId, url, cancel.Token);
+        var palette = _highContrast
             ? new ArtworkPalette(SystemColor("SystemColorWindowColor"), SystemColor("SystemColorWindowTextColor"), SystemColor("SystemColorWindowTextColor"), SystemColor("SystemColorHighlightColor"))
-            : await ArtworkColors.PaletteAsync(track.VideoId, url, dark, cancel.Token);
+            : await ArtworkColors.PaletteAsync(track.VideoId, url, dark: true, cancel.Token);
         if (cancel.IsCancellationRequested) return;
         // Открыто — цвет наплывает; закрыто — просто встаёт, к открытию он уже на месте
-        ApplyPalette(palette ?? ThemePalette(dark), animate: IsOpen && AnimationsEnabled);
+        ApplyPalette(palette ?? ThemePalette(), animate: IsOpen && AnimationsEnabled);
     }
+
+    /// <summary>Размытая обложка за текстом: готовится в фоне, один раз на обложку, и наплывает поверх прежней.</summary>
+    private async Task LoadBackdropAsync(string key, string? url, CancellationToken ct)
+    {
+        var cover = await ArtworkColors.BackdropAsync(key, url, ct);
+        if (ct.IsCancellationRequested || cover is null) return;
+        await _backdrop.ShowAsync(key, cover, animate: IsOpen && AnimationsEnabled);
+        if (ct.IsCancellationRequested) return;
+        // Затухание текста у краёв рисуется подложкой обложки
+        _backdropBase = Color.FromArgb(255, (byte)(cover.Base >> 16), (byte)(cover.Base >> 8), (byte)cover.Base);
+        if (_palette is { } palette) _synced.SetColors(palette.Text, palette.Pill, _backdropBase.Value);
+    }
+
+    /// <summary>
+    /// Часы фона идут, только пока «Сейчас играет» на экране, трек играет, окно видно, «Живой фон» включён и в системе не
+    /// выключены эффекты анимации. Иначе стоят: фон тот же кадр, но неподвижный; пауза время не сбрасывает.
+    /// </summary>
+    private void UpdateBackdropClock()
+    {
+        var showing = IsOpen && _lyrics.Active;
+        var run = showing && BackdropClock.ShouldRun(_engine.IsPlaying, WindowVisible, _settings.LiveBackground, _ui.AnimationsEnabled);
+        _backdrop.Running = run;
+        if (showing && !_watch.IsRunning) _watch.Start();
+        else if (!showing) _watch.Stop();
+    }
+
+    /// <summary>Окно на экране: не скрыто (открыт мини-плеер) и не свёрнуто.</summary>
+    private static bool WindowVisible =>
+        App.Current?.Window?.AppWindow is not { } window
+        || window.IsVisible && window.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Minimized };
 
     private Microsoft.UI.Xaml.Media.Animation.Storyboard? _backgroundFade;
 
@@ -349,7 +406,7 @@ public sealed partial class NowPlayingView : Grid
         _plain.Foreground = new SolidColorBrush(_palette.Text);
         foreach (var text in _secondaryTexts) text.Foreground = new SolidColorBrush(_palette.SecondaryText);
         foreach (var text in _message.Children.OfType<TextBlock>()) text.Foreground = new SolidColorBrush(_palette.Text);
-        _synced.SetColors(_palette.Text, _palette.Pill, _palette.Background);
+        _synced.SetColors(_palette.Text, _palette.Pill, _backdropBase ?? _palette.Background);
     }
 
     /// <summary>Текст, который нажимается: без подчёркивания и цвета ссылки, цвет — от обложки.</summary>
@@ -391,13 +448,14 @@ public sealed partial class NowPlayingView : Grid
         if (wide)
         {
             // Две равные колонки по обе стороны от середины окна (там же Play в панели плеера): обложка прижата к середине
-            // слева, текст начинается сразу справа от неё; колонка не шире 760, обложка до 480 и не выше окна
-            var half = Math.Min(760, (available - _body.ColumnSpacing) / 2);
-            side = Math.Max(120, Math.Min(Math.Min(480, ActualHeight - 220), half));
+            // слева, текст начинается сразу справа от неё. Сторона обложки — min(0,50 · H, 0,38 · W) от всей области (tasks/0034)
+            var half = Math.Max(0, (available - _body.ColumnSpacing) / 2);
+            side = Math.Max(120, NowPlayingMetrics.WideCoverSide(ActualWidth, ActualHeight));
             _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(half) });
             _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(half) });
             _body.HorizontalAlignment = HorizontalAlignment.Center;
             _artPanel.HorizontalAlignment = HorizontalAlignment.Right;
+            _artPanel.MaxWidth = double.PositiveInfinity;
             // Ширина — ровно обложка: длинное название переносится под ней и не отодвигает её от середины
             _artPanel.Width = side;
             SetColumn(_lyricsPanel, 1);
@@ -409,6 +467,7 @@ public sealed partial class NowPlayingView : Grid
             side = Math.Max(120, Math.Min(Math.Min(available, 480), ActualHeight - 220));
             _body.HorizontalAlignment = HorizontalAlignment.Stretch;
             _artPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            _artPanel.MaxWidth = 480;
             _artPanel.Width = double.NaN;
             SetColumn(_lyricsPanel, 0);
             _artPanel.Visibility = _showLyricsInNarrow ? Visibility.Collapsed : Visibility.Visible;
@@ -416,6 +475,26 @@ public sealed partial class NowPlayingView : Grid
         }
         _artwork.Width = side;
         _artwork.Height = _wideArtwork ? Math.Round(side * 9 / 16) : side;
+        ApplyLyricsSize(wide);
+    }
+
+    /// <summary>
+    /// Размер текста песни — от высоты всей области «Сейчас играет», а не колонки текста (tasks/0034 §3): в окне любой ширины
+    /// видно одно и то же число строк. Обычный текст — в тех же пропорциях. В широкой раскладке строка не шире ~28 знаков и
+    /// стоит у левого края своей колонки.
+    /// </summary>
+    private void ApplyLyricsSize(bool wide)
+    {
+        var size = NowPlayingMetrics.LyricsFontSize(ActualHeight);
+        _synced.AreaHeight = ActualHeight;
+        _plain.FontSize = size * 22 / 28;
+        _plain.LineHeight = size * 34 / 28;
+        var width = wide ? NowPlayingMetrics.LyricsMaxWidth(size) : double.PositiveInfinity;
+        foreach (FrameworkElement view in new FrameworkElement[] { _synced, _plainScroller })
+        {
+            view.MaxWidth = width;
+            view.HorizontalAlignment = wide ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+        }
     }
 
     private void ShowLyrics()

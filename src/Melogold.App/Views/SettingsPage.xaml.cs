@@ -31,6 +31,7 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         InitializeComponent();
         Controls.PageColumn.Center(Scroller, Column, 1000);
         ThemeBox.SelectedIndex = (int)_settings.Theme;
+        LiveBackgroundSwitch.IsOn = _settings.LiveBackground;
         PauseHistorySwitch.IsOn = _settings.PauseHistory;
         PauseSearchSwitch.IsOn = _settings.PauseSearchHistory;
         UpdateButton.Content = VersionUpdateButton.Content = Loc.Get("UpdateAction");
@@ -416,6 +417,11 @@ public sealed partial class SettingsPage : Page, IScrollToTop
     private void OnRemoteControlToggled(object sender, RoutedEventArgs e)
     {
         if (_ready) _settings.RemoteControl = RemoteControlSwitch.IsOn;
+    }
+
+    private void OnLiveBackgroundToggled(object sender, RoutedEventArgs e)
+    {
+        if (_ready) _settings.LiveBackground = LiveBackgroundSwitch.IsOn;
     }
 
     private void OnThemeChanged(object sender, SelectionChangedEventArgs e)

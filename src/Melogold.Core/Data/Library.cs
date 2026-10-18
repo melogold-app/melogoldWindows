@@ -25,6 +25,9 @@ public enum LibraryChange
 /// <summary>Свой плейлист (в Библиотеке): <see cref="SyncId"/> — UUID сервера, если плейлист синхронизирован.</summary>
 public sealed record LocalPlaylist(long Id, string? SyncId, string Name, string? BrowseId, string? ThumbnailUrl, long CreatedAt, int TrackCount, IReadOnlyList<string> Mosaic);
 
+/// <summary>Что перешло с клипа на песню (<see cref="Library.ReplaceClipWithSong"/>).</summary>
+public sealed record ClipReplaced(bool Liked, int Playlists, bool MovedOverride, bool MovedPin);
+
 public sealed record HistoryEntry(Track Track, long PlayedAt);
 
 /// <summary>
@@ -295,6 +298,94 @@ public sealed class Library(LibraryDatabase db)
             }
         });
         Notify(LibraryChange.Likes);
+    }
+
+    // ---------- Клипы из альбомов (tasks/0033) ----------
+
+    /// <summary>
+    /// Клипы из альбомов, которые человек сохранил: в «Нравится» или в плейлисте. До tasks/0032 список альбома давал клипы
+    /// вместо песен, и они остались в медиатеке.
+    /// </summary>
+    public List<Track> SavedAlbumClips() => Database.Read(c => Tracks(c, $"""
+        SELECT {TrackColumns} FROM tracks WHERE video_type = 'video' AND album_id LIKE 'MPREb%'
+            AND (liked_at IS NOT NULL OR video_id IN (SELECT video_id FROM playlist_items))
+        ORDER BY video_id
+        """));
+
+    /// <summary>
+    /// Сохранённый клип → его песня: ♡ (с прежней датой), места в плейлистах, своё название и закреплённый текст
+    /// переходят на песню. Синхронизация (снимок <c>synced_*</c> против библиотеки) увидит это как снятый ♡ у клипа и
+    /// поставленный у песни, замену трека в плейлисте: те же ops, что от ручных правок.
+    /// <para>
+    /// Загрузки и история остаются за клипом: файл загрузки — звук клипа, а история — то, что действительно звучало.
+    /// </para>
+    /// </summary>
+    public ClipReplaced ReplaceClipWithSong(string clipId, Track song)
+    {
+        if (clipId == song.VideoId) return new ClipReplaced(false, 0, false, false);
+        var replaced = Database.Write((c, t) =>
+        {
+            UpsertTrack(c, t, song);
+
+            // ♡: песня получает прежнюю дату, у клипа ♡ снимается
+            var liked = LibraryDatabase.Scalar(c, "SELECT liked_at IS NOT NULL FROM tracks WHERE video_id = $id", ("$id", clipId)) is long l && l != 0;
+            if (liked)
+            {
+                LibraryDatabase.Exec(c, t,
+                    "UPDATE tracks SET liked_at = COALESCE(liked_at, (SELECT liked_at FROM tracks WHERE video_id = $clip)) WHERE video_id = $song",
+                    ("$clip", clipId), ("$song", song.VideoId));
+                LibraryDatabase.Exec(c, t, "UPDATE tracks SET liked_at = NULL WHERE video_id = $clip", ("$clip", clipId));
+            }
+
+            // Плейлисты: песня на месте клипа; если песня там уже есть — клип убирается
+            var playlists = new List<long>();
+            using (var command = c.CreateCommand())
+            {
+                command.Transaction = t;
+                command.CommandText = "SELECT playlist_id FROM playlist_items WHERE video_id = $clip";
+                command.Parameters.AddWithValue("$clip", clipId);
+                using var r = command.ExecuteReader();
+                while (r.Read()) playlists.Add(r.GetInt64(0));
+            }
+            foreach (var playlistId in playlists)
+            {
+                var hasSong = LibraryDatabase.Scalar(c, "SELECT EXISTS(SELECT 1 FROM playlist_items WHERE playlist_id = $p AND video_id = $song)",
+                    ("$p", playlistId), ("$song", song.VideoId)) is long exists && exists != 0;
+                if (hasSong)
+                {
+                    LibraryDatabase.Exec(c, t, "DELETE FROM playlist_items WHERE playlist_id = $p AND video_id = $clip", ("$p", playlistId), ("$clip", clipId));
+                    Renumber(c, t, playlistId);
+                }
+                else
+                {
+                    // sort_key (ключ места на сервере) — у клипа; песню сервер ещё не знает, как добавленную здесь вручную
+                    LibraryDatabase.Exec(c, t, "UPDATE playlist_items SET video_id = $song, sort_key = NULL WHERE playlist_id = $p AND video_id = $clip",
+                        ("$p", playlistId), ("$clip", clipId), ("$song", song.VideoId));
+                }
+            }
+
+            // Своё название и закреплённый текст — если у песни своих нет
+            const string HasOverride = "SELECT EXISTS(SELECT 1 FROM track_overrides WHERE video_id = $id AND (title IS NOT NULL OR artists_text IS NOT NULL OR album_title IS NOT NULL))";
+            var movedOverride = LibraryDatabase.Scalar(c, HasOverride, ("$id", clipId)) is long clipHas && clipHas != 0
+                && LibraryDatabase.Scalar(c, HasOverride, ("$id", song.VideoId)) is long songHas && songHas == 0;
+            if (movedOverride)
+            {
+                // Правка песни — со временем правки клипа; у клипа правка снимается (строка без полей), чтобы синхронизация
+                // сняла её и на сервере
+                LibraryDatabase.Exec(c, t, """
+                    INSERT OR REPLACE INTO track_overrides (video_id, title, artists_text, album_title, updated_at)
+                    SELECT $song, title, artists_text, album_title, updated_at FROM track_overrides WHERE video_id = $clip
+                    """, ("$clip", clipId), ("$song", song.VideoId));
+                WriteOverride(c, t, clipId, TrackOverride.None, IsoTime.NowMs());
+            }
+            var movedPin = LibraryDatabase.Exec(c, t, """
+                UPDATE lyrics_pins SET video_id = $song WHERE video_id = $clip
+                    AND NOT EXISTS (SELECT 1 FROM lyrics_pins WHERE video_id = $song)
+                """, ("$clip", clipId), ("$song", song.VideoId)) > 0;
+            return new ClipReplaced(liked, playlists.Count, movedOverride, movedPin);
+        });
+        Notify(LibraryChange.Likes | LibraryChange.Playlists | LibraryChange.Tracks | LibraryChange.Overrides | LibraryChange.Lyrics);
+        return replaced;
     }
 
     // ---------- Альбомы и исполнители ----------

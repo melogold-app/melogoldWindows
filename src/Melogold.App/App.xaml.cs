@@ -156,6 +156,11 @@ public partial class App : Application
             Services.GetRequiredService<LibrarySync>().Flush(TimeSpan.FromSeconds(3));
         };
         Services.GetRequiredService<LibrarySync>().Start();
+        // Клипы из альбомов, сохранённые до tasks/0032, — на песни (один раз, tasks/0033)
+        var music = Services.GetRequiredService<YouTubeMusic>();
+        _ = AlbumClipsRepair.RunAsync(Services.GetRequiredService<Library>(), music.AlbumTwinsAsync, AlbumClipsRepair.StartDelay,
+            (message, error) => { if (error is null) Log.Info(message); else Log.Warn(message, error); }).ContinueWith(
+            task => Log.Warn("Починка клипов из альбомов прервана", task.Exception!.GetBaseException()), TaskContinuationOptions.OnlyOnFaulted);
         // Обновления: при каждом запуске и раз в 6 часов
         if (!Melogold.Core.Domain.QuietMode.IsOn) Services.GetRequiredService<UpdateService>().Start();
         // Первый запуск новой версии: значок на панели задач и в ярлыках — новый, а не из кэша Windows

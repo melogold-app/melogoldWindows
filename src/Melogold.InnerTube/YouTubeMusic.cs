@@ -185,10 +185,29 @@ public sealed class YouTubeMusic(InnerTubeClient client)
     // ---------- Страницы ----------
 
     /// <summary>Альбом — с песнями, а не с клипами (см. <see cref="PreferAlbumAudio"/>).</summary>
-    public async Task<AlbumDetails> AlbumAsync(string browseId, CancellationToken ct = default)
+    public async Task<AlbumDetails> AlbumAsync(string browseId, CancellationToken ct = default) =>
+        (await AlbumWithRowsAsync(browseId, strict: false, ct).ConfigureAwait(false)).Details;
+
+    /// <summary>
+    /// Клипы списка альбома и песни, которыми они заменены: <c>(id клипа, песня)</c>. Для починки медиатеки — треков,
+    /// сохранённых клипами до <see cref="PreferAlbumAudio"/> (tasks/0033). Строки без пары и песни альбома не входят.
+    /// Плейлист альбома не загрузился — это ошибка, а не «пар нет»: починка повторится при следующем запуске.
+    /// </summary>
+    public async Task<IReadOnlyList<(string ClipId, Track Song)>> AlbumTwinsAsync(string browseId, CancellationToken ct = default)
+    {
+        var (details, rows) = await AlbumWithRowsAsync(browseId, strict: true, ct).ConfigureAwait(false);
+        return rows.Zip(details.Tracks, (row, song) => (ClipId: row, Song: song)).Where(pair => pair.ClipId != pair.Song.VideoId).ToList();
+    }
+
+    /// <summary>
+    /// Альбом с песнями вместо клипов и id строк, какими их дал YouTube, — в том же порядке. <paramref name="strict"/>:
+    /// плейлист альбома не загрузился — бросить ошибку, а не вернуть альбом с клипами.
+    /// </summary>
+    private async Task<(AlbumDetails Details, List<string> Rows)> AlbumWithRowsAsync(string browseId, bool strict, CancellationToken ct)
     {
         var response = await Music("browse", new JsonObject { ["browseId"] = browseId }, ct).ConfigureAwait(false);
         var details = ParseAlbum(browseId, response);
+        var rows = details.Tracks.Select(t => t.VideoId).ToList();
         // Второй запрос — только когда в списке есть клипы: у большинства альбомов их нет.
         if (details.Tracks.Any(t => t.VideoType == "video") && details.Album.PlaylistId is { } playlistId)
         {
@@ -198,11 +217,11 @@ public sealed class YouTubeMusic(InnerTubeClient client)
                 details = details with { Tracks = PreferAlbumAudio(details.Tracks, audio) };
             }
             // Без плейлиста альбом всё равно открывается — с клипами, как раньше.
-            catch (Exception error) when (error is not OperationCanceledException)
+            catch (Exception error) when (!strict && error is not OperationCanceledException)
             {
             }
         }
-        return details;
+        return (details, rows);
     }
 
     /// <summary>

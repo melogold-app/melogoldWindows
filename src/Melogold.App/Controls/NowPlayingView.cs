@@ -24,8 +24,10 @@ namespace Melogold.App.Controls;
 /// «Сейчас играет» (docs/PROMPT.md §5.2): страница поверх окна, Esc закрывает её. Фон — размытая обложка с виньеткой
 /// (<see cref="BackdropView"/>, tasks/0034), которая движется, пока играет трек и включён «Живой фон»; текст и кнопки
 /// поверх него всегда светлые: палитра — тёмная схема цвета обложки (Material Color Utilities, как на Android), какая бы
-/// ни была тема приложения. В широком окне обложка слева, текст справа; в узком — переключатель «Обложка · Текст».
-/// Управление остаётся в панели воспроизведения внизу.
+/// ни была тема приложения. В широком окне — как в Linux: окно пополам, обложка с названием посередине левой половины
+/// (сторона — min(0,50 · H, 0,38 · W)), текст — во всю правую; в узком — переключатель «Обложка · Текст».
+/// Фон лежит под всем окном — и под строкой заголовка, и под панелью воспроизведения: они поверх него прозрачные и
+/// светлые (<see cref="Insets"/> — их место). Управление остаётся в панели воспроизведения внизу.
 /// </summary>
 public sealed partial class NowPlayingView : Grid
 {
@@ -38,7 +40,9 @@ public sealed partial class NowPlayingView : Grid
     private readonly BackdropView _backdrop = new();
     private readonly Windows.UI.ViewManagement.UISettings _ui = new();
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _watch;
-    private readonly Grid _body = new() { ColumnSpacing = 64 };
+    private readonly Grid _body = new();
+    private readonly Grid _top = new() { Padding = new Thickness(16, 8, 16, 0), RequestedTheme = ElementTheme.Dark };
+    private Thickness _insets;
     private readonly Grid _artPanel = new() { RowSpacing = 16, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 480 };
     private readonly Grid _lyricsPanel = new();
     private readonly Border _artwork = new() { CornerRadius = new CornerRadius(8), HorizontalAlignment = HorizontalAlignment.Center };
@@ -90,10 +94,9 @@ public sealed partial class NowPlayingView : Grid
         // стрелки нет (пользователь: два одинаковых действия друг над другом); меню текста — в «…» панели плеера
         // Текст и кнопки поверх размытой обложки светлые при любой теме приложения: тёмная тема стоит на верхней строке и
         // на теле «Сейчас играет», а не на редакторе текста поверх них (он остаётся в теме приложения)
-        var top = new Grid { Padding = new Thickness(16, 8, 16, 0), RequestedTheme = ElementTheme.Dark };
-        top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        _top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        _top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        _top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _mode.Items.Add(new SelectorBarItem { Text = Loc.Get("NowPlayingArtwork"), Tag = "art" });
         _mode.Items.Add(new SelectorBarItem { Text = Loc.Get("PlayerLyrics"), Tag = "lyrics" });
         _mode.SelectionChanged += (_, _) =>
@@ -103,8 +106,8 @@ public sealed partial class NowPlayingView : Grid
         };
         // Посередине окна, а не колонки между кнопками
         SetColumnSpan(_mode, 3);
-        top.Children.Add(_mode);
-        Children.Add(top);
+        _top.Children.Add(_mode);
+        Children.Add(_top);
 
         // Обложка, название, исполнитель
         _artPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -178,6 +181,29 @@ public sealed partial class NowPlayingView : Grid
 
     public bool IsOpen => Visibility == Visibility.Visible;
 
+    /// <summary>
+    /// Место строки заголовка (сверху), панели воспроизведения (снизу) и очереди (справа): фон лежит и под ними, а обложка
+    /// и текст — между ними.
+    /// </summary>
+    public Thickness Insets
+    {
+        get => _insets;
+        set
+        {
+            if (_insets == value) return;
+            _insets = value;
+            _top.Margin = new Thickness(value.Left, value.Top, value.Right, 0);
+            _body.Margin = new Thickness(value.Left, 0, value.Right, value.Bottom);
+            if (_editor is not null) _editor.Margin = value;
+            Arrange();
+        }
+    }
+
+    /// <summary>Цвета обложки сменились: панель воспроизведения красит ими ▶ и ползунок.</summary>
+    public event Action<ArtworkPalette>? PaletteChanged;
+
+    public ArtworkPalette? Palette => _palette;
+
     public event Action<bool>? OpenChanged;
 
     private static bool AnimationsEnabled => new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
@@ -238,6 +264,7 @@ public sealed partial class NowPlayingView : Grid
         else Open(lyrics, from);
     }
 
+    /// <summary>Фон только проявляется — он и под строкой заголовка, и под панелью, сдвиг открыл бы край; обложка и текст ещё и подъезжают.</summary>
     private void Animate(bool opening)
     {
         var visual = ElementCompositionPreview.GetElementVisual(this);
@@ -246,7 +273,6 @@ public sealed partial class NowPlayingView : Grid
             if (!opening) Visibility = Visibility.Collapsed;
             return;
         }
-        ElementCompositionPreview.SetIsTranslationEnabled(this, true);
         var compositor = visual.Compositor;
         var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
         var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.1f, 0.9f), new Vector2(0.2f, 1f));
@@ -258,7 +284,11 @@ public sealed partial class NowPlayingView : Grid
         fade.InsertKeyFrame(0, opening ? 0 : 1);
         fade.InsertKeyFrame(1, opening ? 1 : 0, easing);
         fade.Duration = move.Duration;
-        visual.StartAnimation("Translation", move);
+        foreach (var content in new UIElement[] { _top, _body })
+        {
+            ElementCompositionPreview.SetIsTranslationEnabled(content, true);
+            ElementCompositionPreview.GetElementVisual(content).StartAnimation("Translation", move);
+        }
         visual.StartAnimation("Opacity", fade);
         batch.End();
         if (!opening) batch.Completed += (_, _) => DispatcherQueue.TryEnqueue(() =>
@@ -324,7 +354,8 @@ public sealed partial class NowPlayingView : Grid
 
     /// <summary>Цвета тёмной темы: пока цвет по обложке не посчитан и у серой обложки. Фон «Сейчас играет» тёмный всегда.</summary>
     private static ArtworkPalette ThemePalette() =>
-        new(Color.FromArgb(255, 0x20, 0x20, 0x20), Colors.White, Color.FromArgb(255, 0xC5, 0xC5, 0xC5), Color.FromArgb(255, 0x3A, 0x3A, 0x3A));
+        new(Color.FromArgb(255, 0x20, 0x20, 0x20), Colors.White, Color.FromArgb(255, 0xC5, 0xC5, 0xC5), Color.FromArgb(255, 0x3A, 0x3A, 0x3A),
+            Color.FromArgb(255, 0xF0, 0xF0, 0xF0), Color.FromArgb(255, 0x20, 0x20, 0x20));
 
     /// <summary>
     /// Цвета текста по обложке и сам фон. Палитра — тёмная схема цвета обложки, какая бы ни была тема приложения; у серой
@@ -345,7 +376,8 @@ public sealed partial class NowPlayingView : Grid
         _backdrop.Visibility = _highContrast ? Visibility.Collapsed : Visibility.Visible;
         if (!_highContrast) _ = LoadBackdropAsync(track.VideoId, url, cancel.Token);
         var palette = _highContrast
-            ? new ArtworkPalette(SystemColor("SystemColorWindowColor"), SystemColor("SystemColorWindowTextColor"), SystemColor("SystemColorWindowTextColor"), SystemColor("SystemColorHighlightColor"))
+            ? new ArtworkPalette(SystemColor("SystemColorWindowColor"), SystemColor("SystemColorWindowTextColor"), SystemColor("SystemColorWindowTextColor"), SystemColor("SystemColorHighlightColor"),
+                SystemColor("SystemColorHighlightColor"), SystemColor("SystemColorHighlightTextColor"))
             : await ArtworkColors.PaletteAsync(track.VideoId, url, dark: true, cancel.Token);
         if (cancel.IsCancellationRequested) return;
         // Открыто — цвет наплывает; закрыто — просто встаёт, к открытию он уже на месте
@@ -419,6 +451,7 @@ public sealed partial class NowPlayingView : Grid
         foreach (var text in _secondaryTexts) text.Foreground = new SolidColorBrush(_palette.SecondaryText);
         foreach (var text in _message.Children.OfType<TextBlock>()) text.Foreground = new SolidColorBrush(_palette.Text);
         _synced.SetColors(_palette.Text, _palette.Pill);
+        PaletteChanged?.Invoke(palette);
     }
 
     /// <summary>Текст, который нажимается: без подчёркивания и цвета ссылки, цвет — от обложки.</summary>
@@ -450,25 +483,32 @@ public sealed partial class NowPlayingView : Grid
     }
 
     /// <summary>Широкое окно — обложка и текст рядом; узкое — одно из двух по переключателю.</summary>
+    /// <summary>Ширина области «Сейчас играет» без очереди справа.</summary>
+    private double AreaWidth => Math.Max(0, ActualWidth - _insets.Right);
+
+    /// <summary>Высота области вместе со строкой заголовка, как у страницы Linux с её шапкой, но без панели воспроизведения.</summary>
+    private double AreaHeight => Math.Max(0, ActualHeight - _insets.Bottom);
+
     private void Arrange()
     {
-        var wide = ActualWidth >= WideWidth;
+        var (width, height) = (AreaWidth, AreaHeight);
+        var wide = width >= WideWidth;
         _mode.Visibility = wide ? Visibility.Collapsed : Visibility.Visible;
         _body.ColumnDefinitions.Clear();
-        var available = ActualWidth - 96;
         double side;
         if (wide)
         {
-            // Две равные колонки по обе стороны от середины окна (там же Play в панели плеера): обложка прижата к середине
-            // слева, текст начинается сразу справа от неё. Сторона обложки — min(0,50 · H, 0,38 · W) от всей области (tasks/0034)
-            var half = Math.Max(0, (available - _body.ColumnSpacing) / 2);
-            side = Math.Max(120, NowPlayingMetrics.WideCoverSide(ActualWidth, ActualHeight));
-            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(half) });
-            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(half) });
-            _body.HorizontalAlignment = HorizontalAlignment.Center;
-            _artPanel.HorizontalAlignment = HorizontalAlignment.Right;
+            // Как в Linux (now_playing.rs): окно пополам; слева колонка не шире стороны обложки + 2 × 28 посередине половины,
+            // справа текст во всю половину (поле справа 12). Сторона обложки — min(0,50 · H, 0,38 · W) (tasks/0034)
+            _body.Padding = new Thickness(0, 16, 12, 24);
+            var half = width / 2;
+            side = Math.Max(120, Math.Min(NowPlayingMetrics.WideCoverSide(width, height), half - 2 * 28));
+            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            _body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            _body.HorizontalAlignment = HorizontalAlignment.Stretch;
+            _artPanel.HorizontalAlignment = HorizontalAlignment.Center;
             _artPanel.MaxWidth = double.PositiveInfinity;
-            // Ширина — ровно обложка: длинное название переносится под ней и не отодвигает её от середины
+            // Ширина — ровно обложка: длинное название переносится под ней
             _artPanel.Width = side;
             SetColumn(_lyricsPanel, 1);
             _artPanel.Visibility = Visibility.Visible;
@@ -476,7 +516,9 @@ public sealed partial class NowPlayingView : Grid
         }
         else
         {
-            side = Math.Max(120, Math.Min(Math.Min(available, 480), ActualHeight - 220));
+            _body.Padding = new Thickness(48, 16, 48, 24);
+            var available = width - 96;
+            side = Math.Max(120, Math.Min(Math.Min(available, 480), height - 220));
             _body.HorizontalAlignment = HorizontalAlignment.Stretch;
             _artPanel.HorizontalAlignment = HorizontalAlignment.Center;
             _artPanel.MaxWidth = 480;
@@ -497,15 +539,15 @@ public sealed partial class NowPlayingView : Grid
     /// </summary>
     private void ApplyLyricsSize(bool wide)
     {
-        var size = NowPlayingMetrics.LyricsFontSize(ActualHeight);
-        _synced.AreaHeight = ActualHeight;
+        var size = NowPlayingMetrics.LyricsFontSize(AreaHeight);
+        _synced.AreaHeight = AreaHeight;
         _plain.FontSize = size * 22 / 28;
         _plain.LineHeight = size * 34 / 28;
-        var width = wide ? NowPlayingMetrics.LyricsMaxWidth(size) : double.PositiveInfinity;
+        // Текст — во всю свою половину, как в Linux: строки переносятся по её ширине
         foreach (FrameworkElement view in new FrameworkElement[] { _synced, _plainScroller })
         {
-            view.MaxWidth = width;
-            view.HorizontalAlignment = wide ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+            view.MaxWidth = double.PositiveInfinity;
+            view.HorizontalAlignment = HorizontalAlignment.Stretch;
         }
     }
 
@@ -626,6 +668,8 @@ public sealed partial class NowPlayingView : Grid
         if (_lyrics.Track is not { } track || _editor is not null) return;
         _editor = new LyricsEditorView(track, _lyrics.Stored, _lyrics.InitialDraft());
         SetRowSpan(_editor, 2);
+        // Между строкой заголовка и панелью воспроизведения, как обложка и текст
+        _editor.Margin = _insets;
         _editor.Closed += CloseEditor;
         Children.Add(_editor);
     }

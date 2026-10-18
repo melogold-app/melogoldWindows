@@ -11,7 +11,9 @@ using Windows.UI;
 namespace Melogold.App.Services;
 
 /// <summary>Цвета «Сейчас играет» из обложки: фон, текст, вторичный текст, подложка активной строки.</summary>
-public sealed record ArtworkPalette(Color Background, Color Text, Color SecondaryText, Color Pill);
+/// <param name="Accent">главное действие поверх цвета обложки: ▶, заполнение ползунка, включённые кнопки (Material primary)</param>
+/// <param name="OnAccent">значок и текст на <paramref name="Accent"/></param>
+public sealed record ArtworkPalette(Color Background, Color Text, Color SecondaryText, Color Pill, Color Accent, Color OnAccent);
 
 /// <summary>
 /// Цвета из обложки трека, как у Android (<c>ArtworkColorScheme.kt</c>, REDESIGN-M3E §4.4): чёрные полосы
@@ -131,7 +133,8 @@ public static class ArtworkColors
     {
         var core = CorePalette.ContentOf(seed);
         var scheme = dark ? new DarkSchemeMapper().Map(core) : new LightSchemeMapper().Map(core);
-        return new ArtworkPalette(ToColor(scheme.Surface), ToColor(scheme.OnSurface), ToColor(scheme.OnSurfaceVariant), ToColor(scheme.SecondaryContainer));
+        return new ArtworkPalette(ToColor(scheme.Surface), ToColor(scheme.OnSurface), ToColor(scheme.OnSurfaceVariant), ToColor(scheme.SecondaryContainer),
+            ToColor(scheme.Primary), ToColor(scheme.OnPrimary));
     }
 
     private static Color ToColor(uint argb) => Color.FromArgb(255, (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb);

@@ -107,9 +107,17 @@ public sealed partial class MainWindow : Window
         }
         _navigator.SectionShown += OnSectionShown;
         _navigator.Changed += UpdateChrome;
-        // «Сейчас играет» — поверх разделов; переход куда-либо его закрывает
-        Grid.SetRow(NowPlaying, 1);
+        // «Сейчас играет» — поверх разделов; переход куда-либо его закрывает. Его фон — на всё окно: строка заголовка,
+        // пульт и панель воспроизведения лежат поверх него прозрачными (ApplyNowPlayingChrome), как шапка у Linux
+        Grid.SetRowSpan(NowPlaying, 4);
         Root.Children.Add(NowPlaying);
+        foreach (var chrome in new UIElement[] { AppTitleBar, RemoteBanner, Player }) Canvas.SetZIndex(chrome, 8);
+        foreach (var chrome in new FrameworkElement[] { AppTitleBar, RemoteBanner, Player }) chrome.SizeChanged += (_, _) => LayoutNowPlaying();
+        NowPlaying.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, (_, _) => ApplyNowPlayingChrome());
+        NowPlaying.PaletteChanged += palette =>
+        {
+            if (NowPlaying.IsOpen) Player.Tint(palette);
+        };
         _navigator.Changed += () => NowPlaying.Close();
         NowPlaying.OpenChanged += open =>
         {
@@ -254,7 +262,33 @@ public sealed partial class MainWindow : Window
         var wide = Root.ActualWidth >= 900;
         var margin = new Thickness(0, 0, Queue.IsOpen && wide ? Queue.Width : 0, 0);
         Nav.Margin = margin;
-        NowPlaying.Margin = margin;
+        LayoutNowPlaying();
+    }
+
+    /// <summary>Обложка и текст «Сейчас играет» — между строкой заголовка, пультом и панелью воспроизведения и левее очереди.</summary>
+    private void LayoutNowPlaying()
+    {
+        var top = AppTitleBar.Visibility == Visibility.Visible ? AppTitleBar.ActualHeight : 0;
+        var bottom = Player.ActualHeight + (RemoteBanner.Visibility == Visibility.Visible ? RemoteBanner.ActualHeight : 0);
+        NowPlaying.Insets = new Thickness(0, top, Nav.Margin.Right, bottom);
+    }
+
+    private Microsoft.UI.Windowing.TitleBarTheme? _captionTheme;
+
+    /// <summary>
+    /// «Сейчас играет» на экране: строка заголовка (поиск, «Назад», кнопки окна), очередь и панель воспроизведения — светлые поверх
+    /// его тёмного фона, панель — ещё и в цвет обложки; закрыт — как было.
+    /// </summary>
+    private void ApplyNowPlayingChrome()
+    {
+        var on = NowPlaying.IsOpen;
+        LayoutNowPlaying();
+        AppTitleBar.RequestedTheme = on ? ElementTheme.Dark : ElementTheme.Default;
+        // Очередь полупрозрачная и тоже лежит на фоне «Сейчас играет»
+        Queue.RequestedTheme = on ? ElementTheme.Dark : ElementTheme.Default;
+        _captionTheme ??= AppWindow.TitleBar.PreferredTheme;
+        AppWindow.TitleBar.PreferredTheme = on ? Microsoft.UI.Windowing.TitleBarTheme.Dark : _captionTheme.Value;
+        Player.Tint(on ? NowPlaying.Palette : null);
     }
 
     /// <summary>
@@ -523,8 +557,7 @@ public sealed partial class MainWindow : Window
         _fullScreen = on;
         AppWindow.SetPresenter(on ? AppWindowPresenterKind.FullScreen : AppWindowPresenterKind.Default);
         AppTitleBar.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
-        Grid.SetRow(NowPlaying, on ? 0 : 1);
-        Grid.SetRowSpan(NowPlaying, on ? 2 : 1);
+        LayoutNowPlaying();
     }
 
     // ---------- Клавиатура и мышь ----------

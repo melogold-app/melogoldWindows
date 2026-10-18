@@ -5,6 +5,7 @@ using Melogold.Core.Domain;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 
@@ -48,6 +49,67 @@ public sealed partial class PlayerBar : UserControl
 
     /// <summary>Кнопка «Текст» нажата, пока «Сейчас играет» открыто.</summary>
     public void SetNowPlayingOpen(bool open) => LyricsButton.IsChecked = open;
+
+    private bool _tinted;
+    private Brush? _barBackground;
+    private readonly SolidColorBrush _tintFill = new(), _accent = new(), _accentHover = new(), _accentPressed = new(), _onAccent = new(), _onAccentPressed = new();
+
+    /// <summary>
+    /// «Сейчас играет» открыт — панель лежит на его фоне: полупрозрачная в цвет обложки, без рамки, светлая; ▶, заполнение
+    /// ползунков и включённые кнопки — акцентом обложки, как в Linux (<c>tint_css</c>), а не системным цветом. null — обычная.
+    /// </summary>
+    public void Tint(Melogold.App.Services.ArtworkPalette? palette)
+    {
+        if (palette is { } p)
+        {
+            _tintFill.Color = Windows.UI.Color.FromArgb(0x66, p.Background.R, p.Background.G, p.Background.B);
+            _accent.Color = p.Accent;
+            _accentHover.Color = Mix(p.Accent, p.OnAccent, 0.12);
+            _accentPressed.Color = Mix(p.Accent, p.OnAccent, 0.24);
+            _onAccent.Color = p.OnAccent;
+            _onAccentPressed.Color = Windows.UI.Color.FromArgb(0xCC, p.OnAccent.R, p.OnAccent.G, p.OnAccent.B);
+            if (_tinted) return;
+            _tinted = true;
+            _barBackground = Bar.Background;
+            Bar.Background = _tintFill;
+            Bar.BorderThickness = new Thickness(0);
+            foreach (var (key, brush) in TintBrushes()) Bar.Resources[key] = brush;
+            Retheme(ElementTheme.Dark);
+        }
+        else if (_tinted)
+        {
+            _tinted = false;
+            Bar.Background = _barBackground;
+            Bar.BorderThickness = new Thickness(0, 1, 0, 0);
+            foreach (var (key, _) in TintBrushes()) Bar.Resources.Remove(key);
+            Retheme(ElementTheme.Default);
+        }
+    }
+
+    private IEnumerable<(string Key, Brush Brush)> TintBrushes()
+    {
+        foreach (var (state, fill, text) in new[] { ("", _accent, _onAccent), ("PointerOver", _accentHover, _onAccent), ("Pressed", _accentPressed, _onAccentPressed) })
+        {
+            yield return ("AccentButtonBackground" + state, fill);
+            yield return ("AccentButtonForeground" + state, text);
+            yield return ("AccentButtonBorderBrush" + state, fill);
+            yield return ("ToggleButtonBackgroundChecked" + state, fill);
+            yield return ("ToggleButtonForegroundChecked" + state, text);
+            yield return ("ToggleButtonBorderBrushChecked" + state, fill);
+            yield return ("SliderTrackValueFill" + state, fill);
+            yield return ("SliderThumbBackground" + state, fill);
+        }
+    }
+
+    /// <summary>Свои цвета в ресурсах панели подхватываются сменой темы: сначала противоположная, потом нужная.</summary>
+    private void Retheme(ElementTheme theme)
+    {
+        Bar.RequestedTheme = Bar.ActualTheme == ElementTheme.Dark ? ElementTheme.Light : ElementTheme.Dark;
+        Bar.RequestedTheme = theme;
+    }
+
+    private static Windows.UI.Color Mix(Windows.UI.Color from, Windows.UI.Color to, double amount) => Windows.UI.Color.FromArgb(255,
+        (byte)Math.Round(from.R + (to.R - from.R) * amount), (byte)Math.Round(from.G + (to.G - from.G) * amount), (byte)Math.Round(from.B + (to.B - from.B) * amount));
 
     private void OnTitleClick(object sender, RoutedEventArgs e)
     {

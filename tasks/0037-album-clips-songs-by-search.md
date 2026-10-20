@@ -1,6 +1,6 @@
 # Альбом: песни для клипов ищет поиск, если плейлист альбома их не дал
 
-Статус: сделано — `Melogold.InnerTube`: `YouTubeMusic.SongsForClipsAsync`, `YouTubeMusic.SongForClip`, разбор поиска вынесен
+Статус: сделано (выпущено в 0.1.19) — `Melogold.InnerTube`: `YouTubeMusic.SongsForClipsAsync`, `YouTubeMusic.SongForClip`, разбор поиска вынесен
 в `ParseSearch`; тесты `AlbumClipsTests` (`EstateSaleClipsFindTheirSongsBySearch`, `ASongFromSearchMustMatchTitleArtistAndDuration`,
 `AnEmptyPlaylistLeavesTheClipsToTheSearch`, `AFailedSearchIsAnErrorForTheRepairButNotForTheAlbumPage`; на Linux проверены
 через .NET 10 SDK, на Windows — CI)

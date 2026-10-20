@@ -1,5 +1,6 @@
 using Melogold.Core.Domain;
 using Melogold.Core.Music;
+using System.Runtime.ExceptionServices;
 using System.Text.Json.Nodes;
 
 namespace Melogold.InnerTube;
@@ -104,9 +105,12 @@ public sealed class YouTubeMusic(InnerTubeClient client)
     }
 
     /// <summary>YTM с фильтром; продолжение — <see cref="SearchContinuationAsync"/>.</summary>
-    public async Task<ItemsPage> SearchAsync(string query, MusicSearchFilter filter, CancellationToken ct = default)
+    public async Task<ItemsPage> SearchAsync(string query, MusicSearchFilter filter, CancellationToken ct = default) =>
+        ParseSearch(await Music("search", new JsonObject { ["query"] = query, ["params"] = Params(filter) }, ct).ConfigureAwait(false));
+
+    /// <summary>Разбор ответа <c>search</c> с фильтром: выдача и продолжение.</summary>
+    public static ItemsPage ParseSearch(JsonNode response)
     {
-        var response = await Music("search", new JsonObject { ["query"] = query, ["params"] = Params(filter) }, ct).ConfigureAwait(false);
         var sections = response.At("contents", "tabbedSearchResultsRenderer", "tabs", 0, "tabRenderer", "content", "sectionListRenderer", "contents");
         var items = new List<MusicItem>();
         string? continuation = null;
@@ -184,44 +188,108 @@ public sealed class YouTubeMusic(InnerTubeClient client)
 
     // ---------- Страницы ----------
 
-    /// <summary>Альбом — с песнями, а не с клипами (см. <see cref="PreferAlbumAudio"/>).</summary>
+    /// <summary>
+    /// Альбом — с песнями, а не с клипами (см. <see cref="PreferAlbumAudio"/> и <see cref="SongForClip"/>). Не нашлось
+    /// песни — строка остаётся клипом, альбом открывается всё равно.
+    /// </summary>
     public async Task<AlbumDetails> AlbumAsync(string browseId, CancellationToken ct = default) =>
-        (await AlbumWithRowsAsync(browseId, strict: false, ct).ConfigureAwait(false)).Details;
+        (await AlbumWithRowsAsync(browseId, ct).ConfigureAwait(false)).Details;
 
     /// <summary>
     /// Клипы списка альбома и песни, которыми они заменены: <c>(id клипа, песня)</c>. Для починки медиатеки — треков,
     /// сохранённых клипами до <see cref="PreferAlbumAudio"/> (tasks/0033). Строки без пары и песни альбома не входят.
-    /// Плейлист альбома не загрузился — это ошибка, а не «пар нет»: починка повторится при следующем запуске.
+    /// Поиск песни для клипа не прошёл — это ошибка, а не «пар нет»: починка повторится при следующем запуске.
     /// </summary>
     public async Task<IReadOnlyList<(string ClipId, Track Song)>> AlbumTwinsAsync(string browseId, CancellationToken ct = default)
     {
-        var (details, rows) = await AlbumWithRowsAsync(browseId, strict: true, ct).ConfigureAwait(false);
+        var (details, rows, failed) = await AlbumWithRowsAsync(browseId, ct).ConfigureAwait(false);
+        if (failed is not null) ExceptionDispatchInfo.Throw(failed);
         return rows.Zip(details.Tracks, (row, song) => (ClipId: row, Song: song)).Where(pair => pair.ClipId != pair.Song.VideoId).ToList();
     }
 
     /// <summary>
-    /// Альбом с песнями вместо клипов и id строк, какими их дал YouTube, — в том же порядке. <paramref name="strict"/>:
-    /// плейлист альбома не загрузился — бросить ошибку, а не вернуть альбом с клипами.
+    /// Альбом с песнями вместо клипов, id строк, какими их дал YouTube (в том же порядке), и ошибка поиска песен, из-за
+    /// которой клип остался без пары.
     /// </summary>
-    private async Task<(AlbumDetails Details, List<string> Rows)> AlbumWithRowsAsync(string browseId, bool strict, CancellationToken ct)
+    private async Task<(AlbumDetails Details, List<string> Rows, Exception? Failed)> AlbumWithRowsAsync(string browseId, CancellationToken ct)
     {
         var response = await Music("browse", new JsonObject { ["browseId"] = browseId }, ct).ConfigureAwait(false);
         var details = ParseAlbum(browseId, response);
         var rows = details.Tracks.Select(t => t.VideoId).ToList();
+        Exception? failed = null;
         // Второй запрос — только когда в списке есть клипы: у большинства альбомов их нет.
-        if (details.Tracks.Any(t => t.VideoType == "video") && details.Album.PlaylistId is { } playlistId)
+        if (details.Tracks.Any(IsClip) && details.Album.PlaylistId is { } playlistId)
         {
             try
             {
                 var audio = await PlaylistTracksAsync(playlistId, details.Tracks.Count + 50, ct).ConfigureAwait(false);
                 details = details with { Tracks = PreferAlbumAudio(details.Tracks, audio) };
             }
-            // Без плейлиста альбом всё равно открывается — с клипами, как раньше.
-            catch (Exception error) when (!strict && error is not OperationCanceledException)
+            // Пустой плейлист — тоже ошибка разбора («has no content»): песни ищет поиск ниже
+            catch (Exception error) when (error is not OperationCanceledException)
             {
             }
         }
-        return (details, rows);
+        // Плейлист пуст, не загрузился или сам из клипов (переиздание «The Estate Sale», 20.10.2026): песню для каждого
+        // оставшегося клипа ищет поиск. Ошибку плейлиста сменяет итог поиска — иначе альбом с пустым плейлистом чинился бы
+        // на каждом запуске.
+        if (details.Tracks.Any(IsClip))
+        {
+            var (tracks, error) = await SongsForClipsAsync(details.Tracks, ct).ConfigureAwait(false);
+            details = details with { Tracks = tracks };
+            failed = error;
+        }
+        return (details, rows, failed);
+    }
+
+    /// <summary>Сколько поисков песен для клипов альбома идёт сразу.</summary>
+    private const int SongSearchesAtOnce = 8;
+
+    /// <summary>
+    /// Песни для клипов, которым не нашлось пары в плейлисте альбома: поиск «Песни» по исполнителю и названию, пара — по
+    /// <see cref="SongForClip"/>. Запросы идут по несколько сразу, чтобы альбом не открывался секундами. Итог — список и
+    /// ошибка запроса, если из-за неё клип остался клипом. Клип без пары остаётся клипом — лучше сыграть клип, чем чужую
+    /// песню.
+    /// </summary>
+    private async Task<(List<Track> Tracks, Exception? Failed)> SongsForClipsAsync(IReadOnlyList<Track> tracks, CancellationToken ct)
+    {
+        var clips = Enumerable.Range(0, tracks.Count).Where(i => IsClip(tracks[i])).ToList();
+        using var slots = new SemaphoreSlim(SongSearchesAtOnce);
+        async Task<(ItemsPage? Page, Exception? Error)> Search(int index)
+        {
+            await slots.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                return (await SearchAsync($"{tracks[index].ArtistsText} {tracks[index].Title}".Trim(), MusicSearchFilter.Songs, ct).ConfigureAwait(false), null);
+            }
+            catch (Exception error) when (error is not OperationCanceledException)
+            {
+                return (null, error);
+            }
+            finally
+            {
+                slots.Release();
+            }
+        }
+        var results = await Task.WhenAll(clips.Select(Search)).ConfigureAwait(false);
+
+        var result = tracks.ToList();
+        var taken = tracks.Select(t => t.VideoId).ToHashSet();
+        Exception? failed = null;
+        for (var i = 0; i < clips.Count; i++)
+        {
+            var (page, error) = results[i];
+            if (page is null)
+            {
+                failed = error;
+                continue;
+            }
+            var found = page.Items.OfType<Track>().Where(t => !taken.Contains(t.VideoId)).ToList();
+            if (SongForClip(result[clips[i]], found) is not { } song) continue;
+            taken.Add(song.VideoId);
+            result[clips[i]] = TakeSong(result[clips[i]], song);
+        }
+        return (result, failed);
     }
 
     /// <summary>
@@ -239,20 +307,18 @@ public sealed class YouTubeMusic(InnerTubeClient client)
     /// </summary>
     public static List<Track> PreferAlbumAudio(IReadOnlyList<Track> tracks, IReadOnlyList<Track> audio)
     {
-        static string Key(string title) =>
-            string.Join(' ', title.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
         var used = new bool[audio.Count];
         var result = new List<Track>(tracks.Count);
         for (var index = 0; index < tracks.Count; index++)
         {
             var track = tracks[index];
-            if (track.VideoType != "video")
+            if (!IsClip(track))
             {
                 result.Add(track);
                 continue;
             }
-            var wanted = Key(track.Title);
-            bool Fits(int i) => !used[i] && audio[i].VideoType == "song" && Key(audio[i].Title) == wanted;
+            var wanted = TitleKey(track.Title);
+            bool Fits(int i) => !used[i] && IsSong(audio[i]) && TitleKey(audio[i].Title) == wanted;
             var found = index < audio.Count && Fits(index) ? index : Enumerable.Range(0, audio.Count).Where(Fits).DefaultIfEmpty(-1).First();
             if (found < 0)
             {
@@ -260,17 +326,55 @@ public sealed class YouTubeMusic(InnerTubeClient client)
                 continue;
             }
             used[found] = true;
-            var song = audio[found];
-            result.Add(track with
-            {
-                VideoId = song.VideoId,
-                VideoType = "song",
-                DurationMs = track.DurationMs ?? song.DurationMs,
-                DurationText = track.DurationText ?? song.DurationText,
-            });
+            result.Add(TakeSong(track, audio[found]));
         }
         return result;
     }
+
+    /// <summary>Длительность песни из поиска может разойтись со строкой альбома на округление.</summary>
+    private const long SongDurationSlackMs = 2_000;
+
+    /// <summary>
+    /// Песня для клипа из выдачи поиска «Песни», когда плейлист альбома её не дал: у переиздания Tyler, The Creator
+    /// «CALL ME IF YOU GET LOST: The Estate Sale» (2023) плейлист альбома пуст, а очередь по нему — те же клипы
+    /// (20.10.2026), и песни есть только у альбома 2021 года.
+    ///
+    /// Пара — то же название (без учёта регистра и пробелов), хоть один общий исполнитель и длительность строки альбома
+    /// ±2 с: в строке стоит длительность песни, а у клипа она своя (LEMONHEAD — 2:11 у песни и 1:26 у клипа, CORSO — 2:27
+    /// и 5:32). Без длительности строки пары нет.
+    /// </summary>
+    public static Track? SongForClip(Track clip, IReadOnlyList<Track> found)
+    {
+        if (clip.DurationMs is not { } duration) return null;
+        var wanted = TitleKey(clip.Title);
+        return found.FirstOrDefault(song => IsSong(song) && TitleKey(song.Title) == wanted
+                                            && song.DurationMs is { } length && Math.Abs(length - duration) <= SongDurationSlackMs
+                                            && SharesArtist(clip, song));
+    }
+
+    private static bool IsClip(Track track) => track.VideoType == "video";
+
+    private static bool IsSong(Track track) => track.VideoType == "song";
+
+    private static string TitleKey(string title) =>
+        string.Join(' ', title.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
+
+    private static bool SharesArtist(Track a, Track b)
+    {
+        static HashSet<string> Ids(Track t) => t.Artists.Select(artist => artist.Id).OfType<string>().ToHashSet();
+        static HashSet<string> Names(Track t) =>
+            t.Artists.Select(artist => TitleKey(artist.Name)).Concat(t.ArtistsText is { } text ? [TitleKey(text)] : []).ToHashSet();
+        return Ids(a).Overlaps(Ids(b)) || Names(a).Overlaps(Names(b));
+    }
+
+    /// <summary>Строка альбома играет песню: альбом, название и длительность строки остаются.</summary>
+    private static Track TakeSong(Track track, Track song) => track with
+    {
+        VideoId = song.VideoId,
+        VideoType = "song",
+        DurationMs = track.DurationMs ?? song.DurationMs,
+        DurationText = track.DurationText ?? song.DurationText,
+    };
 
     public static AlbumDetails ParseAlbum(string browseId, JsonNode response)
     {

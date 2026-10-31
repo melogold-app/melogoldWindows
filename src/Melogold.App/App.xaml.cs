@@ -21,7 +21,9 @@ public partial class App : Application
     {
         _args = args;
         AppPaths.Ensure();
-        Log.Start();
+        // Настройки — раньше журнала: в них «Журнал» и «Хранить» (tasks/0040); их строки журнал допишет после старта
+        var settings = new SettingsStore(AppPaths.Settings);
+        Log.Start(settings);
         UnhandledException += (_, e) =>
         {
             Log.Crash(e.Exception, "UI");
@@ -41,7 +43,7 @@ public partial class App : Application
             Log.Warn("Unobserved task", e.Exception);
             e.SetObserved();
         };
-        Services = ConfigureServices();
+        Services = ConfigureServices(settings);
         Images.Cache = Services.GetRequiredService<ImageCache>();
         var songs = Services.GetRequiredService<SongCache>();
         var downloads = Services.GetRequiredService<TrackDownloads>();
@@ -61,10 +63,10 @@ public partial class App : Application
 
     public MainWindow? Window => _window;
 
-    private static ServiceProvider ConfigureServices()
+    private static ServiceProvider ConfigureServices(SettingsStore settings)
     {
         var services = new ServiceCollection();
-        services.AddSingleton(new SettingsStore(AppPaths.Settings));
+        services.AddSingleton(settings);
         services.AddSingleton<Navigator>();
         services.AddSingleton<LinkRouter>();
         services.AddSingleton(_ => new LibraryDatabase(AppPaths.Database));

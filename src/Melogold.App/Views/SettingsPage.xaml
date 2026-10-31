@@ -176,16 +176,31 @@
                     <Button x:Name="VersionUpdateButton" Style="{StaticResource AccentButtonStyle}" Click="OnUpdate" Visibility="Collapsed" />
                 </StackPanel>
             </toolkit:SettingsCard>
-            <toolkit:SettingsCard x:Uid="SettingsDiagnostics" Header="Diagnostics" Description="App logs">
-                <toolkit:SettingsCard.HeaderIcon>
+            <!-- Диагностика, как карточки кэша: действия — сразу, настройки журнала — внутри. «Сохранить журнал…» — все файлы
+                 папки одним, чтобы приложить к сообщению о проблеме (tasks/0039); «Журнал» и «Хранить» — tasks/0040 -->
+            <toolkit:SettingsExpander x:Name="DiagnosticsCard" x:Uid="SettingsDiagnostics" Header="Diagnostics" Description="App logs">
+                <toolkit:SettingsExpander.HeaderIcon>
                     <FontIcon Glyph="&#xE9D9;" />
-                </toolkit:SettingsCard.HeaderIcon>
-                <!-- «Сохранить журнал…» — три файла папки одним, чтобы приложить к сообщению о проблеме (tasks/0039) -->
+                </toolkit:SettingsExpander.HeaderIcon>
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Button x:Uid="OpenLogs" Content="Open folder" Click="OnOpenLogs" />
-                    <Button x:Uid="SaveLog" Content="Save log…" Click="OnSaveLog" />
+                    <Button x:Name="OpenLogsButton" x:Uid="OpenLogs" Content="Open folder" Click="OnOpenLogs" />
+                    <Button x:Name="SaveLogButton" x:Uid="SaveLog" Content="Save log…" Click="OnSaveLog" />
                 </StackPanel>
-            </toolkit:SettingsCard>
+                <toolkit:SettingsExpander.Items>
+                    <toolkit:SettingsCard x:Uid="SettingsLog" Header="Log" Description="Write what the app does to files — useful if something breaks">
+                        <ToggleSwitch x:Name="LogSwitch" Toggled="OnLogToggled" />
+                    </toolkit:SettingsCard>
+                    <!-- Порядок — как LogFiles.RetentionDays: 1, 3, 7, 30 дней -->
+                    <toolkit:SettingsCard x:Uid="SettingsLogRetention" Header="Keep">
+                        <ComboBox x:Name="LogRetentionBox" x:Uid="LogRetentionBox" MinWidth="180" SelectionChanged="OnLogRetentionChanged">
+                            <ComboBoxItem x:Uid="LogRetentionDay" Content="A day" />
+                            <ComboBoxItem x:Uid="LogRetention3Days" Content="3 days" />
+                            <ComboBoxItem x:Uid="LogRetentionWeek" Content="A week" />
+                            <ComboBoxItem x:Uid="LogRetentionMonth" Content="A month" />
+                        </ComboBox>
+                    </toolkit:SettingsCard>
+                </toolkit:SettingsExpander.Items>
+            </toolkit:SettingsExpander>
             <controls:ClickableCard x:Uid="SettingsShortcuts" Header="Keyboard shortcuts" Description="F1" Activated="OnShortcuts">
                 <toolkit:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE765;" />

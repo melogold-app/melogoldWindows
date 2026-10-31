@@ -46,6 +46,11 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         RemoteControlSwitch.IsOn = _settings.RemoteControl;
         FillSizes(ImageCacheSizeBox, ImageCacheSizes, _settings.ImageCacheMaxMb, 128);
         FillSizes(SongCacheSizeBox, SongCacheSizes, _settings.SongCacheMaxMb, 4096);
+        LogSwitch.IsOn = _settings.LogEnabled;
+        LogRetentionBox.SelectedIndex = Math.Max(0, Array.IndexOf(LogFiles.RetentionDays, _settings.LogRetentionDays));
+        ShowLog();
+        // Журнал выключен — карточка раскрыта: видно, почему «Открыть папку» и «Сохранить журнал…» недоступны
+        DiagnosticsCard.IsExpanded = !_settings.LogEnabled;
         SignInButton.Content = Loc.Get("AccountSignIn");
         RegisterButton.Content = Loc.Get("AccountRegister");
         _account.StateChanged += _ => DispatcherQueue.TryEnqueue(ShowAccount);
@@ -431,10 +436,28 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         _settings.Theme = (AppTheme)ThemeBox.SelectedIndex;
     }
 
+    // ---------- Журнал (tasks/0040) ----------
+
+    /// <summary>Журнал выключен — файлов нет: срок, «Открыть папку» и «Сохранить журнал…» недоступны.</summary>
+    private void ShowLog() => LogRetentionBox.IsEnabled = OpenLogsButton.IsEnabled = SaveLogButton.IsEnabled = _settings.LogEnabled;
+
+    /// <summary>Выключили — запись прекращается и записанное удаляется сразу, включили — сразу новый файл (<see cref="Log"/>).</summary>
+    private void OnLogToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _settings.LogEnabled = LogSwitch.IsOn;
+        ShowLog();
+    }
+
+    private void OnLogRetentionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_ready && LogRetentionBox.SelectedIndex >= 0) _settings.LogRetentionDays = LogFiles.RetentionDays[LogRetentionBox.SelectedIndex];
+    }
+
     private void OnOpenLogs(object sender, RoutedEventArgs e) => OpenExternal(AppPaths.Logs);
 
     /// <summary>
-    /// «Сохранить журнал…» (tasks/0039): шапка, падение, прошлый запуск и этот — одним файлом <c>.txt</c>, куда выберет
+    /// «Сохранить журнал…» (tasks/0039): шапка, падение и все журналы папки — одним файлом <c>.txt</c>, куда выберет
     /// пользователь (по умолчанию «Документы»), чтобы приложить его к сообщению о проблеме.
     /// </summary>
     private async void OnSaveLog(object sender, RoutedEventArgs e)

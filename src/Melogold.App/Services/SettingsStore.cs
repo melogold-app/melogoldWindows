@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Melogold.Core.Domain;
 using Melogold.Playback;
 
 namespace Melogold.App.Services;
@@ -122,6 +123,17 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     [ObservableProperty]
     public partial string? MiniPlayerPosition { get; set; }
 
+    /// <summary>
+    /// «Журнал» (tasks/0040): записывать работу приложения в файлы. Выключен — ничего не пишется, записанное удаляется
+    /// сразу (<see cref="Log"/>).
+    /// </summary>
+    [ObservableProperty]
+    public partial bool LogEnabled { get; set; } = true;
+
+    /// <summary>«Хранить» журнал, дней: 1, 3, 7 или 30 (<see cref="LogFiles.RetentionDays"/>).</summary>
+    [ObservableProperty]
+    public partial int LogRetentionDays { get; set; } = LogFiles.DefaultRetentionDays;
+
     /// <summary>Сортировки списков по ключу экрана.</summary>
     [ObservableProperty]
     public partial Dictionary<string, string> Sorts { get; set; } = [];
@@ -157,6 +169,8 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             LastRunVersion = data.LastRunVersion;
             SongCacheSizeChosen = data.SongCacheSizeChosen;
             SongCacheMaxMb = data.SongCacheSizeChosen ? Math.Max(0, data.SongCacheMaxMb) : 4096;
+            LogEnabled = data.LogEnabled;
+            LogRetentionDays = LogFiles.Retention(data.LogRetentionDays);
         }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
         {
@@ -180,6 +194,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
                 LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, LiveBackground = LiveBackground, PauseSearchHistory = PauseSearchHistory, Sorts = Sorts,
                 ImageCacheMaxMb = ImageCacheMaxMb, SongCacheMaxMb = SongCacheMaxMb, SongCacheSizeChosen = SongCacheSizeChosen, UpdateAnnouncedVersion = UpdateAnnouncedVersion,
                 WindowPlacement = WindowPlacement, MiniPlayerPosition = MiniPlayerPosition, LastRunVersion = LastRunVersion,
+                LogEnabled = LogEnabled, LogRetentionDays = LogRetentionDays,
             };
             var temp = _path + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(data, Json));
@@ -221,5 +236,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         public string? WindowPlacement { get; set; }
         public string? MiniPlayerPosition { get; set; }
         public string? LastRunVersion { get; set; }
+        public bool LogEnabled { get; set; } = true;
+        public int LogRetentionDays { get; set; } = LogFiles.DefaultRetentionDays;
     }
 }

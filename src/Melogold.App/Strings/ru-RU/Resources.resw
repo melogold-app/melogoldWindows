@@ -41,6 +41,14 @@
   <data name="SaveLogFileType" xml:space="preserve"><value>Текстовый файл</value></data>
   <data name="SaveLogDone" xml:space="preserve"><value>Журнал сохранён</value></data>
   <data name="SaveLogFailed" xml:space="preserve"><value>Не удалось сохранить журнал</value></data>
+  <data name="SettingsLog.Header" xml:space="preserve"><value>Журнал</value></data>
+  <data name="SettingsLog.Description" xml:space="preserve"><value>Записывать работу приложения в файлы — пригодится, если что-то сломается</value></data>
+  <data name="SettingsLogRetention.Header" xml:space="preserve"><value>Хранить</value></data>
+  <data name="LogRetentionDay.Content" xml:space="preserve"><value>День</value></data>
+  <data name="LogRetention3Days.Content" xml:space="preserve"><value>3 дня</value></data>
+  <data name="LogRetentionWeek.Content" xml:space="preserve"><value>Неделя</value></data>
+  <data name="LogRetentionMonth.Content" xml:space="preserve"><value>Месяц</value></data>
+  <data name="LogRetentionBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Сколько хранить журнал</value></data>
   <data name="SettingsSource.Header" xml:space="preserve"><value>GitHub</value></data>
   <data name="SettingsSource.Description" xml:space="preserve"><value>Просмотреть исходный код</value></data>
   <data name="SettingsReportBug.Header" xml:space="preserve"><value>Сообщить о проблеме</value></data>

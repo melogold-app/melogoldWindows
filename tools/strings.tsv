@@ -40,6 +40,14 @@ SaveLog.Content	Сохранить журнал…	Save log…
 SaveLogFileType	Текстовый файл	Text file
 SaveLogDone	Журнал сохранён	Log saved
 SaveLogFailed	Не удалось сохранить журнал	Couldn't save the log
+SettingsLog.Header	Журнал	Log
+SettingsLog.Description	Записывать работу приложения в файлы — пригодится, если что-то сломается	Write what the app does to files — useful if something breaks
+SettingsLogRetention.Header	Хранить	Keep
+LogRetentionDay.Content	День	A day
+LogRetention3Days.Content	3 дня	3 days
+LogRetentionWeek.Content	Неделя	A week
+LogRetentionMonth.Content	Месяц	A month
+LogRetentionBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name	Сколько хранить журнал	How long to keep the log
 SettingsSource.Header	GitHub	GitHub
 SettingsSource.Description	Просмотреть исходный код	View the source code
 SettingsReportBug.Header	Сообщить о проблеме	Report an issue

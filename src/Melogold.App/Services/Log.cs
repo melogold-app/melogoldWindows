@@ -6,42 +6,35 @@ using Microsoft.Win32;
 namespace Melogold.App.Services;
 
 /// <summary>
-/// Журнал (docs/PROMPT.md §3): <c>logs\current.log</c> до 2 МБ, при старте прежний переименовывается в
-/// <c>previous.log</c>; последнее падение — отдельным файлом <c>last-crash.txt</c>. Пароли и токены сюда не пишутся.
-/// «Сохранить журнал…» собирает всё это одним файлом (<see cref="Report"/>).
+/// Журнал (docs/PROMPT.md §3, tasks/0040): <c>logs\melogold-ГГГГММДД-ЧЧММСС.log</c> на запуск, новый файл — на 2 МБ и со
+/// сменой даты; последнее падение — отдельным файлом <c>last-crash.txt</c>. «Журнал» и «Хранить» — в настройках, смена
+/// применяется сразу, без перезапуска: выключили — ничего не пишется и записанное удаляется, старое уходит по сроку и
+/// сверх 50 МБ (<see cref="LogFiles"/>). Пароли и токены сюда не пишутся. «Сохранить журнал…» собирает всё одним файлом
+/// (<see cref="Report"/>).
 /// </summary>
 public static class Log
 {
-    private const long MaxBytes = 2 * 1024 * 1024;
+    /// <summary>Строки до <see cref="Start"/>: настройки читаются раньше журнала, и пока неясно, включён ли он.</summary>
+    private const int MaxEarlyLines = 200;
+
     private static readonly Lock Gate = new();
     private static StreamWriter? _writer;
+    private static string? _path;
+    private static DateTime _started;
+    private static bool _enabled;
+    private static int _retentionDays = LogFiles.DefaultRetentionDays;
+    private static List<string>? _early = [];
 
-    public static string CurrentPath => Path.Combine(AppPaths.Logs, LogReport.CurrentFile);
+    public static string CrashPath => Path.Combine(AppPaths.Logs, LogFiles.CrashFile);
 
-    public static string PreviousPath => Path.Combine(AppPaths.Logs, LogReport.PreviousFile);
-
-    public static string CrashPath => Path.Combine(AppPaths.Logs, LogReport.CrashFile);
-
-    public static void Start()
+    /// <summary>Журнал по настройкам; дальше «Журнал» и «Хранить» применяются, как только их сменили.</summary>
+    public static void Start(SettingsStore settings)
     {
-        lock (Gate)
+        Apply(settings.LogEnabled, settings.LogRetentionDays);
+        settings.PropertyChanged += (_, e) =>
         {
-            try
-            {
-                Directory.CreateDirectory(AppPaths.Logs);
-                if (File.Exists(CurrentPath)) File.Move(CurrentPath, PreviousPath, overwrite: true);
-                _writer = new StreamWriter(new FileStream(CurrentPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite), new UTF8Encoding(false)) { AutoFlush = true };
-            }
-            catch (IOException)
-            {
-                _writer = null;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                _writer = null;
-            }
-        }
-        Info($"Melogold {AppInfo.Version} on Windows {Environment.OSVersion.Version}, {System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}");
+            if (e.PropertyName is nameof(SettingsStore.LogEnabled) or nameof(SettingsStore.LogRetentionDays)) Apply(settings.LogEnabled, settings.LogRetentionDays);
+        };
     }
 
     public static void Info(string message) => Write("I", message);
@@ -50,36 +43,99 @@ public static class Log
 
     public static void Error(string message, Exception? error = null) => Write("E", error is null ? message : $"{message}: {error}");
 
-    private static void Write(string level, string message)
+    private static void Apply(bool enabled, int retentionDays)
     {
-        var line = $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)} {level} [{Environment.CurrentManagedThreadId}] {message}";
-        System.Diagnostics.Debug.WriteLine(line);
         lock (Gate)
         {
-            if (_writer is null) return;
-            try
+            _retentionDays = retentionDays;
+            var early = _early;
+            _early = null;
+            if (!enabled)
             {
-                if (_writer.BaseStream.Length > MaxBytes)
-                {
-                    _writer.Dispose();
-                    File.Move(CurrentPath, PreviousPath, overwrite: true);
-                    _writer = new StreamWriter(new FileStream(CurrentPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite), new UTF8Encoding(false)) { AutoFlush = true };
-                }
-                _writer.WriteLine(line);
+                // Выключили: запись прекращается, всё записанное удаляется — и файл этого запуска
+                _enabled = false;
+                Close();
+                LogFiles.DeleteAll(AppPaths.Logs);
+                return;
             }
-            catch (IOException)
+            if (_enabled && _writer is not null)
             {
+                // Сменили срок: лишнее — сразу
+                LogFiles.Clean(AppPaths.Logs, DateTimeOffset.Now, retentionDays, _path);
+                return;
             }
-            catch (ObjectDisposedException)
-            {
-            }
+            // Старт или включили снова — новый файл с первой строкой о версии и системе
+            _enabled = true;
+            Open(DateTime.Now);
+            Append(Line("I", $"Melogold {AppInfo.Version} on Windows {Environment.OSVersion.Version}, {System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}"));
+            foreach (var line in early ?? []) Append(line);
         }
     }
 
-    /// <summary>Падение: полный текст исключения в <c>last-crash.txt</c> и в журнал.</summary>
+    private static void Write(string level, string message)
+    {
+        var line = Line(level, message);
+        System.Diagnostics.Debug.WriteLine(line);
+        lock (Gate)
+        {
+            if (_early is null) Append(line);
+            else if (_early.Count < MaxEarlyLines) _early.Add(line);
+        }
+    }
+
+    private static string Line(string level, string message) =>
+        $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)} {level} [{Environment.CurrentManagedThreadId}] {message}";
+
+    /// <summary>Строка в файл (под <see cref="Gate"/>); файл дорос до 2 МБ или сменилась дата — сначала новый.</summary>
+    private static void Append(string line)
+    {
+        if (_writer is null) return;
+        try
+        {
+            var now = DateTime.Now;
+            if (LogFiles.NeedsNewFile(_started, _writer.BaseStream.Length, now))
+            {
+                Open(now);
+                if (_writer is null) return;
+            }
+            _writer.WriteLine(line);
+        }
+        catch (Exception e) when (e is IOException or ObjectDisposedException)
+        {
+        }
+    }
+
+    /// <summary>Новый файл со временем начала в имени и уборка: старое по сроку, всё вместе — не больше 50 МБ.</summary>
+    private static void Open(DateTime now)
+    {
+        Close();
+        try
+        {
+            Directory.CreateDirectory(AppPaths.Logs);
+            var path = Path.Combine(AppPaths.Logs, LogFiles.FileName(now));
+            // Та же секунда (включили снова, перезапуск) — дописывается, а не затирается
+            _writer = new StreamWriter(new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite), new UTF8Encoding(false)) { AutoFlush = true };
+            _path = path;
+            _started = now;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+        }
+        LogFiles.Clean(AppPaths.Logs, DateTimeOffset.Now, _retentionDays, _path);
+    }
+
+    private static void Close()
+    {
+        _writer?.Dispose();
+        _writer = null;
+        _path = null;
+    }
+
+    /// <summary>Падение: полный текст исключения в <c>last-crash.txt</c> и в журнал; журнал выключен — никуда.</summary>
     public static void Crash(Exception error, string source)
     {
         Error($"Crash ({source})", error);
+        if (!_enabled) return;
         try
         {
             File.WriteAllText(CrashPath, $"{DateTimeOffset.Now:O}\nMelogold {AppInfo.Version}\n{source}\n\n{error}");
@@ -93,11 +149,11 @@ public static class Log
     }
 
     /// <summary>
-    /// «Сохранить журнал…» (tasks/0039): шапка, падение, прошлый запуск и этот — одним текстом (<see cref="LogReport"/>).
+    /// «Сохранить журнал…» (tasks/0039): шапка, падение и все журналы папки — одним текстом (<see cref="LogReport"/>).
     /// Строки до нажатия уже на диске: журнал пишется без буфера.
     /// </summary>
     public static string Report() =>
-        LogReport.Build(LogReport.Header(AppInfo.Version, WindowsVersion(), ArchitectureText(), DateTimeOffset.Now), AppPaths.Logs);
+        LogReport.Build(LogReport.Header(AppInfo.Version, WindowsVersion(), ArchitectureText(), _retentionDays, DateTimeOffset.Now), AppPaths.Logs);
 
     /// <summary>
     /// «11 24H2, сборка 26100.4652»: выпуск и номер обновления — из реестра (в <c>OSVersion</c> их нет), не прочитались —

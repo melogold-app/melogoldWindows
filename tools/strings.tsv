@@ -36,6 +36,10 @@ VersionFormat	Версия {0}	Version {0}
 SettingsDiagnostics.Header	Диагностика	Diagnostics
 SettingsDiagnostics.Description	Журналы приложения: пригодятся, если что-то не работает	App logs, useful if something doesn't work
 OpenLogs.Content	Открыть папку	Open folder
+SaveLog.Content	Сохранить журнал…	Save log…
+SaveLogFileType	Текстовый файл	Text file
+SaveLogDone	Журнал сохранён	Log saved
+SaveLogFailed	Не удалось сохранить журнал	Couldn't save the log
 SettingsSource.Header	GitHub	GitHub
 SettingsSource.Description	Просмотреть исходный код	View the source code
 SettingsReportBug.Header	Сообщить о проблеме	Report an issue

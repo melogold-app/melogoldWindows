@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Melogold.App.Services;
 using Melogold.Core.Data;
+using Melogold.Core.Domain;
 using Melogold.Playback;
 using Melogold.Server;
 using Microsoft.Extensions.DependencyInjection;
@@ -431,6 +432,33 @@ public sealed partial class SettingsPage : Page, IScrollToTop
     }
 
     private void OnOpenLogs(object sender, RoutedEventArgs e) => OpenExternal(AppPaths.Logs);
+
+    /// <summary>
+    /// «Сохранить журнал…» (tasks/0039): шапка, падение, прошлый запуск и этот — одним файлом <c>.txt</c>, куда выберет
+    /// пользователь (по умолчанию «Документы»), чтобы приложить его к сообщению о проблеме.
+    /// </summary>
+    private async void OnSaveLog(object sender, RoutedEventArgs e)
+    {
+        var picker = new Windows.Storage.Pickers.FileSavePicker { SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary, SuggestedFileName = LogReport.SuggestedName(DateTimeOffset.Now) };
+        picker.FileTypeChoices.Add(Loc.Get("SaveLogFileType"), [".txt"]);
+        if (App.Current?.Window is not { } window) return;
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(window));
+        var file = await picker.PickSaveFileAsync();
+        if (file is null) return;
+        var snackbar = App.Services.GetRequiredService<Snackbar>();
+        try
+        {
+            // UTF-8 без BOM, как сам журнал
+            await Task.Run(() => File.WriteAllText(file.Path, Log.Report()));
+            Log.Info("Saved the log as a file");
+            snackbar.Show(Loc.Get("SaveLogDone"));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warn("Save of the log as a file failed", ex);
+            snackbar.Show(Loc.Get("SaveLogFailed"));
+        }
+    }
 
     private void OnOpenSource(object sender, RoutedEventArgs e) => OpenExternal(AppInfo.RepositoryUrl);
 

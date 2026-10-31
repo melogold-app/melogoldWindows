@@ -180,7 +180,11 @@
                 <toolkit:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE9D9;" />
                 </toolkit:SettingsCard.HeaderIcon>
-                <Button x:Uid="OpenLogs" Content="Open folder" Click="OnOpenLogs" />
+                <!-- «Сохранить журнал…» — три файла папки одним, чтобы приложить к сообщению о проблеме (tasks/0039) -->
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button x:Uid="OpenLogs" Content="Open folder" Click="OnOpenLogs" />
+                    <Button x:Uid="SaveLog" Content="Save log…" Click="OnSaveLog" />
+                </StackPanel>
             </toolkit:SettingsCard>
             <controls:ClickableCard x:Uid="SettingsShortcuts" Header="Keyboard shortcuts" Description="F1" Activated="OnShortcuts">
                 <toolkit:SettingsCard.HeaderIcon>

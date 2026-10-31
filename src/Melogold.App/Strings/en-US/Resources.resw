@@ -37,6 +37,10 @@
   <data name="SettingsDiagnostics.Header" xml:space="preserve"><value>Diagnostics</value></data>
   <data name="SettingsDiagnostics.Description" xml:space="preserve"><value>App logs, useful if something doesn't work</value></data>
   <data name="OpenLogs.Content" xml:space="preserve"><value>Open folder</value></data>
+  <data name="SaveLog.Content" xml:space="preserve"><value>Save log…</value></data>
+  <data name="SaveLogFileType" xml:space="preserve"><value>Text file</value></data>
+  <data name="SaveLogDone" xml:space="preserve"><value>Log saved</value></data>
+  <data name="SaveLogFailed" xml:space="preserve"><value>Couldn't save the log</value></data>
   <data name="SettingsSource.Header" xml:space="preserve"><value>GitHub</value></data>
   <data name="SettingsSource.Description" xml:space="preserve"><value>View the source code</value></data>
   <data name="SettingsReportBug.Header" xml:space="preserve"><value>Report an issue</value></data>

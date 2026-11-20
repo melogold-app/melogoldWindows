@@ -6,6 +6,8 @@
 
 <p align="center">Клиент <a href="https://github.com/melogold-app/melogoldAndroid">Melogold</a> для Windows: музыка из YouTube Music и обычного YouTube с общими Избранным, плейлистами и сохранёнными альбомами на всех устройствах.</p>
 
+Melogold работает локально. Для синхронизации между устройствами укажите адрес собственного [сервера Melogold](https://github.com/melogold-app/melogoldServer) в настройках. Публичный сервер закрывается 21 ноября 2026 года.
+
 ## Что умеет
 
 - Поиск по YouTube Music и YouTube, «Тренды» и «Новое», альбомы, исполнители, каналы, плейлисты.

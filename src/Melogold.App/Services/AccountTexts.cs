@@ -8,6 +8,7 @@ public static class AccountTexts
 {
     public static string Error(Exception error) => Loc.Get((error as ApiException)?.Code switch
     {
+        "server_not_configured" => "ServerText",
         "invalid_credentials" => "AccountErrorCredentials",
         "login_throttled" or "rate_limited" or "reauth_throttled" => "AccountErrorThrottled",
         "device_limit_reached" => "AccountErrorDeviceLimit",

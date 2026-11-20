@@ -108,7 +108,7 @@ public class LiveSyncTests(ITestOutputHelper output)
     public async Task TwoDevicesStayTheSame()
     {
         Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
-        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? throw new InvalidOperationException("Set MELOGOLD_SERVER for live tests");
         var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
         var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
 
@@ -193,7 +193,7 @@ public class LiveSyncTests(ITestOutputHelper output)
     public async Task WatchSignsInWithCode()
     {
         Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
-        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? throw new InvalidOperationException("Set MELOGOLD_SERVER for live tests");
         var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
         var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
         using var a = new Device("E2E Windows A", server, output);
@@ -262,7 +262,7 @@ public class LiveSyncTests(ITestOutputHelper output)
     {
         var file = Environment.GetEnvironmentVariable("MELOGOLD_SCREENSHOT_ACCOUNT");
         Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1" && !string.IsNullOrEmpty(file), "MELOGOLD_LIVE=1 и MELOGOLD_SCREENSHOT_ACCOUNT");
-        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? throw new InvalidOperationException("Set MELOGOLD_SERVER for live tests");
         using var a = new Device("E2E Windows", server, output);
         if (File.Exists(file))
         {
@@ -296,7 +296,7 @@ public class LiveSyncTests(ITestOutputHelper output)
     public async Task HistoryIsSharedBetweenDevices()
     {
         Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
-        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? throw new InvalidOperationException("Set MELOGOLD_SERVER for live tests");
         var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
         var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
 
@@ -353,7 +353,7 @@ public class LiveSyncTests(ITestOutputHelper output)
     public async Task OwnLyricsReachOtherDevices()
     {
         Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
-        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? throw new InvalidOperationException("Set MELOGOLD_SERVER for live tests");
         var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
         var other = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
         var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
@@ -415,7 +415,7 @@ public class LiveSyncTests(ITestOutputHelper output)
     public async Task OverridesReachOtherDevices()
     {
         Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
-        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? throw new InvalidOperationException("Set MELOGOLD_SERVER for live tests");
         var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
         var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
         var track = new Track
@@ -460,7 +460,7 @@ public class LiveSyncTests(ITestOutputHelper output)
     public async Task LyricsPinsReachOtherDevices()
     {
         Assert.SkipUnless(Environment.GetEnvironmentVariable("MELOGOLD_LIVE") == "1", "MELOGOLD_LIVE=1");
-        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? AccountService.DefaultServerUrl;
+        var server = Environment.GetEnvironmentVariable("MELOGOLD_SERVER") ?? throw new InvalidOperationException("Set MELOGOLD_SERVER for live tests");
         var login = "e2ewin" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
         var password = "проверка связи " + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));
         var video = "e2e" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(4));

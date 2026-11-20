@@ -324,7 +324,7 @@
   <data name="AccountSignOutText" xml:space="preserve"><value>Библиотека останется на этом устройстве, но перестанет синхронизироваться</value></data>
   <data name="AccountPasswordConfirm" xml:space="preserve"><value>Подтвердить</value></data>
   <data name="ServerTitle" xml:space="preserve"><value>Сервер Melogold</value></data>
-  <data name="ServerText" xml:space="preserve"><value>Библиотека синхронизируется через этот сервер. Можно указать свой — сервер открытый и ставится одной командой</value></data>
+  <data name="ServerText" xml:space="preserve"><value>Для синхронизации укажите адрес своего сервера Melogold в настройках сервера.</value></data>
   <data name="ServerAddress" xml:space="preserve"><value>Адрес сервера</value></data>
   <data name="ServerCheck" xml:space="preserve"><value>Проверить</value></data>
   <data name="ServerConnect" xml:space="preserve"><value>Подключить</value></data>

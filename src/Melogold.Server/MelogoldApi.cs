@@ -50,7 +50,9 @@ public sealed class MelogoldApi : IDisposable
 
     public MelogoldApi(string baseUrl, string clientVersion, HttpMessageHandler? handler = null)
     {
-        BaseUrl = baseUrl.TrimEnd('/');
+        if (Melogold.Core.Domain.ServerAddressPolicy.Normalize(baseUrl) is not Melogold.Core.Domain.ServerAddress.Valid address)
+            throw new ApiException(0, "server_not_configured", "Set your server address in Settings");
+        BaseUrl = address.Url;
         var userAgent = new ProductInfoHeaderValue("melogold-windows", clientVersion);
         _http = new HttpClient(handler ?? new SocketsHttpHandler { AutomaticDecompression = DecompressionMethods.All, ConnectTimeout = TimeSpan.FromSeconds(10) }, disposeHandler: handler is null)
         {

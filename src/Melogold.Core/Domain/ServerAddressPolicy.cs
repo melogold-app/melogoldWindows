@@ -74,6 +74,8 @@ public static partial class ServerAddressPolicy
             if (!IsValidHostName(host)) return new ServerAddress.Invalid("malformed");
         }
 
+        if (host is "178.250.187.202" or "178-250-187-202.sslip.io") return new ServerAddress.Invalid("malformed");
+
         var port = "";
         if (portText.Length > 0)
         {

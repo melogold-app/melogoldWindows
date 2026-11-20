@@ -151,7 +151,13 @@ public sealed partial class SignInPage : Page
         var register = new HyperlinkButton { Content = Loc.Get("AccountNoAccount"), Padding = new Thickness(0, 4, 0, 4) };
         register.Click += (_, _) => Form.Navigator.Open(typeof(RegisterPage));
         body.Children.Add(register);
-        body.Children.Add(Form.Caption(Loc.Format("AccountOnServerFormat", AccountTexts.Host(account.ServerUrl))));
+        if (account.ServerUrl.Length == 0)
+        {
+            var choose = new Button { Content = Loc.Get("ServerTitle") };
+            choose.Click += (_, _) => Form.Navigator.Open(typeof(ServerPage));
+            body.Children.Add(choose);
+        }
+        else body.Children.Add(Form.Caption(Loc.Format("AccountOnServerFormat", AccountTexts.Host(account.ServerUrl))));
         Content = scroller;
 
         _login.TextChanged += (_, _) => Update();
@@ -546,7 +552,6 @@ public sealed partial class ServerPage : Page
     private readonly Form.ActionButton _check = new(Loc.Get("ServerCheck"), accent: false);
     private readonly Form.ActionButton _connect = new(Loc.Get("ServerConnect"));
     private readonly TextBlock _switchNote = Form.Caption(Loc.Get("ServerSwitchSignsOut"));
-    private readonly HyperlinkButton _default = new() { Content = Loc.Get("ServerDefault"), Padding = new Thickness(0, 4, 0, 4) };
     private ServerInfo? _checkedInfo;
     private string? _checked;
 
@@ -560,7 +565,6 @@ public sealed partial class ServerPage : Page
         body.Children.Add(_error);
         body.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { _check, _connect } });
         body.Children.Add(_switchNote);
-        body.Children.Add(_default);
         Content = scroller;
 
         _address.TextChanged += (_, _) =>
@@ -577,7 +581,6 @@ public sealed partial class ServerPage : Page
         };
         _check.Click += (_, _) => _ = CheckAsync(false);
         _connect.Click += (_, _) => _ = CheckAsync(true);
-        _default.Click += (_, _) => _address.Text = AccountService.DefaultServerUrl;
         Update();
         Loaded += (_, _) => _ = CheckAsync(false);
     }
@@ -606,7 +609,6 @@ public sealed partial class ServerPage : Page
         _connect.IsEnabled = !busy && normalized is not null && !current;
         _connect.Text = Loc.Get(current ? "ServerCurrent" : "ServerConnect");
         _switchNote.Visibility = !current && _account.Session is not null ? Visibility.Visible : Visibility.Collapsed;
-        _default.Visibility = _address.Text.Trim() == AccountService.DefaultServerUrl ? Visibility.Collapsed : Visibility.Visible;
         if (_checkedInfo is { } info && _checked == normalized)
         {
             _info.Text = Loc.Format("ServerInfoFormat", info.InstanceName, info.Version) + "\n" + Loc.Get(info.Registration switch
@@ -634,7 +636,7 @@ public sealed partial class ServerPage : Page
             if (connect)
             {
                 _account.SetServer(url);
-                App.Services.GetRequiredService<SettingsStore>().ServerUrl = url == AccountService.DefaultServerUrl ? null : url;
+                App.Services.GetRequiredService<SettingsStore>().ServerUrl = url;
                 Form.Navigator.GoBack();
             }
         }

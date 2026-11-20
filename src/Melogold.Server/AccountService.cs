@@ -51,9 +51,6 @@ public abstract record AccountState
 /// </summary>
 public sealed class AccountService : IDisposable
 {
-    /// <summary>Сервер по умолчанию, пока нет официального домена (как у Android, REWRITE §3.5.12).</summary>
-    public const string DefaultServerUrl = "https://178-250-187-202.sslip.io";
-
     private const long RefreshEarlyMs = 60_000;
 
     private readonly ISessionStore _store;
@@ -68,8 +65,13 @@ public sealed class AccountService : IDisposable
     {
         _store = store;
         _identity = identity;
-        _serverUrl = serverUrl ?? DefaultServerUrl;
+        _serverUrl = ServerAddressPolicy.Normalize(serverUrl) is ServerAddress.Valid configured ? configured.Url : "";
         _session = store.Load();
+        if (_session is not null && ServerAddressPolicy.Normalize(_session.ServerUrl) is not ServerAddress.Valid)
+        {
+            _session = null;
+            store.Save(null);
+        }
         State = _session is null ? new AccountState.SignedOut() : new AccountState.SignedIn(_session.Login, _session.DeviceId, _session.ServerUrl);
     }
 

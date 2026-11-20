@@ -409,6 +409,8 @@
   <data name="SettingsSpeed.Header" xml:space="preserve"><value>Playback speed</value></data>
   <data name="SettingsSpeed.Description" xml:space="preserve"><value>For all tracks</value></data>
   <data name="SpeedNormal" xml:space="preserve"><value>Normal</value></data>
+  <data name="SettingsCrossfade.Header" xml:space="preserve"><value>Crossfade</value></data>
+  <data name="SettingsCrossfade.Description" xml:space="preserve"><value>Overlap tracks for 3 seconds</value></data>
   <data name="SettingsNormalize.Header" xml:space="preserve"><value>Loudness normalization</value></data>
   <data name="SettingsNormalize.Description" xml:space="preserve"><value>Keeps every track at the same loudness</value></data>
   <data name="Previous" xml:space="preserve"><value>Previous track</value></data>

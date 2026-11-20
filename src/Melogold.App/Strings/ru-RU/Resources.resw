@@ -409,6 +409,8 @@
   <data name="SettingsSpeed.Header" xml:space="preserve"><value>Скорость воспроизведения</value></data>
   <data name="SettingsSpeed.Description" xml:space="preserve"><value>Для всех треков</value></data>
   <data name="SpeedNormal" xml:space="preserve"><value>Обычная</value></data>
+  <data name="SettingsCrossfade.Header" xml:space="preserve"><value>Плавная смена треков</value></data>
+  <data name="SettingsCrossfade.Description" xml:space="preserve"><value>Накладывает конец трека на начало следующего на 3 секунды</value></data>
   <data name="SettingsNormalize.Header" xml:space="preserve"><value>Нормализация громкости</value></data>
   <data name="SettingsNormalize.Description" xml:space="preserve"><value>Регулирует громкость до фиксированного уровня</value></data>
   <data name="Previous" xml:space="preserve"><value>Предыдущий трек</value></data>

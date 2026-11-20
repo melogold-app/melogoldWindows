@@ -55,6 +55,9 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
     [ObservableProperty]
     public partial bool NormalizeVolume { get; set; } = true;
 
+    [ObservableProperty]
+    public partial bool Crossfade { get; set; }
+
     /// <summary>Повтор: 0 — выкл, 1 — очередь, 2 — трек.</summary>
     [ObservableProperty]
     public partial int Repeat { get; set; }
@@ -152,6 +155,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
             Muted = data.Muted;
             Speed = Math.Clamp(data.Speed is 0 ? 1 : data.Speed, 0.5, 2);
             NormalizeVolume = data.NormalizeVolume;
+            Crossfade = data.Crossfade;
             Repeat = Math.Clamp(data.Repeat, 0, 2);
             Shuffle = data.Shuffle;
             Autoplay = data.Autoplay;
@@ -189,7 +193,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         {
             var data = new SettingsData
             {
-                Theme = Theme, LastSection = LastSection, Volume = Volume, Muted = Muted, Speed = Speed, NormalizeVolume = NormalizeVolume,
+                Theme = Theme, LastSection = LastSection, Volume = Volume, Muted = Muted, Speed = Speed, NormalizeVolume = NormalizeVolume, Crossfade = Crossfade,
                 Repeat = Repeat, Shuffle = Shuffle, Autoplay = Autoplay, PauseHistory = PauseHistory, ServerUrl = ServerUrl,
                 LastUpdateCheck = LastUpdateCheck, PreferSyncedLyrics = PreferSyncedLyrics, LiveBackground = LiveBackground, PauseSearchHistory = PauseSearchHistory, Sorts = Sorts,
                 ImageCacheMaxMb = ImageCacheMaxMb, SongCacheMaxMb = SongCacheMaxMb, SongCacheSizeChosen = SongCacheSizeChosen, UpdateAnnouncedVersion = UpdateAnnouncedVersion,
@@ -219,6 +223,7 @@ public sealed partial class SettingsStore : ObservableObject, IPlaybackSettings
         public bool Muted { get; set; }
         public double Speed { get; set; } = 1;
         public bool NormalizeVolume { get; set; } = true;
+        public bool Crossfade { get; set; }
         public int Repeat { get; set; }
         public bool Shuffle { get; set; }
         public bool Autoplay { get; set; } = true;

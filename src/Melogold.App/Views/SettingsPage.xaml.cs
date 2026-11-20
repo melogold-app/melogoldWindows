@@ -43,6 +43,7 @@ public sealed partial class SettingsPage : Page, IScrollToTop
         foreach (var speed in Speeds) SpeedBox.Items.Add(new ComboBoxItem { Content = speed == 1 ? Loc.Get("SpeedNormal") : $"{speed.ToString(System.Globalization.CultureInfo.CurrentCulture)}×" });
         SpeedBox.SelectedIndex = Math.Max(0, Array.IndexOf(Speeds, _settings.Speed));
         NormalizeSwitch.IsOn = _settings.NormalizeVolume;
+        CrossfadeSwitch.IsOn = _settings.Crossfade;
         RemoteControlSwitch.IsOn = _settings.RemoteControl;
         FillSizes(ImageCacheSizeBox, ImageCacheSizes, _settings.ImageCacheMaxMb, 128);
         FillSizes(SongCacheSizeBox, SongCacheSizes, _settings.SongCacheMaxMb, 4096);
@@ -410,6 +411,13 @@ public sealed partial class SettingsPage : Page, IScrollToTop
     {
         if (!_ready || SpeedBox.SelectedIndex < 0) return;
         _settings.Speed = Speeds[SpeedBox.SelectedIndex];
+        App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>().ApplyVolume();
+    }
+
+    private void OnCrossfadeToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _settings.Crossfade = CrossfadeSwitch.IsOn;
         App.Services.GetRequiredService<Melogold.Playback.PlayerEngine>().ApplyVolume();
     }
 

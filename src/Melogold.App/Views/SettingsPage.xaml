@@ -70,6 +70,12 @@
                 </toolkit:SettingsCard.HeaderIcon>
                 <ToggleSwitch x:Name="NormalizeSwitch" Toggled="OnNormalizeToggled" />
             </toolkit:SettingsCard>
+            <toolkit:SettingsCard x:Uid="SettingsCrossfade" Header="Crossfade" Description="Overlap tracks for 3 seconds">
+                <toolkit:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE767;" />
+                </toolkit:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="CrossfadeSwitch" Toggled="OnCrossfadeToggled" />
+            </toolkit:SettingsCard>
             <toolkit:SettingsCard x:Uid="SettingsRemoteControl" Header="Control from other devices" Description="Pause, skip and change the volume from your phone">
                 <toolkit:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE772;" />

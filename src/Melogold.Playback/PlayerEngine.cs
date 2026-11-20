@@ -17,6 +17,7 @@ public interface IPlaybackSettings
     bool Muted { get; }
     double Speed { get; }
     bool NormalizeVolume { get; }
+    bool Crossfade => false;
     bool Autoplay { get; }
     bool PauseHistory { get; }
 }
@@ -52,7 +53,14 @@ public sealed record PlayerError(StreamErrorKind Kind, string Message, Track Tra
 public sealed class PlayerEngine : IDisposable
 {
     private const int MinPlayMs = 5000;
-    private readonly MediaPlayer _player;
+    private const double FadeSeconds = 3;
+    private MediaPlayer _player;
+    private string? _loadedVideoId;
+    private Timer? _crossfadeTimer;
+    private Outgoing? _outgoing;
+    private long? _fadeStarted;
+
+    private sealed record Outgoing(MediaPlayer Player, AacStreamSource Stream, long RetiredAt);
     private readonly StreamResolver _resolver;
     private readonly YouTubeMusic _music;
     private readonly Library _library;
@@ -120,34 +128,40 @@ public sealed class PlayerEngine : IDisposable
             DefaultRequestVersion = System.Net.HttpVersion.Version20,
             DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
         };
-        _player = new MediaPlayer
-        {
-            AudioCategory = MediaPlayerAudioCategory.Media,
-            AutoPlay = false,
-        };
-        // Тихий режим проверок: ни медиапанели Windows, ни медиаклавиш — они у пользовательского Melogold
-        _player.CommandManager.IsEnabled = !QuietMode.IsOn;
-        if (QuietMode.IsOn) _player.SystemMediaTransportControls.IsEnabled = false;
-        _player.CommandManager.NextBehavior.EnablingRule = MediaCommandEnablingRule.Always;
-        _player.CommandManager.PreviousBehavior.EnablingRule = MediaCommandEnablingRule.Always;
-        _player.CommandManager.NextReceived += (_, e) =>
-        {
-            e.Handled = true;
-            Post(() => Next());
-        };
-        _player.CommandManager.PreviousReceived += (_, e) =>
-        {
-            e.Handled = true;
-            Post(Previous);
-        };
-        _player.MediaEnded += (_, _) => Post(OnEnded);
-        _player.MediaFailed += (_, e) => Post(() => OnFailed(e));
-        _player.PlaybackSession.PlaybackStateChanged += (_, _) => Post(OnSessionStateChanged);
+        _player = CreatePlayer();
         Queue.Changed += () => QueueChanged?.Invoke();
         ApplyVolume();
         // Трек, ждущий сеть (tasks/0030), пробуется сразу, как система сообщила о сети или смене адреса (VPN)
         System.Net.NetworkInformation.NetworkChange.NetworkAvailabilityChanged += OnNetworkAvailabilityChanged;
         System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += OnNetworkAddressChanged;
+    }
+
+    private MediaPlayer CreatePlayer()
+    {
+        var player = new MediaPlayer
+        {
+            AudioCategory = MediaPlayerAudioCategory.Media,
+            AutoPlay = false,
+        };
+        // Тихий режим проверок: ни медиапанели Windows, ни медиаклавиш — они у пользовательского Melogold
+        player.CommandManager.IsEnabled = !QuietMode.IsOn;
+        if (QuietMode.IsOn) player.SystemMediaTransportControls.IsEnabled = false;
+        player.CommandManager.NextBehavior.EnablingRule = MediaCommandEnablingRule.Always;
+        player.CommandManager.PreviousBehavior.EnablingRule = MediaCommandEnablingRule.Always;
+        player.CommandManager.NextReceived += (_, e) =>
+        {
+            e.Handled = true;
+            Post(() => { if (ReferenceEquals(player, _player)) Next(); });
+        };
+        player.CommandManager.PreviousReceived += (_, e) =>
+        {
+            e.Handled = true;
+            Post(() => { if (ReferenceEquals(player, _player)) Previous(); });
+        };
+        player.MediaEnded += (_, _) => Post(() => { if (ReferenceEquals(player, _player)) OnEnded(); });
+        player.MediaFailed += (_, e) => Post(() => { if (ReferenceEquals(player, _player)) OnFailed(e); });
+        player.PlaybackSession.PlaybackStateChanged += (_, _) => Post(() => { if (ReferenceEquals(player, _player)) OnSessionStateChanged(); });
+        return player;
     }
 
     private void OnNetworkAvailabilityChanged(object? sender, System.Net.NetworkInformation.NetworkAvailabilityEventArgs e)
@@ -216,6 +230,7 @@ public sealed class PlayerEngine : IDisposable
     {
         if (Status == status) return;
         Status = status;
+        UpdateCrossfadeTimer();
         UpdateListening();
         StateChanged?.Invoke();
     }
@@ -282,6 +297,7 @@ public sealed class PlayerEngine : IDisposable
     public void Pause()
     {
         _playWhenReady = false;
+        FinishCrossfade();
         _player.Pause();
         if (Status == PlayerStatus.Resolving) StateChanged?.Invoke();
     }
@@ -293,7 +309,7 @@ public sealed class PlayerEngine : IDisposable
         if (!Queue.MoveNext(userAction))
         {
             // Конец очереди без автовоспроизведения: остановка на последнем треке в позиции 0
-            _player.Pause();
+            Pause();
             _player.PlaybackSession.Position = TimeSpan.Zero;
             SetStatus(PlayerStatus.Paused);
             return;
@@ -321,6 +337,7 @@ public sealed class PlayerEngine : IDisposable
 
     public void Seek(TimeSpan position)
     {
+        FinishCrossfade();
         if (_player.PlaybackSession.CanSeek) _player.PlaybackSession.Position = position;
         StateChanged?.Invoke();
     }
@@ -343,15 +360,73 @@ public sealed class PlayerEngine : IDisposable
     /// <summary>Громкость, «без звука», скорость и нормализация — после смены настроек.</summary>
     public void ApplyVolume()
     {
-        var gain = 1.0;
-        if (_settings.NormalizeVolume && Stream?.LoudnessDb is { } loudness && loudness > 0)
+        if (!_settings.Crossfade && _outgoing is not null)
         {
-            // loudnessDb — насколько трек громче эталона YouTube: громкие приглушаются, тихие не усиливаются
-            gain = Math.Pow(10, -loudness / 20);
+            FinishCrossfade();
+            return;
         }
-        _player.Volume = Math.Clamp(_settings.Volume * gain, 0, 1);
-        _player.IsMuted = _settings.Muted || QuietMode.IsOn;
+        var progress = _outgoing is null ? 1 : FadeProgress();
+        SetVolume(_player, Stream, progress);
         _player.PlaybackSession.PlaybackRate = Math.Clamp(_settings.Speed, 0.5, 2);
+        if (_outgoing is { } old) SetVolume(old.Player, old.Stream.Info, 1 - progress);
+        UpdateCrossfadeTimer();
+    }
+
+    private void SetVolume(MediaPlayer player, StreamInfo? stream, double weight)
+    {
+        var gain = _settings.NormalizeVolume && stream?.LoudnessDb is { } loudness && loudness > 0
+            ? Math.Pow(10, -loudness / 20)
+            : 1.0;
+        player.Volume = Math.Clamp(_settings.Volume * gain, 0, 1) * weight;
+        player.IsMuted = _settings.Muted || QuietMode.IsOn;
+    }
+
+    private double FadeProgress() => _fadeStarted is long started
+        ? Math.Clamp(Stopwatch.GetElapsedTime(started).TotalSeconds / FadeSeconds, 0, 1)
+        : 0;
+
+    private void UpdateCrossfadeTimer()
+    {
+        if (_disposed) return;
+        if (_settings.Crossfade && (Status == PlayerStatus.Playing || _outgoing is not null))
+        {
+            _crossfadeTimer ??= new Timer(_ => Post(CrossfadeTick), null, 50, 50);
+        }
+        else
+        {
+            _crossfadeTimer?.Dispose();
+            _crossfadeTimer = null;
+        }
+    }
+
+    private void FinishCrossfade()
+    {
+        if (_outgoing is not { } old) return;
+        _outgoing = null;
+        _fadeStarted = null;
+        old.Player.Dispose();
+        old.Stream.Dispose();
+        ApplyVolume();
+    }
+
+    private void CrossfadeTick()
+    {
+        if (_outgoing is { } old)
+        {
+            if (_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing) _fadeStarted ??= Stopwatch.GetTimestamp();
+            if (FadeProgress() >= 1 || Stopwatch.GetElapsedTime(old.RetiredAt).TotalSeconds >= FadeSeconds * 2)
+                FinishCrossfade();
+            else ApplyVolume();
+            return;
+        }
+
+        if (!_settings.Crossfade || Status != PlayerStatus.Playing || SleepAtTrackEnd
+            || Queue.PeekNext(userAction: false) is not int next || Queue.Items[next].Track.VideoId == _loadedVideoId)
+            return;
+        var remaining = Duration - Position;
+        if (remaining > TimeSpan.Zero && remaining.TotalSeconds <= FadeSeconds * Math.Clamp(_settings.Speed, 0.5, 2)
+            && _preloaded.TryGetValue(Queue.Items[next].Track.VideoId, out var prepared) && prepared.IsCompletedSuccessfully)
+            Next(userAction: false);
     }
 
     /// <summary>Восстановить очередь после перезапуска: последний трек на паузе, без автостарта.</summary>
@@ -388,11 +463,24 @@ public sealed class PlayerEngine : IDisposable
         LastLoadStartMs = startMs;
         _playWhenReady = play;
         Error = null;
-        _player.Pause();
-        _player.Source = null;
+        FinishCrossfade();
         var old = _stream;
         _stream = null;
-        old?.Dispose();
+        if (_settings.Crossfade && play && startMs == 0 && old is not null
+            && _loadedVideoId != track.VideoId && _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+        {
+            _player.CommandManager.IsEnabled = false;
+            _player.SystemMediaTransportControls.IsEnabled = false;
+            _outgoing = new Outgoing(_player, old, Stopwatch.GetTimestamp());
+            _player = CreatePlayer();
+        }
+        else
+        {
+            _player.Pause();
+            _player.Source = null;
+            old?.Dispose();
+        }
+        _loadedVideoId = null;
         SetStatus(PlayerStatus.Resolving);
         TrackChanged?.Invoke();
         UpdateSmtcPlaceholder(track);
@@ -409,6 +497,7 @@ public sealed class PlayerEngine : IDisposable
                     return;
                 }
                 _stream = stream;
+                _loadedVideoId = track.VideoId;
                 stream.Failed += error => Post(() =>
                 {
                     if (ReferenceEquals(_stream, stream))
@@ -475,6 +564,7 @@ public sealed class PlayerEngine : IDisposable
     /// </summary>
     private void WaitForNetwork(Track track, PlayerError error, long positionMs)
     {
+        FinishCrossfade();
         var now = DateTime.UtcNow;
         var wait = _waitingNetwork is { } current && current.VideoId == track.VideoId ? current : new NetworkWait(track.VideoId, now, 0, positionMs);
         _load?.Cancel();
@@ -658,6 +748,7 @@ public sealed class PlayerEngine : IDisposable
     {
         var state = _player.PlaybackSession.PlaybackState;
         if (_player.Source is null) return;
+        if (state == MediaPlaybackState.Paused && _fadeStarted is not null) FinishCrossfade();
         SetStatus(state switch
         {
             MediaPlaybackState.Playing => PlayerStatus.Playing,
@@ -954,6 +1045,8 @@ public sealed class PlayerEngine : IDisposable
         System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
         FinishListening();
         _sleepTimer?.Dispose();
+        _crossfadeTimer?.Dispose();
+        FinishCrossfade();
         _load?.Cancel();
         foreach (var task in _preloaded.Values) _ = task.ContinueWith(t => t.Result.Dispose(), TaskContinuationOptions.OnlyOnRanToCompletion);
         _player.Dispose();
